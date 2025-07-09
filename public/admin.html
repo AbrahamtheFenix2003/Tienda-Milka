@@ -7,219 +7,400 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; scroll-behavior: smooth; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <header class="bg-white shadow-sm">
+    <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 sm:px-6 lg:p-8 flex justify-between items-center h-16">
-            <h1 class="text-xl font-bold text-gray-800">Panel de Administración</h1>
-            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
-                Cerrar Sesión
-            </button>
+            <div class="flex items-center space-x-4">
+                <div class="flex space-x-1">
+                    <button id="back-button" title="Atrás" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button id="forward-button" title="Adelante" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">Gestión de Productos</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/reportes.html" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+                    Ver Reportes
+                </a>
+                <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
         </div>
     </header>
 
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Formulario para Añadir/Editar Productos -->
-        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-bold mb-4">Añadir Nuevo Producto</h2>
+        <div id="form-section" class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 id="form-title" class="text-2xl font-bold mb-4">Añadir Nuevo Producto</h2>
             <form id="product-form" class="space-y-6">
-                
+                <input type="hidden" id="productId">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
-                        <input type="text" id="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                        <input type="text" id="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
                     </div>
                     <div>
                         <label for="category" class="block text-sm font-medium text-gray-700">Categoría</label>
-                        <input type="text" id="category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <select id="category" class="block w-full rounded-md border-gray-300 shadow-sm" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                            <button type="button" id="manage-categories-button" class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Gestionar</button>
+                        </div>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="price" class="block text-sm font-medium text-gray-700">Precio (S/)</label>
-                        <input type="number" step="0.01" id="price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                        <label for="price" class="block text-sm font-medium text-gray-700">Precio de Venta (S/)</label>
+                        <input type="number" step="0.01" id="price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
                     </div>
                     <div>
-                        <label for="originalPrice" class="block text-sm font-medium text-gray-700">Precio Original (S/) (Opcional)</label>
-                        <input type="number" step="0.01" id="originalPrice" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500">
+                        <label for="originalPrice" class="block text-sm font-medium text-gray-700">Precio Original (S/)</label>
+                        <input type="number" step="0.01" id="originalPrice" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                     </div>
                 </div>
-
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="acquisitionCost" class="block text-sm font-medium text-gray-700">Costo de Adquisición (S/)</label>
+                        <input type="number" step="0.01" id="acquisitionCost" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label for="stock" class="block text-sm font-medium text-gray-700">Stock (Unidades)</label>
+                        <input type="number" id="stock" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="code" class="block text-sm font-medium text-gray-700">Código (SKU)</label>
-                        <input type="text" id="code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500">
+                        <input type="text" id="code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                     </div>
                     <div>
-                        <label for="image" class="block text-sm font-medium text-gray-700">Imagen del Producto</label>
-                        <input type="file" id="image" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100" required>
+                        <label for="image" class="block text-sm font-medium text-gray-700">Imagen (Opcional al editar)</label>
+                        <input type="file" id="image" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
                         <progress id="upload-progress" value="0" max="100" class="w-full mt-2 hidden"></progress>
                     </div>
                 </div>
-
                 <div>
                     <label for="description" class="block text-sm font-medium text-gray-700">Descripción</label>
-                    <textarea id="description" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500"></textarea>
+                    <textarea id="description" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
                 </div>
-
-                <div class="text-right">
-                    <button type="submit" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition-colors">
-                        Guardar Producto
-                    </button>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-edit-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded hidden">Cancelar</button>
+                    <button type="submit" id="submit-button" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-6 rounded">Guardar Producto</button>
                 </div>
             </form>
         </div>
-
-        <!-- Lista de Productos Existentes -->
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold mb-4">Productos Existentes</h2>
-            <div id="products-list" class="space-y-4">
-                <p>Cargando productos...</p>
-            </div>
+            <div id="products-list" class="space-y-4"></div>
         </div>
     </main>
+
+    <div id="category-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Gestionar Categorías</h3>
+            <div class="flex space-x-2 mb-4">
+                <input type="text" id="new-category-name" placeholder="Nombre de la nueva categoría" class="flex-grow block w-full rounded-md border-gray-300 shadow-sm">
+                <button id="add-category-button" class="bg-rose-500 text-white font-bold py-2 px-4 rounded">Añadir</button>
+            </div>
+            <div id="modal-category-list" class="space-y-2 max-h-60 overflow-y-auto border-t pt-4"></div>
+            <div class="text-right mt-6">
+                <button id="close-modal-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyApegF3TQ4s2QLBWifxQqHuQ6IVGPjy-8c",
-            authDomain: "braholet-importaciones.firebaseapp.com",
-            projectId: "braholet-importaciones",
-            // ESTA ES LA LÍNEA CORREGIDA:
-            storageBucket: "braholet-importaciones.firebasestorage.app",
-            messagingSenderId: "299104716322",
-            appId: "1:299104716322:web:53d239b829aa7a40ed6c7b",
-            measurementId: "G-79DPZ14Z23"
-        };
+        const ADMIN_EMAIL = 'elinquisidor09@gmail.com'; 
+        let auth, db, storage, categoriesCache = [];
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-
-        const productForm = document.getElementById('product-form');
-        const productsList = document.getElementById('products-list');
-        const logoutButton = document.getElementById('logout-button');
-        const uploadProgress = document.getElementById('upload-progress');
-
-        // Proteger la página: si no hay usuario, redirigir al login
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-            } else {
-                loadProducts();
+        async function main() {
+            try {
+                const response = await fetch('/__/firebase/init.json');
+                const firebaseConfig = await response.json();
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                storage = getStorage(app);
+                setupAdminPage();
+            } catch (error) {
+                console.error("Error al inicializar Firebase:", error);
             }
-        });
+        }
 
-        // Cerrar sesión
-        logoutButton.addEventListener('click', async () => {
-            await signOut(auth);
-        });
-
-        // Manejar el envío del formulario
-        productForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const imageFile = document.getElementById('image').files[0];
-
-            if (!imageFile) {
-                alert('Por favor, selecciona una imagen.');
-                return;
-            }
-
-            const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, imageFile);
-
-            uploadTask.on('state_changed', 
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    uploadProgress.value = progress;
-                    uploadProgress.classList.remove('hidden');
-                }, 
-                (error) => {
-                    console.error("Error al subir la imagen:", error);
-                    alert('Error al subir la imagen.');
-                }, 
-                async () => {
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    
-                    const newProduct = {
-                        name: document.getElementById('name').value,
-                        category: document.getElementById('category').value,
-                        price: parseFloat(document.getElementById('price').value),
-                        originalPrice: parseFloat(document.getElementById('originalPrice').value) || 0,
-                        code: document.getElementById('code').value,
-                        description: document.getElementById('description').value,
-                        imageUrl: downloadURL
-                    };
-
-                    try {
-                        await addDoc(collection(db, 'products'), newProduct);
-                        productForm.reset();
-                        uploadProgress.classList.add('hidden');
-                        alert('¡Producto guardado exitosamente!');
-                        loadProducts();
-                    } catch (error) {
-                        console.error("Error al guardar el producto:", error);
-                        alert('Error al guardar el producto.');
-                    }
+        function setupAdminPage() {
+            onAuthStateChanged(auth, (user) => {
+                if (user && user.email === ADMIN_EMAIL) {
+                    document.body.style.opacity = '1';
+                    initialLoad();
+                    setupEventListeners();
+                } else {
+                    window.location.href = '/index.html';
                 }
-            );
-        });
+            });
+        }
         
-        // Cargar y mostrar productos existentes
-        async function loadProducts() {
-            productsList.innerHTML = '<p>Cargando productos...</p>';
-            const querySnapshot = await getDocs(collection(db, "products"));
-            let html = '';
-            if (querySnapshot.empty) {
-                productsList.innerHTML = '<p>No hay productos existentes.</p>';
-                return;
+        async function initialLoad() {
+            await loadCategories();
+            await loadProducts();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('product-form').addEventListener('submit', handleFormSubmit);
+            document.getElementById('products-list').addEventListener('click', handleListClick);
+            document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+            document.getElementById('cancel-edit-button').addEventListener('click', resetFormToCreate);
+            document.getElementById('back-button').addEventListener('click', () => window.history.back());
+            document.getElementById('forward-button').addEventListener('click', () => window.history.forward());
+            document.getElementById('manage-categories-button').addEventListener('click', () => document.getElementById('category-modal').classList.add('active'));
+            document.getElementById('close-modal-button').addEventListener('click', () => document.getElementById('category-modal').classList.remove('active'));
+            document.getElementById('add-category-button').addEventListener('click', handleAddCategory);
+            document.getElementById('modal-category-list').addEventListener('click', handleDeleteCategory);
+        }
+
+        async function loadCategories() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "categories"));
+                categoriesCache = [];
+                querySnapshot.forEach(doc => categoriesCache.push({ id: doc.id, ...doc.data() }));
+                categoriesCache.sort((a, b) => a.name.localeCompare(b.name));
+                populateCategorySelect();
+                populateCategoryModalList();
+            } catch (error) {
+                console.error("Error al cargar categorías:", error);
             }
-            querySnapshot.forEach((doc) => {
-                const product = doc.data();
-                html += `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                        <div class="flex items-center space-x-4">
-                            <img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 object-cover rounded-md">
-                            <div>
-                                <p class="font-semibold">${product.name}</p>
-                                <p class="text-sm text-gray-500">${product.category}</p>
-                            </div>
-                        </div>
-                        <div>
-                            <button data-id="${doc.id}" class="delete-button text-red-500 hover:text-red-700 font-semibold">Eliminar</button>
-                        </div>
+        }
+
+        function populateCategorySelect() {
+            const select = document.getElementById('category');
+            select.innerHTML = '<option value="">-- Selecciona --</option>';
+            categoriesCache.forEach(cat => {
+                select.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
+            });
+        }
+
+        function populateCategoryModalList() {
+            const list = document.getElementById('modal-category-list');
+            list.innerHTML = categoriesCache.length ? '' : '<p>No hay categorías.</p>';
+            categoriesCache.forEach(cat => {
+                list.innerHTML += `
+                    <div class="flex justify-between items-center p-2 bg-gray-100 rounded">
+                        <span>${cat.name}</span>
+                        <button data-id="${cat.id}" class="delete-category-button text-red-500 hover:text-red-700 font-semibold">Eliminar</button>
                     </div>
                 `;
             });
-            productsList.innerHTML = html;
         }
 
-        // Manejar la eliminación de productos
-        productsList.addEventListener('click', async (e) => {
+        async function handleAddCategory() {
+            const input = document.getElementById('new-category-name');
+            const newName = input.value.trim();
+            if (!newName) return;
+
+            const normalizedName = newName.charAt(0).toUpperCase() + newName.slice(1).toLowerCase();
+            const exists = categoriesCache.some(cat => cat.name.toLowerCase() === normalizedName.toLowerCase());
+            
+            if (exists) {
+                alert('Esa categoría ya existe.');
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "categories"), { name: normalizedName });
+                input.value = '';
+                await loadCategories();
+            } catch (error) {
+                console.error("Error al añadir categoría:", error);
+            }
+        }
+
+        async function handleDeleteCategory(e) {
+            if (!e.target.classList.contains('delete-category-button')) return;
+            const categoryId = e.target.dataset.id;
+            try {
+                await deleteDoc(doc(db, "categories", categoryId));
+                await loadCategories();
+            } catch (error) {
+                console.error("Error al eliminar categoría:", error);
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const productId = document.getElementById('productId').value;
+            const imageFile = document.getElementById('image').files[0];
+            const data = getFormData();
+
+            if (productId) { // Modo Edición
+                if (imageFile) {
+                    await uploadImageAndUpdate(productId, imageFile, data);
+                } else {
+                    await updateProduct(productId, data);
+                }
+            } else { // Modo Creación
+                if (!imageFile) {
+                    alert('Se requiere una imagen para crear un producto nuevo.');
+                    return;
+                }
+                await uploadImageAndCreate(imageFile, data);
+            }
+        }
+
+        function getFormData() {
+            return {
+                name: document.getElementById('name').value,
+                category: document.getElementById('category').value,
+                price: parseFloat(document.getElementById('price').value),
+                originalPrice: parseFloat(document.getElementById('originalPrice').value) || 0,
+                acquisitionCost: parseFloat(document.getElementById('acquisitionCost').value) || 0,
+                stock: parseInt(document.getElementById('stock').value, 10) || 0,
+                code: document.getElementById('code').value,
+                description: document.getElementById('description').value,
+            };
+        }
+
+        async function uploadImageAndCreate(imageFile, data) {
+            const uploadProgress = document.getElementById('upload-progress');
+            uploadProgress.classList.remove('hidden');
+            const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, imageFile);
+            uploadTask.on('state_changed', 
+                (snapshot) => uploadProgress.value = (snapshot.bytesTransferred / snapshot.totalBytes) * 100, 
+                (error) => console.error("Error al subir imagen:", error),
+                async () => {
+                    data.imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                    data.createdAt = new Date();
+                    await addDoc(collection(db, 'products'), data);
+                    resetFormToCreate();
+                    loadProducts();
+                }
+            );
+        }
+
+        async function uploadImageAndUpdate(productId, imageFile, data) {
+            const uploadProgress = document.getElementById('upload-progress');
+            uploadProgress.classList.remove('hidden');
+            const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, imageFile);
+            uploadTask.on('state_changed',
+                (snapshot) => uploadProgress.value = (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
+                (error) => console.error("Error al subir imagen:", error),
+                async () => {
+                    data.imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                    await updateProduct(productId, data);
+                }
+            );
+        }
+
+        async function updateProduct(productId, data) {
+             try {
+                await updateDoc(doc(db, "products", productId), data);
+                resetFormToCreate();
+                loadProducts();
+            } catch (error) {
+                console.error("Error al actualizar el producto:", error);
+            }
+        }
+
+        async function handleListClick(e) {
             if (e.target.classList.contains('delete-button')) {
                 const id = e.target.dataset.id;
                 if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
                     try {
                         await deleteDoc(doc(db, "products", id));
-                        alert('Producto eliminado.');
                         loadProducts();
                     } catch (error) {
-                        console.error("Error al eliminar el producto:", error);
-                        alert('Error al eliminar el producto.');
+                        console.error("Error al eliminar:", error);
                     }
                 }
             }
-        });
+            if (e.target.classList.contains('edit-button')) {
+                await populateFormForEdit(e.target.dataset.id);
+            }
+        }
 
+        async function populateFormForEdit(id) {
+            try {
+                const docSnap = await getDoc(doc(db, "products", id));
+                if (docSnap.exists()) {
+                    const product = docSnap.data();
+                    document.getElementById('productId').value = id;
+                    document.getElementById('name').value = product.name || '';
+                    document.getElementById('category').value = product.category || '';
+                    document.getElementById('price').value = product.price || 0;
+                    document.getElementById('originalPrice').value = product.originalPrice || 0;
+                    document.getElementById('acquisitionCost').value = product.acquisitionCost || 0;
+                    document.getElementById('stock').value = product.stock || 0;
+                    document.getElementById('code').value = product.code || '';
+                    document.getElementById('description').value = product.description || '';
+                    document.getElementById('form-title').textContent = 'Editar Producto';
+                    document.getElementById('submit-button').textContent = 'Actualizar Producto';
+                    document.getElementById('cancel-edit-button').classList.remove('hidden');
+                    window.location.hash = "form-section";
+                }
+            } catch (error) {
+                console.error("Error al cargar para editar:", error);
+            }
+        }
+
+        function resetFormToCreate() {
+            document.getElementById('product-form').reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('form-title').textContent = 'Añadir Nuevo Producto';
+            document.getElementById('submit-button').textContent = 'Guardar Producto';
+            document.getElementById('cancel-edit-button').classList.add('hidden');
+            document.getElementById('upload-progress').classList.add('hidden');
+        }
+        
+        async function loadProducts() {
+            const productsList = document.getElementById('products-list');
+            productsList.innerHTML = '<p>Cargando productos...</p>';
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                let products = [];
+                querySnapshot.forEach((doc) => products.push({ id: doc.id, ...doc.data() }));
+                products.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                
+                let html = '';
+                products.forEach((product) => {
+                    const cost = product.acquisitionCost || 0;
+                    const stock = product.stock || 0;
+                    const price = product.price || 0;
+                    const stockColor = stock > 10 ? 'text-green-600' : stock > 0 ? 'text-yellow-600' : 'text-red-600';
+                    html += `
+                        <div class="grid grid-cols-12 gap-4 items-center p-3 bg-gray-50 rounded-md">
+                            <div class="col-span-2"><img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 object-cover rounded-md"></div>
+                            <div class="col-span-4"><p class="font-semibold">${product.name}</p><p class="text-sm text-gray-500">${product.category}</p></div>
+                            <div class="col-span-2 text-sm"><p>Costo: S/ ${cost.toFixed(2)}</p><p>Venta: S/ ${price.toFixed(2)}</p></div>
+                            <div class="col-span-2 text-sm font-semibold ${stockColor}">Stock: ${stock} uds.</div>
+                            <div class="col-span-2 text-right space-x-2">
+                                <button data-id="${product.id}" class="edit-button text-blue-500 hover:text-blue-700 font-semibold">Editar</button>
+                                <button data-id="${product.id}" class="delete-button text-red-500 hover:text-red-700 font-semibold">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                productsList.innerHTML = html;
+            } catch(error) {
+                console.error("Error al cargar productos:", error);
+            }
+        }
+
+        main();
     </script>
 </body>
 </html>

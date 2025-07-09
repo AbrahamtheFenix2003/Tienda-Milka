@@ -4,71 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle del Producto</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="bg-gray-50">
 
-    <!-- Encabezado (similar al de index.html) -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
+    <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <div class="flex-shrink-0">
-                    <a href="/index.html" class="text-2xl font-bold text-rose-500">XOARA</a>
-                    <p class="text-xs text-gray-400 -mt-1">ONLINE STORE</p>
-                </div>
                 <div class="flex items-center space-x-4">
-                    <a href="#" class="text-gray-500 hover:text-rose-500"><svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c.51 0 .962-.344 1.087-.849l1.858-6.443a.75.75 0 0 0-.7-1.002H5.632l-.305-1.148A.75.75 0 0 0 4.5 3H2.25" /></svg></a>
-                    <a href="#" class="text-gray-500 hover:text-rose-500"><svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg></a>
+                    <div class="flex space-x-1">
+                        <button id="back-button" title="Atrás" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <button id="forward-button" title="Adelante" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <a href="/index.html" class="text-2xl font-bold text-rose-500"></a>
+                        <p class="text-xs text-gray-400 -mt-1">IMPORTACIONES</p>
+                    </div>
                 </div>
+                <div id="user-controls" class="flex items-center space-x-4"></div>
             </div>
         </div>
     </header>
 
-    <!-- Contenido del Producto -->
     <main id="product-content" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- El contenido se cargará aquí. Mostramos un mensaje de carga inicial. -->
-        <p id="loading-message" class="text-center text-gray-500">Cargando producto...</p>
+        <p id="loading-message" class="text-center text-gray-500">Verificando acceso y cargando producto...</p>
     </main>
     
-    <!-- Plantilla para la vista del producto (oculta inicialmente) -->
     <template id="product-view-template">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Columna de Imágenes -->
             <div>
                 <div class="aspect-square bg-gray-100 rounded-lg mb-4">
                     <img id="main-product-image" src="" alt="Imagen principal del producto" class="w-full h-full object-cover rounded-lg">
                 </div>
-                <!-- Galería de miniaturas (funcionalidad futura) -->
-                <div id="thumbnail-gallery" class="grid grid-cols-4 gap-2">
-                    <!-- Las miniaturas se pueden agregar aquí -->
-                </div>
             </div>
-
-            <!-- Columna de Detalles -->
             <div class="flex flex-col">
                 <span id="product-category" class="text-sm text-gray-500">Categoría</span>
                 <h1 id="product-name" class="text-3xl font-bold text-gray-900 mt-1">Nombre del Producto</h1>
-                
+                <p id="product-stock" class="mt-2 text-sm font-semibold"></p>
                 <div class="mt-4">
                     <span id="product-price" class="text-3xl font-bold text-rose-600">S/ 0.00</span>
                     <span id="product-original-price" class="text-lg text-gray-400 line-through ml-2"></span>
                 </div>
-
                 <p id="product-description" class="text-gray-600 mt-6 flex-grow">
                     Descripción del producto...
                 </p>
-
                 <div class="mt-8">
-                    <p class="text-sm text-gray-500">Cantidad Mínima: <span id="min-quantity">1 UN</span></p>
-                    <a id="whatsapp-button" href="#" target="_blank" class="mt-4 w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-lg">
+                    <a id="whatsapp-button" href="#" target="_blank" class="mt-4 w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
                         <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 14.2l-1.5-0.8c-0.4-0.2-0.7-0.1-0.9 0.2l-0.5 0.6c-0.2 0.2-0.5 0.3-0.8 0.2C11.9 14 11 13.2 10.1 12.2c-0.9-0.9-1.7-1.8-1.9-2.8 0-0.3 0.1-0.6 0.3-0.8l0.6-0.5c0.2-0.2 0.3-0.5 0.2-0.9l-0.8-1.5c-0.2-0.4-0.6-0.6-1-0.6H5.7C5.3 4 5 4.3 5 4.7c0 0.9 0.3 1.8 0.9 2.6 0.6 0.8 1.4 1.6 2.3 2.4 1.2 1.1 2.6 2 4.2 2.4 0.2 0 0.3 0 0.5 0 0.8 0 1.6-0.3 2.2-0.9 0.6-0.6 1-1.4 1-2.2 0-0.4-0.3-0.7-0.7-0.7h-1.4c-0.4 0-0.8 0.2-1 0.6zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
                         Pedir por WhatsApp
                     </a>
@@ -80,24 +71,53 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        let db, auth;
 
-        // --- TU CONFIGURACIÓN DE FIREBASE ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyApegF3TQ4s2QLBWifxQqHuQ6IVGPjy-8c",
-            authDomain: "braholet-importaciones.firebaseapp.com",
-            projectId: "braholet-importaciones",
-            storageBucket: "braholet-importaciones.appspot.com",
-            messagingSenderId: "299104716322",
-            appId: "1:299104716322:web:53d239b829aa7a40ed6c7b",
-            measurementId: "G-79DPZ14Z23"
-        };
+        async function main() {
+            try {
+                const response = await fetch('/__/firebase/init.json');
+                const firebaseConfig = await response.json();
+                const app = initializeApp(firebaseConfig);
+                
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                setupNavigation();
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        document.body.style.opacity = '1';
+                        setupUserControls(user);
+                        loadProduct();
+                    } else {
+                        window.location.href = '/login-cliente.html';
+                    }
+                });
+            } catch (error) {
+                console.error("❌ Error en la inicialización:", error);
+            }
+        }
+
+        function setupNavigation() {
+            document.getElementById('back-button').addEventListener('click', () => window.history.back());
+            document.getElementById('forward-button').addEventListener('click', () => window.history.forward());
+        }
+
+        function setupUserControls(user) {
+            const userControlsDiv = document.getElementById('user-controls');
+            userControlsDiv.innerHTML = `
+                <div class="text-right">
+                    <p class="text-sm font-medium text-gray-800">${user.displayName || user.email}</p>
+                    <button id="logout-button" class="text-xs text-gray-500 hover:underline">Cerrar Sesión</button>
+                </div>
+            `;
+            document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+        }
 
         async function loadProduct() {
             const loadingMessage = document.getElementById('loading-message');
-            const productContent = document.getElementById('product-content');
-            
-            // 1. Obtener el ID del producto de la URL
             const params = new URLSearchParams(window.location.search);
             const productId = params.get('id');
 
@@ -106,64 +126,59 @@
                 return;
             }
 
-            // 2. Conectar y autenticar con Firebase
             try {
-                const app = initializeApp(firebaseConfig);
-                const db = getFirestore(app);
-                const auth = getAuth(app);
-                await signInAnonymously(auth);
-
-                // 3. Buscar el documento específico del producto
                 const productRef = doc(db, "products", productId);
                 const docSnap = await getDoc(productRef);
-
                 if (docSnap.exists()) {
-                    // 4. Si el producto existe, mostrarlo
-                    const productData = docSnap.data();
-                    displayProduct(productData);
+                    displayProduct(docSnap.data());
                 } else {
                     loadingMessage.innerText = 'Producto no encontrado.';
                 }
             } catch (error) {
                 console.error("Error al cargar el producto:", error);
-                loadingMessage.innerText = 'No se pudo cargar el producto. Revisa la consola.';
             }
         }
 
         function displayProduct(product) {
             const productContent = document.getElementById('product-content');
             const template = document.getElementById('product-view-template');
-            
-            // Clonar la plantilla para usarla
             const view = template.content.cloneNode(true);
 
-            // Poblar los datos en la vista clonada
             view.getElementById('main-product-image').src = product.imageUrl || 'https://placehold.co/600x600/f0f0f0/333?text=Sin+Imagen';
             view.getElementById('main-product-image').alt = product.name;
             view.getElementById('product-category').textContent = product.category || 'Sin categoría';
             view.getElementById('product-name').textContent = product.name || 'Nombre no disponible';
-            view.getElementById('product-price').textContent = `S/ ${parseFloat(product.price || 0).toFixed(2)}`;
+            view.getElementById('product-price').textContent = `S/ ${(product.price || 0).toFixed(2)}`;
             
-            if (product.originalPrice && parseFloat(product.originalPrice) > parseFloat(product.price)) {
-                view.getElementById('product-original-price').textContent = `S/ ${parseFloat(product.originalPrice).toFixed(2)}`;
+            if (product.originalPrice && product.originalPrice > product.price) {
+                view.getElementById('product-original-price').textContent = `S/ ${product.originalPrice.toFixed(2)}`;
             }
 
-            view.getElementById('product-description').textContent = product.description || 'No hay descripción disponible para este producto.';
+            view.getElementById('product-description').textContent = product.description || 'No hay descripción disponible.';
 
-            // Configurar el botón de WhatsApp
-            const whatsappLink = view.getElementById('whatsapp-button');
+            const stockElement = view.getElementById('product-stock');
+            const whatsappButton = view.getElementById('whatsapp-button');
+            const stock = product.stock || 0;
+            if (stock > 10) {
+                stockElement.textContent = '✅ En Stock';
+                stockElement.className = 'mt-2 text-sm font-semibold text-green-600';
+            } else if (stock > 0) {
+                stockElement.textContent = `⚠️ ¡Últimas ${stock} unidades!`;
+                stockElement.className = 'mt-2 text-sm font-semibold text-yellow-600';
+            } else {
+                stockElement.textContent = '❌ Agotado';
+                stockElement.className = 'mt-2 text-sm font-semibold text-red-600';
+                whatsappButton.disabled = true;
+            }
+
             const message = encodeURIComponent(`Hola, estoy interesado en el producto: ${product.name} (COD: ${product.code})`);
-            // REEMPLAZA el 51993004018 con tu número de WhatsApp
-            whatsappLink.href = `https://wa.me/51938256218?text=${message}`;
+            whatsappButton.href = `https://wa.me/51938256218?text=${message}`;
 
-            // Reemplazar el mensaje de "cargando" con la vista del producto
             productContent.innerHTML = '';
             productContent.appendChild(view);
         }
 
-        // Iniciar la carga del producto cuando la página esté lista
-        loadProduct();
+        main();
     </script>
-
 </body>
 </html>

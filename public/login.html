@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - XOARA</title>
+    <title>Admin Login - BRAHOLET</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -14,7 +14,7 @@
 
     <div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
         <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold text-rose-500">XOARA</h1>
+            <h1 class="text-2xl font-bold text-rose-500">BRAHOLET</h1>
             <p class="text-gray-500">Panel de Administración</p>
         </div>
         
@@ -40,40 +40,53 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyApegF3TQ4s2QLBWifxQqHuQ6IVGPjy-8c",
-            authDomain: "braholet-importaciones.firebaseapp.com",
-            projectId: "braholet-importaciones",
-            storageBucket: "braholet-importaciones.appspot.com",
-            messagingSenderId: "299104716322",
-            appId: "1:299104716322:web:53d239b829aa7a40ed6c7b",
-            measurementId: "G-79DPZ14Z23"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        const loginForm = document.getElementById('login-form');
-        const errorMessage = document.getElementById('error-message');
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            errorMessage.classList.add('hidden');
-
+        async function initializeAndSetupLogin() {
             try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // Si el login es exitoso, redirigir al panel de admin
-                window.location.href = 'admin.html';
+                // 1. Carga la configuración de forma segura
+                const response = await fetch('/__/firebase/init.json');
+                const firebaseConfig = await response.json();
+
+                // 2. Inicializa Firebase
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+
+                // 3. Configura el listener del formulario
+                setupLoginForm(auth);
+
             } catch (error) {
-                console.error("Error de inicio de sesión:", error.code);
-                errorMessage.textContent = 'Correo o contraseña incorrectos.';
+                console.error("Error al inicializar Firebase:", error);
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = 'No se pudo conectar al servidor. Inténtalo más tarde.';
                 errorMessage.classList.remove('hidden');
             }
-        });
+        }
+
+        function setupLoginForm(auth) {
+            const loginForm = document.getElementById('login-form');
+            const errorMessage = document.getElementById('error-message');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                errorMessage.classList.add('hidden');
+
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    // Si el login es exitoso, redirigir al panel de admin
+                    window.location.href = 'admin.html';
+                } catch (error) {
+                    console.error("Error de inicio de sesión:", error.code);
+                    errorMessage.textContent = 'Correo o contraseña incorrectos.';
+                    errorMessage.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Inicia todo el proceso
+        initializeAndSetupLogin();
     </script>
 
 </body>

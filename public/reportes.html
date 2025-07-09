@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Panel de Administración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 sm:px-6 lg:p-8 flex justify-between items-center h-16">
+            <div class="flex items-center space-x-4">
+                <div class="flex space-x-1">
+                    <button id="back-button" title="Atrás" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button id="forward-button" title="Adelante" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">Reportes de Ventas</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/admin.html" class="text-sm font-semibold text-gray-600 hover:text-rose-500">Gestión de Productos</a>
+                <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Formulario para Registrar Venta -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-bold mb-4">Registrar Nueva Venta</h2>
+            <form id="sale-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
+                <div class="md:col-span-2">
+                    <label for="product-select" class="block text-sm font-medium text-gray-700">Producto Vendido</label>
+                    <select id="product-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                        <option value="">Cargando productos...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="quantity-sold" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                    <input type="number" id="quantity-sold" value="1" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                </div>
+                <div>
+                    <label for="sale-price" class="block text-sm font-medium text-gray-700">Precio Venta (c/u)</label>
+                    <input type="number" step="0.01" id="sale-price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                </div>
+                <div class="md:col-span-1">
+                    <button type="submit" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+                        Registrar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sección de Reportes -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold mb-6">Resumen Financiero</h2>
+            <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-blue-800 font-semibold">INGRESOS TOTALES</p>
+                    <p id="total-revenue" class="text-3xl font-bold text-blue-900">S/ 0.00</p>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <p class="text-sm text-red-800 font-semibold">COSTOS TOTALES</p>
+                    <p id="total-cost" class="text-3xl font-bold text-red-900">S/ 0.00</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-sm text-green-800 font-semibold">GANANCIA BRUTA</p>
+                    <p id="total-profit" class="text-3xl font-bold text-green-900">S/ 0.00</p>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold mb-4">Historial de Ventas</h3>
+            <div id="sales-list" class="space-y-3">
+                <p>Cargando ventas...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL DE CONFIRMACIÓN PARA ANULAR VENTA -->
+    <div id="annul-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+            <h3 class="text-xl font-bold mb-4">Confirmar Anulación</h3>
+            <p class="mb-6">¿Estás seguro de que quieres anular esta venta? El stock del producto será restaurado. Esta acción no se puede deshacer.</p>
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-annul-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded">Cancelar</button>
+                <button id="confirm-annul-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded">Sí, Anular</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const ADMIN_EMAIL = 'elinquisidor09@gmail.com'; 
+        let auth, db;
+        let productsCache = [];
+
+        async function main() {
+            try {
+                const response = await fetch('/__/firebase/init.json');
+                const firebaseConfig = await response.json();
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                setupPage();
+            } catch (error) {
+                console.error("Error al inicializar Firebase:", error);
+            }
+        }
+
+        function setupPage() {
+            onAuthStateChanged(auth, (user) => {
+                if (user && user.email === ADMIN_EMAIL) {
+                    document.body.style.opacity = '1';
+                    setupEventListeners();
+                    loadInitialData();
+                } else {
+                    window.location.href = '/index.html';
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('sale-form').addEventListener('submit', handleSaleSubmit);
+            document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+            document.getElementById('back-button').addEventListener('click', () => window.history.back());
+            document.getElementById('forward-button').addEventListener('click', () => window.history.forward());
+            document.getElementById('sales-list').addEventListener('click', openAnnulModal);
+            document.getElementById('cancel-annul-button').addEventListener('click', () => document.getElementById('annul-modal').classList.remove('active'));
+            document.getElementById('confirm-annul-button').addEventListener('click', handleAnnulSale);
+        }
+
+        async function loadInitialData() {
+            await loadProductsIntoSelect();
+            await loadSalesAndCalculateReports();
+        }
+
+        async function loadProductsIntoSelect() {
+            const productSelect = document.getElementById('product-select');
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                productsCache = [];
+                querySnapshot.forEach((doc) => productsCache.push({ id: doc.id, ...doc.data() }));
+                productsCache.sort((a, b) => a.name.localeCompare(b.name));
+                productSelect.innerHTML = '<option value="">-- Selecciona un producto --</option>';
+                productsCache.forEach(product => {
+                    productSelect.innerHTML += `<option value="${product.id}">${product.name} (Stock: ${product.stock || 0})</option>`;
+                });
+            } catch (error) {
+                console.error("Error cargando productos:", error);
+            }
+        }
+
+        async function handleSaleSubmit(e) {
+            e.preventDefault();
+            const productId = document.getElementById('product-select').value;
+            const quantitySold = parseInt(document.getElementById('quantity-sold').value, 10);
+            const salePrice = parseFloat(document.getElementById('sale-price').value);
+
+            if (!productId || isNaN(quantitySold) || isNaN(salePrice)) return;
+
+            const productSold = productsCache.find(p => p.id === productId);
+            if (quantitySold > (productSold.stock || 0)) {
+                alert(`Error: No hay suficiente stock. Stock actual: ${productSold.stock || 0}`);
+                return;
+            }
+
+            const saleData = {
+                productId: productId,
+                productName: productSold.name,
+                quantity: quantitySold,
+                salePricePerUnit: salePrice,
+                totalSale: quantitySold * salePrice,
+                acquisitionCostPerUnit: productSold.acquisitionCost || 0,
+                totalCost: quantitySold * (productSold.acquisitionCost || 0),
+                profit: (quantitySold * salePrice) - (quantitySold * (productSold.acquisitionCost || 0)),
+                soldAt: new Date()
+            };
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const productRef = doc(db, "products", productId);
+                    const productDoc = await transaction.get(productRef);
+                    if (!productDoc.exists()) throw "¡El producto no existe!";
+                    const newStock = (productDoc.data().stock || 0) - quantitySold;
+                    transaction.update(productRef, { stock: newStock });
+                    transaction.set(doc(collection(db, "sales")), saleData);
+                });
+                document.getElementById('sale-form').reset();
+                loadInitialData();
+            } catch (error) {
+                console.error("Error al registrar la venta: ", error);
+            }
+        }
+        
+        function openAnnulModal(e) {
+            if (!e.target.classList.contains('annul-sale-button')) return;
+            const button = e.target;
+            const modal = document.getElementById('annul-modal');
+            const confirmButton = document.getElementById('confirm-annul-button');
+            confirmButton.dataset.saleId = button.dataset.saleId;
+            confirmButton.dataset.productId = button.dataset.productId;
+            confirmButton.dataset.quantity = button.dataset.quantity;
+            modal.classList.add('active');
+        }
+
+        async function handleAnnulSale() {
+            const confirmButton = document.getElementById('confirm-annul-button');
+            const { saleId, productId, quantity } = confirmButton.dataset;
+            
+            if (!saleId || !productId || !quantity) return;
+
+            try {
+                // **INICIO DE LA CORRECCIÓN**
+                await runTransaction(db, async (transaction) => {
+                    const saleRef = doc(db, "sales", saleId);
+                    const productRef = doc(db, "products", productId);
+
+                    // 1. Intentar obtener el producto
+                    const productDoc = await transaction.get(productRef);
+
+                    // 2. Si el producto todavía existe, restaurar el stock
+                    if (productDoc.exists()) {
+                        const restoredStock = (productDoc.data().stock || 0) + parseInt(quantity, 10);
+                        transaction.update(productRef, { stock: restoredStock });
+                    } else {
+                        // Si no existe, simplemente lo informamos en la consola.
+                        console.log(`El producto ${productId} ya no existe. No se restaurará el stock.`);
+                    }
+
+                    // 3. Eliminar el registro de la venta, sin importar si el producto existía o no.
+                    transaction.delete(saleRef);
+                });
+                // **FIN DE LA CORRECCIÓN**
+
+                console.log('Operación de anulación completada.');
+                document.getElementById('annul-modal').classList.remove('active');
+                loadInitialData();
+            } catch (error) {
+                console.error("Error al anular la venta:", error);
+                alert("Error al anular la venta: " + error);
+            }
+        }
+
+        async function loadSalesAndCalculateReports() {
+            const salesListDiv = document.getElementById('sales-list');
+            salesListDiv.innerHTML = '<p>Cargando ventas...</p>';
+            try {
+                const querySnapshot = await getDocs(collection(db, "sales"));
+                let sales = [];
+                querySnapshot.forEach((doc) => sales.push({ id: doc.id, ...doc.data() }));
+                sales.sort((a, b) => (b.soldAt?.toMillis() || 0) - (a.soldAt?.toMillis() || 0));
+
+                let totalRevenue = 0, totalCost = 0, salesHtml = '';
+
+                if (sales.length === 0) {
+                    salesListDiv.innerHTML = '<p>No hay ventas registradas.</p>';
+                } else {
+                    sales.forEach(sale => {
+                        totalRevenue += sale.totalSale;
+                        totalCost += sale.totalCost;
+                        salesHtml += `
+                            <div class="grid grid-cols-6 gap-4 text-sm p-3 border-b items-center">
+                                <div>${new Date(sale.soldAt.seconds * 1000).toLocaleDateString()}</div>
+                                <div class="font-semibold col-span-2">${sale.productName} (x${sale.quantity})</div>
+                                <div>Venta: S/ ${sale.totalSale.toFixed(2)}</div>
+                                <div class="font-bold text-green-700">Ganancia: S/ ${sale.profit.toFixed(2)}</div>
+                                <div class="text-right">
+                                    <button data-sale-id="${sale.id}" data-product-id="${sale.productId}" data-quantity="${sale.quantity}" class="annul-sale-button text-xs bg-gray-200 hover:bg-red-200 text-gray-700 hover:text-red-800 font-semibold py-1 px-2 rounded">
+                                        Anular
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    salesListDiv.innerHTML = salesHtml;
+                }
+
+                document.getElementById('total-revenue').textContent = `S/ ${totalRevenue.toFixed(2)}`;
+                document.getElementById('total-cost').textContent = `S/ ${totalCost.toFixed(2)}`;
+                document.getElementById('total-profit').textContent = `S/ ${(totalRevenue - totalCost).toFixed(2)}`;
+
+            } catch (error) {
+                console.error("Error cargando ventas:", error);
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>

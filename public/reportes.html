@@ -102,7 +102,7 @@
 
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -112,12 +112,11 @@
 
         async function main() {
             try {
-                const response = await fetch('/__/firebase/init.json');
-                const firebaseConfig = await response.json();
-                const app = initializeApp(firebaseConfig);
+                const app = await initFirebase();
                 auth = getAuth(app);
                 db = getFirestore(app);
                 setupPage();
+                registerServiceWorker();
             } catch (error) {
                 console.error("Error al inicializar Firebase:", error);
             }
@@ -138,8 +137,7 @@
         function setupEventListeners() {
             document.getElementById('sale-form').addEventListener('submit', handleSaleSubmit);
             document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
-            document.getElementById('back-button').addEventListener('click', () => window.history.back());
-            document.getElementById('forward-button').addEventListener('click', () => window.history.forward());
+            setupNavigation();
             document.getElementById('sales-list').addEventListener('click', openAnnulModal);
             document.getElementById('cancel-annul-button').addEventListener('click', () => document.getElementById('annul-modal').classList.remove('active'));
             document.getElementById('confirm-annul-button').addEventListener('click', handleAnnulSale);
@@ -301,15 +299,6 @@
         }
 
         main();
-    </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => console.log('SW registrado:', registration))
-                    .catch(error => console.log('Error de registro de SW:', error));
-            });
-        }
     </script>
 </body>
 </html>

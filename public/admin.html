@@ -84,9 +84,23 @@
                         <input type="text" id="code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                     </div>
                     <div>
-                        <label for="image" class="block text-sm font-medium text-gray-700">Imagen (Opcional al editar)</label>
+                        <label for="image" class="block text-sm font-medium text-gray-700">Imagen Principal</label>
                         <input type="file" id="image" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
                         <progress id="upload-progress" value="0" max="100" class="w-full mt-2 hidden"></progress>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="image2" class="block text-sm font-medium text-gray-700">Imagen 2</label>
+                        <input type="file" id="image2" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
+                    </div>
+                    <div>
+                        <label for="image3" class="block text-sm font-medium text-gray-700">Imagen 3</label>
+                        <input type="file" id="image3" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
+                    </div>
+                    <div>
+                        <label for="image4" class="block text-sm font-medium text-gray-700">Imagen 4</label>
+                        <input type="file" id="image4" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
                     </div>
                 </div>
                 <div>
@@ -241,20 +255,30 @@
             e.preventDefault();
             const productId = document.getElementById('productId').value;
             const imageFile = document.getElementById('image').files[0];
+            const imageFile2 = document.getElementById('image2').files[0];
+            const imageFile3 = document.getElementById('image3').files[0];
+            const imageFile4 = document.getElementById('image4').files[0];
             const data = getFormData();
 
+            const filesToUpload = [
+                { file: imageFile, key: 'imageUrl' },
+                { file: imageFile2, key: 'imageUrl2' },
+                { file: imageFile3, key: 'imageUrl3' },
+                { file: imageFile4, key: 'imageUrl4' },
+            ].filter(item => item.file);
+
             if (productId) { // Modo Edición
-                if (imageFile) {
-                    await uploadImageAndUpdate(productId, imageFile, data);
+                if (filesToUpload.length > 0) {
+                    await uploadImagesAndUpdate(productId, filesToUpload, data);
                 } else {
                     await updateProduct(productId, data);
                 }
             } else { // Modo Creación
                 if (!imageFile) {
-                    alert('Se requiere una imagen para crear un producto nuevo.');
+                    alert('La imagen principal es obligatoria.');
                     return;
                 }
-                await uploadImageAndCreate(imageFile, data);
+                await uploadImagesAndCreate(filesToUpload, data);
             }
         }
 
@@ -271,37 +295,69 @@
             };
         }
 
-        async function uploadImageAndCreate(imageFile, data) {
+        async function uploadImagesAndCreate(files, data) {
             const uploadProgress = document.getElementById('upload-progress');
             uploadProgress.classList.remove('hidden');
-            const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, imageFile);
-            uploadTask.on('state_changed', 
-                (snapshot) => uploadProgress.value = (snapshot.bytesTransferred / snapshot.totalBytes) * 100, 
-                (error) => console.error("Error al subir imagen:", error),
-                async () => {
-                    data.imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                    data.createdAt = new Date();
-                    await addDoc(collection(db, 'products'), data);
-                    resetFormToCreate();
-                    loadProducts();
-                }
-            );
+            
+            const uploadPromises = files.map(item => {
+                const storageRef = ref(storage, `products/${Date.now()}_${item.file.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, item.file);
+                return new Promise((resolve, reject) => {
+                    uploadTask.on('state_changed', 
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            uploadProgress.value = progress;
+                        },
+                        (error) => reject(error),
+                        async () => {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            resolve({ key: item.key, url: downloadURL });
+                        }
+                    );
+                });
+            });
+
+            try {
+                const uploadedImages = await Promise.all(uploadPromises);
+                uploadedImages.forEach(img => data[img.key] = img.url);
+                data.createdAt = new Date();
+                await addDoc(collection(db, 'products'), data);
+                resetFormToCreate();
+                loadProducts();
+            } catch (error) {
+                console.error("Error al subir imágenes y crear producto:", error);
+            }
         }
 
-        async function uploadImageAndUpdate(productId, imageFile, data) {
+        async function uploadImagesAndUpdate(productId, files, data) {
             const uploadProgress = document.getElementById('upload-progress');
             uploadProgress.classList.remove('hidden');
-            const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, imageFile);
-            uploadTask.on('state_changed',
-                (snapshot) => uploadProgress.value = (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
-                (error) => console.error("Error al subir imagen:", error),
-                async () => {
-                    data.imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                    await updateProduct(productId, data);
-                }
-            );
+
+            const uploadPromises = files.map(item => {
+                const storageRef = ref(storage, `products/${Date.now()}_${item.file.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, item.file);
+                return new Promise((resolve, reject) => {
+                    uploadTask.on('state_changed', 
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            uploadProgress.value = progress;
+                        },
+                        (error) => reject(error),
+                        async () => {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            resolve({ key: item.key, url: downloadURL });
+                        }
+                    );
+                });
+            });
+
+            try {
+                const uploadedImages = await Promise.all(uploadPromises);
+                uploadedImages.forEach(img => data[img.key] = img.url);
+                await updateProduct(productId, data);
+            } catch (error) {
+                console.error("Error al subir imágenes y actualizar producto:", error);
+            }
         }
 
         async function updateProduct(productId, data) {
@@ -345,6 +401,9 @@
                     document.getElementById('stock').value = product.stock || 0;
                     document.getElementById('code').value = product.code || '';
                     document.getElementById('description').value = product.description || '';
+                    
+                    // Aquí podrías mostrar las imágenes actuales si lo deseas
+
                     document.getElementById('form-title').textContent = 'Editar Producto';
                     document.getElementById('submit-button').textContent = 'Actualizar Producto';
                     document.getElementById('cancel-edit-button').classList.remove('hidden');
@@ -358,6 +417,9 @@
         function resetFormToCreate() {
             document.getElementById('product-form').reset();
             document.getElementById('productId').value = '';
+            document.getElementById('image2').value = '';
+            document.getElementById('image3').value = '';
+            document.getElementById('image4').value = '';
             document.getElementById('form-title').textContent = 'Añadir Nuevo Producto';
             document.getElementById('submit-button').textContent = 'Guardar Producto';
             document.getElementById('cancel-edit-button').classList.add('hidden');

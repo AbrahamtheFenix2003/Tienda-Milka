@@ -46,6 +46,7 @@
                 <div class="aspect-square bg-gray-100 rounded-lg mb-4">
                     <img id="main-product-image" src="" alt="Imagen principal del producto" class="w-full h-full object-cover rounded-lg">
                 </div>
+                <div id="thumbnail-gallery" class="grid grid-cols-4 gap-2"></div>
             </div>
             <div class="flex flex-col">
                 <span id="product-category" class="text-sm text-gray-500">Categoría</span>
@@ -141,6 +142,25 @@
 
             view.getElementById('main-product-image').src = product.imageUrl || 'https://placehold.co/600x600/f0f0f0/333?text=Sin+Imagen';
             view.getElementById('main-product-image').alt = product.name;
+
+            const gallery = view.getElementById('thumbnail-gallery');
+            const images = [product.imageUrl, product.imageUrl2, product.imageUrl3, product.imageUrl4].filter(Boolean);
+            
+            if (images.length > 1) {
+                images.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = 'Vista en miniatura';
+                    img.className = 'w-full h-full object-cover rounded-md cursor-pointer hover:opacity-75 transition-opacity';
+                    img.addEventListener('click', () => {
+                        view.getElementById('main-product-image').src = url;
+                    });
+                    gallery.appendChild(img);
+                });
+            } else {
+                gallery.remove();
+            }
+
             view.getElementById('product-category').textContent = product.category || 'Sin categoría';
             view.getElementById('product-name').textContent = product.name || 'Nombre no disponible';
             view.getElementById('product-price').textContent = `S/ ${(product.price || 0).toFixed(2)}`;

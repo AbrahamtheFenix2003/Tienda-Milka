@@ -186,7 +186,9 @@
                 whatsappButton.disabled = true;
             }
 
-            const message = encodeURIComponent(`Hola, estoy interesado en el producto: ${product.name} (COD: ${product.code})`);
+            const text = `Estoy interesado en el producto: ${product.name}`;
+            const link = product.imageUrl ? `\n${product.imageUrl}` : '';
+            const message = encodeURIComponent(text + link);
             whatsappButton.href = `https://wa.me/51938256218?text=${message}`;
 
             productContent.innerHTML = '';

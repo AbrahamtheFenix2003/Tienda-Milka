@@ -25,14 +25,12 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { initFirebase, registerServiceWorker } from "./js/common.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         async function main() {
             try {
-                const response = await fetch('/__/firebase/init.json');
-                const firebaseConfig = await response.json();
-                const app = initializeApp(firebaseConfig);
+                const app = await initFirebase();
                 const auth = getAuth(app);
                 
                 const googleLoginButton = document.getElementById('google-login-button');
@@ -55,18 +53,11 @@
                 console.error("Error al inicializar Firebase:", error);
                 document.getElementById('error-message').textContent = 'Error de conexión con el servidor.';
             }
+            registerServiceWorker();
         }
 
         main();
     </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => console.log('SW registrado:', registration))
-                    .catch(error => console.log('Error de registro de SW:', error));
-            });
-        }
-    </script>
+    
 </body>
 </html>

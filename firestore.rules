@@ -6,12 +6,12 @@ service cloud.firestore {
     // Colección de Productos
     match /products/{productId} {
       allow read: if request.auth != null;
-      allow write: if request.auth.token.email == 'elinquisidor09@gmail.com';
+      allow write: if request.auth.token.email in ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
     }
 
     // Colección de Ventas
     match /sales/{saleId} {
-      allow read, write: if request.auth.token.email == 'elinquisidor09@gmail.com';
+      allow read, write: if request.auth.token.email in ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
     }
 
     // NUEVA REGLA PARA LA COLECCIÓN DE CATEGORÍAS
@@ -19,7 +19,7 @@ service cloud.firestore {
       // Cualquiera puede leer las categorías para mostrarlas en la tienda
       allow read: if true;
       // Solo el admin puede crear, editar o borrar categorías
-      allow write: if request.auth.token.email == 'elinquisidor09@gmail.com';
+      allow write: if request.auth.token.email in ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
     }
   }
 }

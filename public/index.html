@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
     
     <style>
         body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; }
@@ -26,6 +27,13 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        /* Estilos para el carrito flotante y el panel */
+        #quote-cart-panel {
+            transition: transform 0.3s ease-in-out;
+        }
+        .toast {
+            transition: opacity 0.3s, transform 0.3s;
         }
     </style>
 </head>
@@ -82,21 +90,21 @@
                         </div>
                         <div class="space-y-4 pt-6 border-t">
                              <h3 class="text-lg font-semibold text-gray-800">Contacto</h3>
-                             <div class="flex items-center space-x-2 text-gray-600">
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 6.75Z" /></svg>
+                             <a href="https://wa.me/51938256218" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-gray-600 hover:text-rose-600 group">
+                                <svg class="h-5 w-5 text-gray-400 group-hover:text-rose-500 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 6.75Z" /></svg>
                                 <span>+51 938 256 218</span>
+                             </a>
+                             <div class="flex items-center space-x-2 text-gray-600">
+                                 <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
+                                <span>URB. Huanchaco #401 - Chepen</span>
                              </div>
                              <div class="flex items-center space-x-2 text-gray-600">
-                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
-                                <span>Av. Manco Capac 532, La Victoria</span>
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
+                                <a href="https://www.facebook.com/profile.php?id=100066980643442&locale=es_LA" target="_blank" rel="noopener noreferrer" class="hover:text-rose-600">@braholet_importaciones</a>
                              </div>
                              <div class="flex items-center space-x-2 text-gray-600">
-                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
-                                <a href="https://www.facebook.com/profile.php?id=100066980643442&locale=es_LA" target="_blank" rel="noopener noreferrer" class="hover:text-rose-600">BRAHOLET en Facebook</a>
-                             </div>
-                             <div class="flex items-center space-x-2 text-gray-600">
-                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 012.153 2.153c-.247.636.416 1.363.465 2.427.048 1.024.06 1.378.06 3.808s-.012 2.784-.06 3.808c-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-2.153 2.153c-.636.247-1.363.416-2.427.465-1.024.048-1.378.06-3.808.06s-2.784-.013-3.808-.06c-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-2.153-2.153c-.247-.636-.416-1.363-.465-2.427-.048-1.024-.06-1.378-.06-3.808s.012-2.784.06-3.808c.049-1.064.218-1.791.465-2.427a4.902 4.902 0 012.153-2.153c.636-.247 1.363.416 2.427-.465C9.53 2.013 9.884 2 12.315 2zm0 2.163c-2.403 0-2.748.01-3.727.055-1.007.046-1.634.211-2.203.423a2.72 2.72 0 00-1.15 1.15c-.212.57-.378 1.196-.423 2.203-.045.979-.055 1.324-.055 3.727s.01 2.748.055 3.727c.046 1.007.211 1.634.423 2.203a2.72 2.72 0 001.15 1.15c.57.212 1.196.378 2.203.423.979.045 1.324.055 3.727.055s2.748-.01 3.727-.055c1.007-.046 1.634-.211 2.203-.423a2.72 2.72 0 001.15-1.15c.212-.57.378-1.196.423-2.203.045-.979.055-1.324-.055-3.727s-.01-2.748-.055-3.727c-.046-1.007-.211-1.634-.423-2.203a2.72 2.72 0 00-1.15-1.15c-.57-.212-1.196-.378-2.203-.423-.979-.045-1.324-.055-3.727-.055zm0 3.823a3.736 3.736 0 100 7.472 3.736 3.736 0 000-7.472zm0 5.823a2.087 2.087 0 110-4.174 2.087 2.087 0 010 4.174zM16.425 5.332a1.21 1.21 0 100 2.42 1.21 1.21 0 000-2.42z" clip-rule="evenodd" /></svg>
-                                <a href="https://www.instagram.com/braholet_importaciones?igsh=MXd1OGI0NmNhdWF0ag%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" class="hover:text-rose-600">@braholet.store</a>
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 012.153 2.153c-.247.636.416 1.363.465 2.427.048 1.024.06 1.378.06 3.808s-.012 2.784-.06 3.808c-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-2.153 2.153c-.636.247-1.363.416-2.427.465-1.024.048-1.378.06-3.808.06s-2.784-.013-3.808-.06c-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-2.153-2.153c-.247-.636-.416-1.363-.465-2.427-.048-1.024-.06-1.378-.06-3.808s.012-2.784.06-3.808c.049-1.064.218-1.791.465-2.427a4.902 4.902 0 012.153-2.153c.636-.247 1.363.416 2.427-.465C9.53 2.013 9.884 2 12.315 2zm0 2.163c-2.403 0-2.748.01-3.727.055-1.007.046-1.634.211-2.203.423a2.72 2.72 0 00-1.15 1.15c-.212.57-.378 1.196-.423 2.203-.045.979-.055 1.324-.055 3.727s.01 2.748.055 3.727c.046 1.007.211 1.634.423 2.203a2.72 2.72 0 001.15 1.15c.57.212 1.196.378 2.203.423.979.045 1.324.055 3.727.055s2.748-.01 3.727-.055c1.007-.046 1.634.211 2.203-.423a2.72 2.72 0 001.15-1.15c.212-.57.378-1.196.423-2.203.045-.979-.055-1.324-.055-3.727s-.01-2.748-.055-3.727c-.046-1.007-.211-1.634-.423-2.203a2.72 2.72 0 00-1.15-1.15c-.57-.212-1.196-.378-2.203-.423-.979-.045-1.324-.055-3.727-.055zm0 3.823a3.736 3.736 0 100 7.472 3.736 3.736 0 000-7.472zm0 5.823a2.087 2.087 0 110-4.174 2.087 2.087 0 010 4.174zM16.425 5.332a1.21 1.21 0 100 2.42 1.21 1.21 0 000-2.42z" clip-rule="evenodd" /></svg>
+                                <a href="https://www.instagram.com/braholet_importaciones?igsh=MXd1OGI0NmNhdWF0ag%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" class="hover:text-rose-600">@braholet_importaciones</a>
                              </div>
                         </div>
                     </div>
@@ -117,19 +125,188 @@
         </div>
     </div>
 
+    <!-- ✨ CESTA DE CONSULTA FLOTANTE ✨ -->
+    <button id="quote-cart-button" class="hidden fixed bottom-6 right-6 bg-rose-500 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center hover:bg-rose-600 transition-transform hover:scale-110">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        <span id="quote-cart-count" class="absolute -top-1 -right-1 bg-gray-800 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+    </button>
+
+    <!-- ✨ PANEL LATERAL DE LA CESTA DE CONSULTA ✨ -->
+    <div id="quote-cart-panel-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50"></div>
+    <div id="quote-cart-panel" class="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 transform translate-x-full flex flex-col">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold text-gray-800">Mi Lista de Consulta</h2>
+            <button id="close-cart-panel-btn" class="p-2 rounded-full hover:bg-gray-200">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="quote-list-items" class="flex-grow p-4 overflow-y-auto">
+            <!-- Los productos de la lista se añadirán aquí -->
+            <p class="text-gray-500">Tu lista está vacía.</p>
+        </div>
+        <div class="p-4 border-t bg-gray-50">
+            <a id="whatsapp-quote-button" href="#" target="_blank" class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-lg font-semibold shadow-lg">
+                <svg class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.893 11.892-1.99 0-3.903-.52-5.586-1.457l-6.354 1.687zM8.413 2.928C6.611 3.448 5.104 4.47 3.91 5.946c-1.192 1.475-1.807 3.27-1.807 5.122.002 4.384 3.582 7.962 7.963 7.962 1.833 0 3.544-.627 4.903-1.695l.203-.144 4.225 1.115-1.13-4.132-.16-.586c.823-1.38 1.28-3.006 1.28-4.687 0-4.384-3.582-7.963-7.963-7.963-1.428 0-2.778.385-3.954 1.054l-.233.134z"/></svg>
+                Pedir por WhatsApp
+            </a>
+            <button id="clear-quote-list-button" class="w-full mt-3 text-sm text-red-500 hover:underline">Vaciar lista</button>
+        </div>
+    </div>
+    
+    <!-- Mensaje Toast para confirmación -->
+    <div id="toast-message" class="toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-3"></div>
+
+
     <script type="module">
+        // ✨ CAMBIO: Importamos 'onSnapshot' y 'query' para escuchar en tiempo real ✨
         import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        const ADMIN_EMAIL = 'elinquisidor09@gmail.com'; 
+        const ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com']; 
         let db, auth, allProducts = [], currentlyDisplayedProducts = [], currentSort = 'relevance';
+        let quoteList = [];
+
+        const quoteCartButton = document.getElementById('quote-cart-button');
+        const quoteCartCount = document.getElementById('quote-cart-count');
+        const quoteCartPanel = document.getElementById('quote-cart-panel');
+        const quoteCartPanelOverlay = document.getElementById('quote-cart-panel-overlay');
+        const closeCartPanelBtn = document.getElementById('close-cart-panel-btn');
+        const quoteListItemsContainer = document.getElementById('quote-list-items');
+        const whatsappQuoteButton = document.getElementById('whatsapp-quote-button');
+        const clearQuoteListButton = document.getElementById('clear-quote-list-button');
+        const toastMessage = document.getElementById('toast-message');
+
+        // --- Lógica de la Cesta de Consulta ---
+
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toastMessage.classList.remove('opacity-0', 'translate-y-3');
+            setTimeout(() => {
+                toastMessage.classList.add('opacity-0', 'translate-y-3');
+            }, 2000);
+        }
+
+        function addToQuoteList(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingProduct = quoteList.find(p => p.id === productId);
+            if (existingProduct) {
+                showToast('Este producto ya está en tu lista.');
+                return;
+            }
+
+            quoteList.push(product);
+            showToast('Producto añadido a la lista.');
+            updateQuoteCart();
+        }
+
+        function removeFromQuoteList(productId) {
+            quoteList = quoteList.filter(p => p.id !== productId);
+            updateQuoteCart();
+        }
+
+        function clearQuoteList() {
+            quoteList = [];
+            updateQuoteCart();
+            closeCartPanel();
+        }
+
+        function updateQuoteCart() {
+            if (quoteList.length > 0) {
+                quoteCartCount.textContent = quoteList.length;
+                quoteCartButton.classList.remove('hidden');
+            } else {
+                quoteCartButton.classList.add('hidden');
+            }
+
+            if (quoteList.length === 0) {
+                quoteListItemsContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">Tu lista está vacía.</p>';
+            } else {
+                quoteListItemsContainer.innerHTML = quoteList.map(product => `
+                    <div class="flex items-center justify-between py-2 border-b">
+                        <div class="flex items-center space-x-3">
+                            <img src="${product.imageUrl || 'https://placehold.co/100x100'}" alt="${product.name}" class="w-12 h-12 object-cover rounded-md">
+                            <div>
+                                <p class="font-semibold text-sm">${product.name}</p>
+                                <p class="text-xs text-gray-500">S/ ${(product.price || 0).toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <button data-id="${product.id}" class="remove-from-quote-btn p-1 rounded-full hover:bg-gray-200">
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                `).join('');
+            }
+            
+            generateWhatsAppLink();
+        }
+
+        function generateWhatsAppLink() {
+            if (quoteList.length === 0) {
+                whatsappQuoteButton.classList.add('opacity-50', 'cursor-not-allowed');
+                whatsappQuoteButton.href = '#';
+                return;
+            }
+            
+            whatsappQuoteButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            const phoneNumber = '51938256218';
+            let message = '¡Hola! Quisiera consultar por los siguientes productos:\n\n';
+            
+            quoteList.forEach(product => {
+                const productUrl = `${window.location.origin}/producto/${product.id}`;
+                message += `*${product.name}* (COD: ${product.code || 'N/A'})\n`;
+                message += `${productUrl}\n\n`;
+            });
+            
+            message += '¡Gracias!';
+            
+            const encodedMessage = encodeURIComponent(message);
+            whatsappQuoteButton.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        }
+        
+        function openCartPanel() {
+            quoteCartPanel.classList.remove('translate-x-full');
+            quoteCartPanelOverlay.classList.remove('hidden');
+        }
+
+        function closeCartPanel() {
+            quoteCartPanel.classList.add('translate-x-full');
+            quoteCartPanelOverlay.classList.add('hidden');
+        }
+
+        function setupQuoteCartListeners() {
+            quoteCartButton.addEventListener('click', openCartPanel);
+            closeCartPanelBtn.addEventListener('click', closeCartPanel);
+            quoteCartPanelOverlay.addEventListener('click', closeCartPanel);
+            clearQuoteListButton.addEventListener('click', clearQuoteList);
+
+            document.getElementById('product-grid').addEventListener('click', (e) => {
+                const button = e.target.closest('.add-to-quote-btn');
+                if (button) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addToQuoteList(button.dataset.id);
+                }
+            });
+
+            quoteListItemsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.remove-from-quote-btn');
+                if (button) {
+                    removeFromQuoteList(button.dataset.id);
+                }
+            });
+        }
+
+        // --- Lógica de la Página ---
+
         const filterSidebar = document.getElementById('filter-sidebar');
         const openFilterBtn = document.getElementById('open-filter-btn');
         const closeFilterBtn = document.getElementById('close-filter-btn');
         const mobileFilterOverlay = document.getElementById('mobile-filter-overlay');
 
-        // --- MANEJO DEL MENÚ DE FILTROS MÓVIL ---
         function setupFilterMenu() {
             openFilterBtn.addEventListener('click', () => {
                 filterSidebar.classList.remove('-translate-x-full');
@@ -145,7 +322,6 @@
             mobileFilterOverlay.classList.add('hidden');
         }
 
-
         async function main() {
             try {
                 const app = await initFirebase();
@@ -153,6 +329,8 @@
                 auth = getAuth(app);
                 setupNavigation();
                 setupFilterMenu();
+                setupQuoteCartListeners();
+                setupSortControls();
                 registerServiceWorker();
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
@@ -168,16 +346,16 @@
             }
         }
 
+        // ✨ CAMBIO: La carga inicial ahora solo configura los listeners ✨
         async function initialDataLoad() {
-            await fetchAndRenderProducts();
-            await renderCategories();
+            setupProductsListener();
+            setupCategoriesListener();
         }
-
 
         function setupUserControls(user) {
             const userControlsDiv = document.getElementById('user-controls');
             let controlsHTML = '';
-            if (user.email === ADMIN_EMAIL) {
+            if (ADMIN_EMAILS.includes(user.email)) {
                 controlsHTML += `<a href="/admin.html" class="bg-rose-500 text-white text-sm font-semibold px-3 py-1.5 rounded-md hover:bg-rose-600">Panel Admin</a>`;
             }
             controlsHTML += `
@@ -190,28 +368,38 @@
             document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
         }
 
-        async function fetchAndRenderProducts() {
-            try {
-                const querySnapshot = await getDocs(collection(db, "products"));
+        // ✨ CAMBIO: Esta función ahora escucha cambios en tiempo real ✨
+        function setupProductsListener() {
+            const q = query(collection(db, "products"));
+            onSnapshot(q, (snapshot) => {
                 allProducts = [];
-                querySnapshot.forEach((doc) => allProducts.push({ id: doc.id, ...doc.data() }));
-                currentlyDisplayedProducts = [...allProducts];
-                sortAndRender();
-            } catch (error) {
-                console.error("❌ Error obteniendo productos:", error);
-            }
+                snapshot.forEach((doc) => {
+                    const product = { id: doc.id, ...doc.data() };
+                    // Solo añadimos productos con stock > 0 para clientes
+                    if (!ADMIN_EMAILS.includes(auth.currentUser?.email)) {
+                        if (product.stock > 0) {
+                            allProducts.push(product);
+                        }
+                    } else {
+                        allProducts.push(product);
+                    }
+                });
+                // Re-aplicamos el filtro y orden actual para mantener la vista del usuario
+                const activeCategory = document.querySelector('.category-filter.text-rose-600')?.dataset.category || 'all';
+                filterProducts(activeCategory, false); // false para no cambiar el título
+            });
         }
-
-        async function renderCategories() {
+        
+        // ✨ CAMBIO: Las categorías también se actualizan en tiempo real ✨
+        function setupCategoriesListener() {
             const categoryList = document.getElementById('category-list');
-            categoryList.innerHTML = '<li><p class="text-gray-500">Cargando...</p></li>';
-            try {
-                const querySnapshot = await getDocs(collection(db, "categories"));
+            const q = query(collection(db, "categories"));
+            onSnapshot(q, (snapshot) => {
+                categoryList.innerHTML = '<li><a href="#" class="category-filter text-rose-600 font-semibold" data-category="all">Todo</a></li>';
                 let categories = [];
-                querySnapshot.forEach(doc => categories.push(doc.data()));
+                snapshot.forEach(doc => categories.push(doc.data()));
                 categories.sort((a, b) => a.name.localeCompare(b.name));
-
-                categoryList.innerHTML = `<li><a href="#" class="category-filter text-rose-600 font-semibold" data-category="all">Todo</a></li>`;
+                
                 categories.forEach(category => {
                     categoryList.innerHTML += `<li><a href="#" class="category-filter text-gray-600 hover:text-rose-600" data-category="${category.name}">${category.name}</a></li>`;
                 });
@@ -224,11 +412,7 @@
                         filterProducts(e.target.dataset.category);
                     });
                 });
-                setupSortControls();
-            } catch (error) {
-                console.error("Error al cargar categorías:", error);
-                categoryList.innerHTML = '<li><p class="text-red-500">Error</p></li>';
-            }
+            });
         }
 
         function renderProducts(products) {
@@ -242,15 +426,18 @@
             const originalPrice = product.originalPrice || 0;
             const hasDiscount = originalPrice > 0 && originalPrice > price;
             const discountPercentage = hasDiscount ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+            
             return `
-                <a href="producto.html?id=${product.id}" class="block bg-white rounded-lg shadow-md overflow-hidden group product-card">
-                    <div class="relative">
-                        <img src="${product.imageUrl || 'https://placehold.co/400x400/f0f0f0/333?text=Producto'}" 
-                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/f0f0f0/333?text=Error';"
-                             alt="${product.name || 'Nombre no disponible'}" class="w-full h-56 object-cover">
-                        ${hasDiscount ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-md">${discountPercentage}% OFF</span>` : ''}
-                    </div>
-                    <div class="p-4">
+                <div class="bg-white rounded-lg shadow-md overflow-hidden group product-card flex flex-col">
+                    <a href="/producto/${product.id}" class="block">
+                        <div class="relative">
+                            <img src="${product.imageUrl || 'https://placehold.co/400x400/f0f0f0/333?text=Producto'}" 
+                                 onerror="this.onerror=null;this.src='https://placehold.co/400x400/f0f0f0/333?text=Error';"
+                                 alt="${product.name || 'Nombre no disponible'}" class="w-full h-56 object-cover">
+                            ${hasDiscount ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-md">${discountPercentage}% OFF</span>` : ''}
+                        </div>
+                    </a>
+                    <div class="p-4 flex flex-col flex-grow">
                         <span class="text-xs text-gray-500">${product.category || 'Sin categoría'}</span>
                         <h4 class="text-md font-semibold text-gray-800 mt-1 truncate">${product.name || 'Nombre no disponible'}</h4>
                         <p class="text-sm text-gray-600">${product.code || ''}</p>
@@ -258,16 +445,23 @@
                             <span class="text-lg font-bold text-rose-600">S/ ${price.toFixed(2)}</span>
                             ${hasDiscount ? `<span class="text-sm text-gray-500 line-through ml-2">S/ ${originalPrice.toFixed(2)}</span>` : ''}
                         </div>
-                        <div class="w-full mt-4 bg-gray-800 text-white py-2 rounded-lg group-hover:bg-rose-600 transition-colors text-center">
-                            Ver detalle
+                        <div class="mt-auto pt-4 flex items-center space-x-2">
+                            <a href="/producto/${product.id}" class="w-full bg-gray-800 text-white py-2 rounded-lg group-hover:bg-rose-600 transition-colors text-center text-sm">
+                                Ver detalle
+                            </a>
+                            <button data-id="${product.id}" class="add-to-quote-btn flex-shrink-0 p-2 bg-gray-200 rounded-lg hover:bg-rose-100">
+                                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            </button>
                         </div>
                     </div>
-                </a>
+                </div>
             `;
         }
         
-        function filterProducts(category) {
-            document.getElementById('main-title').innerText = category === 'all' ? 'Todo' : category;
+        function filterProducts(category, changeTitle = true) {
+            if (changeTitle) {
+                document.getElementById('main-title').innerText = category === 'all' ? 'Todo' : category;
+            }
             currentlyDisplayedProducts = category === 'all' ? [...allProducts] : allProducts.filter(p => p.category === category);
             sortAndRender();
         }

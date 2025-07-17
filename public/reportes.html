@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportes - Panel de Administración</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
     <style>
         body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; }
         .modal { display: none; }
@@ -81,6 +84,31 @@
                 </div>
             </div>
 
+            <!-- ✨ NUEVA SECCIÓN DE GRÁFICOS ✨ -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
+                <!-- Gráfico de Ventas (ocupa 3 columnas) -->
+                <div class="lg:col-span-3 bg-gray-50 p-6 rounded-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Rendimiento de Ventas</h3>
+                        <div class="flex space-x-2">
+                            <button class="filter-btn text-sm font-semibold py-1 px-3 rounded-md bg-gray-200 hover:bg-rose-500 hover:text-white transition-colors" data-period="week">Semana</button>
+                            <button class="filter-btn text-sm font-semibold py-1 px-3 rounded-md bg-rose-500 text-white transition-colors" data-period="month">Mes</button>
+                        </div>
+                    </div>
+                    <div>
+                        <canvas id="sales-chart"></canvas>
+                    </div>
+                </div>
+                <!-- Gráfico de Categorías (ocupa 2 columnas) -->
+                <div class="lg:col-span-2 bg-gray-50 p-6 rounded-lg">
+                     <h3 class="text-xl font-bold mb-4 text-center">Ventas por Categoría</h3>
+                     <div class="max-w-xs mx-auto">
+                        <canvas id="category-chart"></canvas>
+                     </div>
+                </div>
+            </div>
+
+
             <h3 class="text-xl font-bold mb-4">Historial de Ventas</h3>
             <div id="sales-list" class="space-y-3">
                 <p>Cargando ventas...</p>
@@ -106,9 +134,11 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const ADMIN_EMAIL = 'elinquisidor09@gmail.com'; 
+        const ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
         let auth, db;
         let productsCache = [];
+        let allSales = [];      
+        let salesChart, categoryChart; // Instancias de los gráficos
 
         async function main() {
             try {
@@ -124,7 +154,7 @@
 
         function setupPage() {
             onAuthStateChanged(auth, (user) => {
-                if (user && user.email === ADMIN_EMAIL) {
+                if (user && ADMIN_EMAILS.includes(user.email)) {
                     document.body.style.opacity = '1';
                     setupEventListeners();
                     loadInitialData();
@@ -141,6 +171,14 @@
             document.getElementById('sales-list').addEventListener('click', openAnnulModal);
             document.getElementById('cancel-annul-button').addEventListener('click', () => document.getElementById('annul-modal').classList.remove('active'));
             document.getElementById('confirm-annul-button').addEventListener('click', handleAnnulSale);
+
+            document.querySelectorAll('.filter-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.remove('bg-rose-500', 'text-white'); btn.classList.add('bg-gray-200'); });
+                    e.target.classList.add('bg-rose-500', 'text-white');
+                    renderSalesChart(e.target.dataset.period);
+                });
+            });
         }
 
         async function loadInitialData() {
@@ -181,6 +219,8 @@
             const saleData = {
                 productId: productId,
                 productName: productSold.name,
+                // ✨ MEJORA: Guardamos la categoría directamente en la venta ✨
+                category: productSold.category || 'Sin Categoría',
                 quantity: quantitySold,
                 salePricePerUnit: salePrice,
                 totalSale: quantitySold * salePrice,
@@ -224,29 +264,16 @@
             if (!saleId || !productId || !quantity) return;
 
             try {
-                // **INICIO DE LA CORRECCIÓN**
                 await runTransaction(db, async (transaction) => {
                     const saleRef = doc(db, "sales", saleId);
                     const productRef = doc(db, "products", productId);
-
-                    // 1. Intentar obtener el producto
                     const productDoc = await transaction.get(productRef);
-
-                    // 2. Si el producto todavía existe, restaurar el stock
                     if (productDoc.exists()) {
                         const restoredStock = (productDoc.data().stock || 0) + parseInt(quantity, 10);
                         transaction.update(productRef, { stock: restoredStock });
-                    } else {
-                        // Si no existe, simplemente lo informamos en la consola.
-                        console.log(`El producto ${productId} ya no existe. No se restaurará el stock.`);
                     }
-
-                    // 3. Eliminar el registro de la venta, sin importar si el producto existía o no.
                     transaction.delete(saleRef);
                 });
-                // **FIN DE LA CORRECCIÓN**
-
-                console.log('Operación de anulación completada.');
                 document.getElementById('annul-modal').classList.remove('active');
                 loadInitialData();
             } catch (error) {
@@ -260,16 +287,16 @@
             salesListDiv.innerHTML = '<p>Cargando ventas...</p>';
             try {
                 const querySnapshot = await getDocs(collection(db, "sales"));
-                let sales = [];
-                querySnapshot.forEach((doc) => sales.push({ id: doc.id, ...doc.data() }));
-                sales.sort((a, b) => (b.soldAt?.toMillis() || 0) - (a.soldAt?.toMillis() || 0));
+                allSales = [];
+                querySnapshot.forEach((doc) => allSales.push({ id: doc.id, ...doc.data() }));
+                allSales.sort((a, b) => (a.soldAt?.toMillis() || 0) - (b.soldAt?.toMillis() || 0));
 
                 let totalRevenue = 0, totalCost = 0, salesHtml = '';
-
-                if (sales.length === 0) {
+                const salesToDisplay = [...allSales].reverse();
+                if (salesToDisplay.length === 0) {
                     salesListDiv.innerHTML = '<p>No hay ventas registradas.</p>';
                 } else {
-                    sales.forEach(sale => {
+                    salesToDisplay.forEach(sale => {
                         totalRevenue += sale.totalSale;
                         totalCost += sale.totalCost;
                         salesHtml += `
@@ -292,10 +319,114 @@
                 document.getElementById('total-revenue').textContent = `S/ ${totalRevenue.toFixed(2)}`;
                 document.getElementById('total-cost').textContent = `S/ ${totalCost.toFixed(2)}`;
                 document.getElementById('total-profit').textContent = `S/ ${(totalRevenue - totalCost).toFixed(2)}`;
-
+                
+                renderSalesChart('month');
+                // ✨ Llamamos a la nueva función para renderizar el gráfico de torta ✨
+                renderCategoryChart();
             } catch (error) {
                 console.error("Error cargando ventas:", error);
             }
+        }
+
+        function renderSalesChart(period = 'month') {
+            const ctx = document.getElementById('sales-chart').getContext('2d');
+            const today = dayjs();
+            const days = period === 'week' ? 7 : 30;
+            const startDate = today.subtract(days - 1, 'day');
+
+            const salesByDay = {};
+            for (let i = 0; i < days; i++) {
+                const date = startDate.add(i, 'day').format('YYYY-MM-DD');
+                salesByDay[date] = 0;
+            }
+
+            allSales.forEach(sale => {
+                const saleDate = dayjs(sale.soldAt.toDate());
+                if (saleDate.isAfter(startDate.startOf('day')) || saleDate.isSame(startDate.startOf('day'))) {
+                    const dateKey = saleDate.format('YYYY-MM-DD');
+                    if (salesByDay[dateKey] !== undefined) {
+                        salesByDay[dateKey] += sale.totalSale;
+                    }
+                }
+            });
+
+            const labels = Object.keys(salesByDay).map(date => dayjs(date).format('DD/MM'));
+            const data = Object.values(salesByDay);
+
+            if (salesChart) {
+                salesChart.destroy();
+            }
+
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ingresos por Ventas',
+                        data: data,
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // ✨ NUEVA FUNCIÓN PARA EL GRÁFICO DE TORTA ✨
+        function renderCategoryChart() {
+            const ctx = document.getElementById('category-chart').getContext('2d');
+
+            // 1. Agrupar ventas por categoría
+            const salesByCategory = {};
+            allSales.forEach(sale => {
+                const category = sale.category || 'Sin Categoría';
+                if (!salesByCategory[category]) {
+                    salesByCategory[category] = 0;
+                }
+                salesByCategory[category] += sale.totalSale;
+            });
+
+            // 2. Preparar datos para el gráfico
+            const labels = Object.keys(salesByCategory);
+            const data = Object.values(salesByCategory);
+            
+            // Colores atractivos para el gráfico
+            const backgroundColors = [
+                '#f43f5e', '#3b82f6', '#10b981', '#f97316', '#8b5cf6', 
+                '#ec4899', '#6366f1', '#f59e0b', '#06b6d4', '#d946ef'
+            ];
+
+            // 3. Destruir gráfico anterior si existe
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            // 4. Crear nuevo gráfico de torta
+            categoryChart = new Chart(ctx, {
+                type: 'pie', // o 'doughnut' para un gráfico de dona
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ventas por Categoría',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
         }
 
         main();

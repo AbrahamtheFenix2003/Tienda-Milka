@@ -6,6 +6,7 @@
     <title>Panel de Administración</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
     <style>
         body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; scroll-behavior: smooth; }
         .modal { display: none; }
@@ -39,6 +40,10 @@
     </header>
 
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="mb-6 flex space-x-4">
+            <button id="show-all-products" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium active">Todos los productos</button>
+            <button id="show-no-stock" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium">Sin stock (0)</button>
+        </div>
         <div id="form-section" class="bg-white p-6 rounded-lg shadow-md mb-8">
             <h2 id="form-title" class="text-2xl font-bold mb-4">Añadir Nuevo Producto</h2>
             <form id="product-form" class="space-y-6">
@@ -115,7 +120,9 @@
         </div>
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold mb-4">Productos Existentes</h2>
-            <div id="products-list" class="space-y-4"></div>
+            <div id="products-list" class="space-y-4">
+                <p>Cargando productos...</p>
+            </div>
         </div>
     </main>
 
@@ -136,10 +143,11 @@
     <script type="module">
         import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // ✨ CAMBIO 1: Importamos 'onSnapshot' y 'query' para escuchar en tiempo real ✨
+        import { getFirestore, collection, addDoc, getDoc, deleteDoc, doc, updateDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-        const ADMIN_EMAIL = 'elinquisidor09@gmail.com'; 
+        const ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com']; 
         let auth, db, storage, categoriesCache = [];
 
         async function main() {
@@ -157,21 +165,17 @@
 
         function setupAdminPage() {
             onAuthStateChanged(auth, (user) => {
-                if (user && user.email === ADMIN_EMAIL) {
+                if (user && ADMIN_EMAILS.includes(user.email)) {
                     document.body.style.opacity = '1';
-                    initialLoad();
                     setupEventListeners();
+                    // ✨ CAMBIO 2: Ya no cargamos los productos aquí, el listener se encargará ✨
+                    loadCategories();
                 } else {
                     window.location.href = '/index.html';
                 }
             });
         }
         
-        async function initialLoad() {
-            await loadCategories();
-            await loadProducts();
-        }
-
         function setupEventListeners() {
             document.getElementById('product-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('products-list').addEventListener('click', handleListClick);
@@ -182,19 +186,107 @@
             document.getElementById('close-modal-button').addEventListener('click', () => document.getElementById('category-modal').classList.remove('active'));
             document.getElementById('add-category-button').addEventListener('click', handleAddCategory);
             document.getElementById('modal-category-list').addEventListener('click', handleDeleteCategory);
+            
+            // ✨ CAMBIO 3: Iniciamos el listener para la lista de productos ✨
+            setupProductsListener();
+        }
+
+        // ✨ CAMBIO 4: Nueva función que escucha cambios en los productos en tiempo real ✨
+        function setupProductsListener() {
+            const productsListDiv = document.getElementById('products-list');
+            const showAllBtn = document.getElementById('show-all-products');
+            const showNoStockBtn = document.getElementById('show-no-stock');
+            const q = query(collection(db, "products"));
+            let currentFilter = 'all';
+
+            function updateProductsList(products, filter) {
+                const filteredProducts = filter === 'no-stock' 
+                    ? products.filter(p => !p.stock || p.stock <= 0)
+                    : products;
+
+                if (filteredProducts.length === 0) {
+                    productsListDiv.innerHTML = '<p class="text-gray-500 text-center">No hay productos ' + 
+                        (filter === 'no-stock' ? 'sin stock.' : 'registrados.') + '</p>';
+                    return;
+                }
+
+                // Actualizar contador de productos sin stock
+                const noStockCount = products.filter(p => !p.stock || p.stock <= 0).length;
+                showNoStockBtn.textContent = `Sin stock (${noStockCount})`;
+            }
+
+            showAllBtn.addEventListener('click', () => {
+                showAllBtn.classList.add('bg-rose-500', 'text-white');
+                showNoStockBtn.classList.remove('bg-rose-500', 'text-white');
+                currentFilter = 'all';
+                updateProductsList(allProducts, currentFilter);
+            });
+
+            showNoStockBtn.addEventListener('click', () => {
+                showNoStockBtn.classList.add('bg-rose-500', 'text-white');
+                showAllBtn.classList.remove('bg-rose-500', 'text-white');
+                currentFilter = 'no-stock';
+                updateProductsList(allProducts, currentFilter);
+            });
+
+            onSnapshot(q, (querySnapshot) => {
+                let products = [];
+                querySnapshot.forEach((doc) => {
+                    products.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Ordenamos los productos por fecha de creación, los más nuevos primero
+                products.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                
+                // Guardamos los productos en una variable global para usarlos en los filtros
+                window.allProducts = products;
+                
+                if (products.length === 0) {
+                    productsListDiv.innerHTML = '<p>No hay productos registrados.</p>';
+                    return;
+                }
+
+                const filteredProducts = currentFilter === 'no-stock' 
+                    ? products.filter(p => !p.stock || p.stock <= 0)
+                    : products;
+
+                let html = '';
+                filteredProducts.forEach((product) => {
+                    const cost = product.acquisitionCost || 0;
+                    const stock = product.stock || 0;
+                    const price = product.price || 0;
+                    const stockColor = stock > 10 ? 'text-green-600' : stock > 0 ? 'text-yellow-600' : 'text-red-600';
+                    const bgColor = stock <= 0 ? 'bg-red-50' : 'bg-gray-50';
+                    html += `
+                        <div class="grid grid-cols-12 gap-4 items-center p-3 ${bgColor} rounded-md border ${stock <= 0 ? 'border-red-200' : 'border-gray-200'}">
+                            <div class="col-span-2"><img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 object-cover rounded-md"></div>
+                            <div class="col-span-4">
+                                <p class="font-semibold">${product.name}</p>
+                                <p class="text-sm text-gray-500">${product.category}</p>
+                                ${stock <= 0 ? '<span class="inline-block px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full mt-1">Sin Stock</span>' : ''}
+                            </div>
+                            <div class="col-span-2 text-sm"><p>Costo: S/ ${cost.toFixed(2)}</p><p>Venta: S/ ${price.toFixed(2)}</p></div>
+                            <div class="col-span-2 text-sm font-semibold ${stockColor}">Stock: ${stock} uds.</div>
+                            <div class="col-span-2 text-right space-x-2">
+                                <button data-id="${product.id}" class="edit-button text-blue-500 hover:text-blue-700 font-semibold">Editar</button>
+                                <button data-id="${product.id}" class="delete-button text-red-500 hover:text-red-700 font-semibold">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                productsListDiv.innerHTML = html;
+            });
         }
 
         async function loadCategories() {
-            try {
-                const querySnapshot = await getDocs(collection(db, "categories"));
+            // Usamos onSnapshot también para las categorías, por si las cambias en otro lado
+            onSnapshot(query(collection(db, "categories")), (snapshot) => {
                 categoriesCache = [];
-                querySnapshot.forEach(doc => categoriesCache.push({ id: doc.id, ...doc.data() }));
+                snapshot.forEach(doc => categoriesCache.push({ id: doc.id, ...doc.data() }));
                 categoriesCache.sort((a, b) => a.name.localeCompare(b.name));
                 populateCategorySelect();
                 populateCategoryModalList();
-            } catch (error) {
-                console.error("Error al cargar categorías:", error);
-            }
+            });
         }
 
         function populateCategorySelect() {
@@ -234,7 +326,7 @@
             try {
                 await addDoc(collection(db, "categories"), { name: normalizedName });
                 input.value = '';
-                await loadCategories();
+                // No necesitamos llamar a loadCategories, el listener lo hará solo.
             } catch (error) {
                 console.error("Error al añadir categoría:", error);
             }
@@ -243,11 +335,12 @@
         async function handleDeleteCategory(e) {
             if (!e.target.classList.contains('delete-category-button')) return;
             const categoryId = e.target.dataset.id;
-            try {
-                await deleteDoc(doc(db, "categories", categoryId));
-                await loadCategories();
-            } catch (error) {
-                console.error("Error al eliminar categoría:", error);
+            if (confirm('¿Seguro que quieres eliminar esta categoría?')) {
+                try {
+                    await deleteDoc(doc(db, "categories", categoryId));
+                } catch (error) {
+                    console.error("Error al eliminar categoría:", error);
+                }
             }
         }
 
@@ -267,13 +360,13 @@
                 { file: imageFile4, key: 'imageUrl4' },
             ].filter(item => item.file);
 
-            if (productId) { // Modo Edición
+            if (productId) {
                 if (filesToUpload.length > 0) {
                     await uploadImagesAndUpdate(productId, filesToUpload, data);
                 } else {
                     await updateProduct(productId, data);
                 }
-            } else { // Modo Creación
+            } else {
                 if (!imageFile) {
                     alert('La imagen principal es obligatoria.');
                     return;
@@ -320,10 +413,10 @@
             try {
                 const uploadedImages = await Promise.all(uploadPromises);
                 uploadedImages.forEach(img => data[img.key] = img.url);
-                data.createdAt = new Date();
+                data.createdAt = new Date(); // Aseguramos que tenga fecha de creación
                 await addDoc(collection(db, 'products'), data);
                 resetFormToCreate();
-                loadProducts();
+                // ✨ CAMBIO 5: Ya no necesitamos llamar a loadProducts() aquí ✨
             } catch (error) {
                 console.error("Error al subir imágenes y crear producto:", error);
             }
@@ -364,7 +457,7 @@
              try {
                 await updateDoc(doc(db, "products", productId), data);
                 resetFormToCreate();
-                loadProducts();
+                // ✨ CAMBIO 5: Ya no necesitamos llamar a loadProducts() aquí ✨
             } catch (error) {
                 console.error("Error al actualizar el producto:", error);
             }
@@ -376,7 +469,7 @@
                 if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
                     try {
                         await deleteDoc(doc(db, "products", id));
-                        loadProducts();
+                        // ✨ CAMBIO 5: Ya no necesitamos llamar a loadProducts() aquí ✨
                     } catch (error) {
                         console.error("Error al eliminar:", error);
                     }
@@ -402,8 +495,6 @@
                     document.getElementById('code').value = product.code || '';
                     document.getElementById('description').value = product.description || '';
                     
-                    // Aquí podrías mostrar las imágenes actuales si lo deseas
-
                     document.getElementById('form-title').textContent = 'Editar Producto';
                     document.getElementById('submit-button').textContent = 'Actualizar Producto';
                     document.getElementById('cancel-edit-button').classList.remove('hidden');
@@ -424,40 +515,6 @@
             document.getElementById('submit-button').textContent = 'Guardar Producto';
             document.getElementById('cancel-edit-button').classList.add('hidden');
             document.getElementById('upload-progress').classList.add('hidden');
-        }
-        
-        async function loadProducts() {
-            const productsList = document.getElementById('products-list');
-            productsList.innerHTML = '<p>Cargando productos...</p>';
-            try {
-                const querySnapshot = await getDocs(collection(db, "products"));
-                let products = [];
-                querySnapshot.forEach((doc) => products.push({ id: doc.id, ...doc.data() }));
-                products.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-                
-                let html = '';
-                products.forEach((product) => {
-                    const cost = product.acquisitionCost || 0;
-                    const stock = product.stock || 0;
-                    const price = product.price || 0;
-                    const stockColor = stock > 10 ? 'text-green-600' : stock > 0 ? 'text-yellow-600' : 'text-red-600';
-                    html += `
-                        <div class="grid grid-cols-12 gap-4 items-center p-3 bg-gray-50 rounded-md">
-                            <div class="col-span-2"><img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 object-cover rounded-md"></div>
-                            <div class="col-span-4"><p class="font-semibold">${product.name}</p><p class="text-sm text-gray-500">${product.category}</p></div>
-                            <div class="col-span-2 text-sm"><p>Costo: S/ ${cost.toFixed(2)}</p><p>Venta: S/ ${price.toFixed(2)}</p></div>
-                            <div class="col-span-2 text-sm font-semibold ${stockColor}">Stock: ${stock} uds.</div>
-                            <div class="col-span-2 text-right space-x-2">
-                                <button data-id="${product.id}" class="edit-button text-blue-500 hover:text-blue-700 font-semibold">Editar</button>
-                                <button data-id="${product.id}" class="delete-button text-red-500 hover:text-red-700 font-semibold">Eliminar</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                productsList.innerHTML = html;
-            } catch(error) {
-                console.error("Error al cargar productos:", error);
-            }
         }
 
         main();

@@ -14,9 +14,16 @@
     ],
     "rewrites": [
       {
+        "source": "/producto/:productId",
+        "function": "ssr"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
+  },
+  "functions": {
+    "source": "functions"
   }
 }

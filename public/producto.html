@@ -3,13 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ✨ ETIQUETAS OPEN GRAPH POR DEFECTO ✨ -->
+    <meta property="og:title" content="BRAHOLET Importaciones">
+    <meta property="og:description" content="Descubre productos de calidad y las últimas novedades.">
+    <meta property="og:image" content="https://braholet-importaciones.web.app/logo.png"> <!-- Cambia esto a una URL real de tu logo -->
+    <meta property="og:url" content="https://braholet-importaciones.web.app">
+    <meta property="og:type" content="website">
+    
     <title>Detalle del Producto</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
     <style>
         body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; }
+        .thumbnail-image {
+            border: 2px solid transparent;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .thumbnail-image.active, .thumbnail-image:hover {
+            border-color: #f43f5e; /* Color rose-500 de Tailwind */
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -27,7 +42,7 @@
                         </button>
                     </div>
                     <div class="flex-shrink-0">
-                        <a href="/index.html" class="text-2xl font-bold text-rose-500"></a>
+                        <a href="/index.html" class="text-2xl font-bold text-rose-500">BRAHOLET</a>
                         <p class="text-xs text-gray-400 -mt-1">IMPORTACIONES</p>
                     </div>
                 </div>
@@ -41,9 +56,9 @@
     </main>
     
     <template id="product-view-template">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             <div>
-                <div class="aspect-square bg-gray-100 rounded-lg mb-4">
+                <div class="aspect-square bg-gray-100 rounded-lg mb-4 shadow-sm">
                     <img id="main-product-image" src="" alt="Imagen principal del producto" class="w-full h-full object-cover rounded-lg">
                 </div>
                 <div id="thumbnail-gallery" class="grid grid-cols-4 gap-2"></div>
@@ -60,7 +75,8 @@
                     Descripción del producto...
                 </p>
                 <div class="mt-8">
-                    <a id="whatsapp-button" href="#" target="_blank" class="mt-4 w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    <!-- El botón ahora es un enlace (<a>) para una mejor semántica -->
+                    <a id="whatsapp-link" href="#" target="_blank" class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-lg font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
                         <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 14.2l-1.5-0.8c-0.4-0.2-0.7-0.1-0.9 0.2l-0.5 0.6c-0.2 0.2-0.5 0.3-0.8 0.2C11.9 14 11 13.2 10.1 12.2c-0.9-0.9-1.7-1.8-1.9-2.8 0-0.3 0.1-0.6 0.3-0.8l0.6-0.5c0.2-0.2 0.3-0.5 0.2-0.9l-0.8-1.5c-0.2-0.4-0.6-0.6-1-0.6H5.7C5.3 4 5 4.3 5 4.7c0 0.9 0.3 1.8 0.9 2.6 0.6 0.8 1.4 1.6 2.3 2.4 1.2 1.1 2.6 2 4.2 2.4 0.2 0 0.3 0 0.5 0 0.8 0 1.6-0.3 2.2-0.9 0.6-0.6 1-1.4 1-2.2 0-0.4-0.3-0.7-0.7-0.7h-1.4c-0.4 0-0.8 0.2-1 0.6zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
                         Pedir por WhatsApp
                     </a>
@@ -79,7 +95,6 @@
         async function main() {
             try {
                 const app = await initFirebase();
-
                 db = getFirestore(app);
                 auth = getAuth(app);
 
@@ -99,7 +114,6 @@
                 console.error("❌ Error en la inicialización:", error);
             }
         }
-
 
         function setupUserControls(user) {
             const userControlsDiv = document.getElementById('user-controls');
@@ -126,13 +140,35 @@
                 const productRef = doc(db, "products", productId);
                 const docSnap = await getDoc(productRef);
                 if (docSnap.exists()) {
-                    displayProduct(docSnap.data());
+                    const productData = { id: docSnap.id, ...docSnap.data() };
+                    updateMetaTagsForProduct(productData);
+                    displayProduct(productData);
                 } else {
                     loadingMessage.innerText = 'Producto no encontrado.';
                 }
             } catch (error) {
                 console.error("Error al cargar el producto:", error);
             }
+        }
+
+        function updateMetaTagsForProduct(product) {
+            document.title = `${product.name} - BRAHOLET Importaciones`;
+            
+            const setMetaTag = (property, content) => {
+                let element = document.querySelector(`meta[property='${property}']`);
+                if (!element) {
+                    element = document.createElement('meta');
+                    element.setAttribute('property', property);
+                    document.head.appendChild(element);
+                }
+                element.setAttribute('content', content);
+            };
+
+            setMetaTag('og:title', product.name);
+            setMetaTag('og:description', product.description || 'Consulta este increíble producto en BRAHOLET Importaciones.');
+            setMetaTag('og:image', product.imageUrl);
+            setMetaTag('og:url', window.location.href);
+            setMetaTag('og:type', 'product');
         }
 
         function displayProduct(product) {
@@ -147,13 +183,16 @@
             const images = [product.imageUrl, product.imageUrl2, product.imageUrl3, product.imageUrl4].filter(Boolean);
             
             if (images.length > 1) {
-                images.forEach(url => {
+                images.forEach((url, index) => {
                     const img = document.createElement('img');
                     img.src = url;
-                    img.alt = 'Vista en miniatura';
-                    img.className = 'w-full h-full object-cover rounded-md cursor-pointer hover:opacity-75 transition-opacity';
-                    img.addEventListener('click', () => {
-                        view.getElementById('main-product-image').src = url;
+                    img.alt = `Vista en miniatura ${index + 1}`;
+                    img.className = 'w-full h-full object-cover rounded-md thumbnail-image cursor-pointer';
+                    if (index === 0) img.classList.add('active');
+                    img.addEventListener('click', (event) => {
+                        document.getElementById('main-product-image').src = url;
+                        document.querySelectorAll('.thumbnail-image').forEach(thumb => thumb.classList.remove('active'));
+                        event.target.classList.add('active');
                     });
                     gallery.appendChild(img);
                 });
@@ -165,29 +204,40 @@
             view.getElementById('product-name').textContent = product.name || 'Nombre no disponible';
             view.getElementById('product-price').textContent = `S/ ${(product.price || 0).toFixed(2)}`;
             
+            const originalPriceEl = view.getElementById('product-original-price');
             if (product.originalPrice && product.originalPrice > product.price) {
-                view.getElementById('product-original-price').textContent = `S/ ${product.originalPrice.toFixed(2)}`;
+                originalPriceEl.textContent = `S/ ${product.originalPrice.toFixed(2)}`;
+            } else {
+                originalPriceEl.remove();
             }
 
             view.getElementById('product-description').textContent = product.description || 'No hay descripción disponible.';
 
             const stockElement = view.getElementById('product-stock');
-            const whatsappButton = view.getElementById('whatsapp-button');
+            const whatsappLink = view.getElementById('whatsapp-link');
             const stock = product.stock || 0;
-            if (stock > 10) {
-                stockElement.textContent = '✅ En Stock';
-                stockElement.className = 'mt-2 text-sm font-semibold text-green-600';
-            } else if (stock > 0) {
-                stockElement.textContent = `⚠️ ¡Últimas ${stock} unidades!`;
-                stockElement.className = 'mt-2 text-sm font-semibold text-yellow-600';
+            if (stock > 0) {
+                stockElement.textContent = stock > 10 ? '✅ En Stock' : `⚠️ ¡Últimas ${stock} unidades!`;
+                stockElement.className = stock > 10 ? 'mt-2 text-sm font-semibold text-green-600' : 'mt-2 text-sm font-semibold text-yellow-600';
             } else {
                 stockElement.textContent = '❌ Agotado';
                 stockElement.className = 'mt-2 text-sm font-semibold text-red-600';
-                whatsappButton.disabled = true;
+                whatsappLink.classList.add('disabled:bg-gray-400', 'disabled:cursor-not-allowed', 'pointer-events-none');
+                whatsappLink.setAttribute('disabled', true);
             }
-
-            const message = encodeURIComponent(`Hola, estoy interesado en el producto: ${product.name} (COD: ${product.code})`);
-            whatsappButton.href = `https://wa.me/51938256218?text=${message}`;
+            
+            // ✨ LÓGICA FINAL DEL BOTÓN DE WHATSAPP CON CACHE BUSTER ✨
+            const phoneNumber = '51938256218';
+            const textMessage = `Hola, estoy interesado en el producto *${product.name}* (COD: ${product.code || 'N/A'}).\n\nEste es el enlace para más detalles:`;
+            
+            // Se obtiene la URL base sin parámetros existentes.
+            const baseUrl = window.location.origin + window.location.pathname + `?id=${product.id}`;
+            // Se añade un parámetro único para forzar a WhatsApp a refrescar su caché.
+            const productPageURLWithCacheBuster = `${baseUrl}&v=${Date.now()}`;
+            
+            const fullMessage = `${textMessage}\n${productPageURLWithCacheBuster}`;
+            const encodedMessage = encodeURIComponent(fullMessage);
+            whatsappLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
 
             productContent.innerHTML = '';
             productContent.appendChild(view);

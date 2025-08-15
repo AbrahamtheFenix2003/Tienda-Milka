@@ -73,7 +73,7 @@
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
                     // Si el login es exitoso, redirigir al panel de admin
-                    window.location.href = 'admin.html';
+                    window.location.href = 'admin/dashboard';
                 } catch (error) {
                     console.error("Error de inicio de sesión:", error.code);
                     errorMessage.textContent = 'Correo o contraseña incorrectos.';

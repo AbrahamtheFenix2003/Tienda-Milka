@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Ventas - BRAHOLET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
+    <style>
+        body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 sm:px-6 lg:p-8 flex justify-between items-center h-16">
+            <div class="flex items-center space-x-4">
+                <div class="flex space-x-1">
+                    <button id="back-button" title="Atrás" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button id="forward-button" title="Adelante" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">Registro de Ventas</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/index.html" class="text-sm font-semibold text-gray-600 hover:text-rose-500">Tienda</a>
+                <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Formulario para Registrar Venta -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-bold mb-4">Registrar Nueva Venta</h2>
+            <form id="sale-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
+                <div class="md:col-span-2">
+                    <label for="product-input" class="block text-sm font-medium text-gray-700">Producto Vendido</label>
+                    <input type="text" id="product-input" list="product-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required placeholder="Escriba para buscar...">
+                    <datalist id="product-list"></datalist>
+                </div>
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                    <input type="number" id="quantity" min="1" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                </div>
+                <div>
+                    <label for="sale-price" class="block text-sm font-medium text-gray-700">Precio de Venta (S/)</label>
+                    <input type="number" id="sale-price" step="0.01" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+                        Registrar Venta
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Mensaje de éxito/error -->
+        <div id="message" class="hidden p-4 rounded-md mb-4"></div>
+
+        <!-- Ventas recientes del vendedor -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Mis Ventas de Hoy</h3>
+                <a href="/reportes.html" class="text-blue-500 hover:text-blue-700 text-sm font-medium">Ver historial completo</a>
+            </div>
+            <div id="recent-sales" class="space-y-2">
+                <p class="text-gray-500">Cargando ventas recientes...</p>
+            </div>
+        </div>
+
+        <!-- Resumen del día -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold mb-4">Resumen del Día</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-blue-600 font-medium">Ventas Realizadas</p>
+                    <p id="total-sales-count" class="text-2xl font-bold text-blue-800">0</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-sm text-green-600 font-medium">Total Vendido</p>
+                    <p id="total-sales-amount" class="text-2xl font-bold text-green-800">S/ 0.00</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <p class="text-sm text-purple-600 font-medium">Productos Vendidos</p>
+                    <p id="total-products-sold" class="text-2xl font-bold text-purple-800">0</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
+        const SUPER_VENDEDOR_EMAILS = ['garyvv.1993@gmail.com', 'abrahamjimenez092003@gmail.com'];
+        const VENDEDOR_EMAILS = ['amvf280194@gmail.com', 'noeatlas28@gmail.com'];
+        let auth, db;
+        let productsCache = [];
+
+        // Funciones para verificar roles
+        function isSuperAdmin(email) {
+            return SUPER_ADMIN_EMAILS.includes(email);
+        }
+
+        function isSuperVendedor(email) {
+            return SUPER_VENDEDOR_EMAILS.includes(email);
+        }
+
+        function isVendedor(email) {
+            return VENDEDOR_EMAILS.includes(email);
+        }
+
+        function isAdmin(email) {
+            return isSuperAdmin(email) || isSuperVendedor(email);
+        }
+
+        function hasAccessToSales(email) {
+            return isAdmin(email) || isVendedor(email);
+        }
+
+        async function main() {
+            try {
+                const app = await initFirebase();
+                auth = getAuth(app);
+                db = getFirestore(app);
+                setupNavigation();
+                setupPage();
+                registerServiceWorker();
+            } catch (error) {
+                console.error("Error al inicializar Firebase:", error);
+            }
+        }
+
+        function setupPage() {
+            onAuthStateChanged(auth, (user) => {
+                if (user && hasAccessToSales(user.email)) {
+                    document.body.style.opacity = '1';
+                    setupEventListeners();
+                    loadInitialData();
+                    loadRecentSales(user.email);
+                } else {
+                    window.location.href = '/index.html';
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+            document.getElementById('sale-form').addEventListener('submit', handleSaleSubmit);
+            document.getElementById('product-input').addEventListener('input', handleProductInput);
+        }
+
+        async function loadInitialData() {
+            await loadProducts();
+        }
+
+        async function loadProducts() {
+            try {
+                const productsSnapshot = await getDocs(collection(db, 'products'));
+                productsCache = [];
+                const productList = document.getElementById('product-list');
+                productList.innerHTML = '';
+
+                productsSnapshot.forEach((doc) => {
+                    const product = { id: doc.id, ...doc.data() };
+                    if (product.stock > 0) { // Solo productos con stock
+                        productsCache.push(product);
+                        const option = document.createElement('option');
+                        option.value = `${product.name} - Stock: ${product.stock}`;
+                        option.dataset.id = product.id;
+                        option.dataset.price = product.price;
+                        option.dataset.stock = product.stock;
+                        productList.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('Error al cargar productos:', error);
+                showMessage('Error al cargar los productos', 'error');
+            }
+        }
+
+        function handleProductInput(event) {
+            const inputValue = event.target.value;
+            const options = document.getElementById('product-list').options;
+            let selectedProduct = null;
+
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === inputValue) {
+                    selectedProduct = options[i];
+                    break;
+                }
+            }
+            
+            if (selectedProduct) {
+                const price = selectedProduct.getAttribute('data-price');
+                const stock = parseInt(selectedProduct.getAttribute('data-stock'));
+                
+                document.getElementById('sale-price').value = price;
+                document.getElementById('quantity').max = stock;
+            }
+        }
+
+        async function handleSaleSubmit(event) {
+            event.preventDefault();
+            
+            const productNameWithStock = document.getElementById('product-input').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const salePrice = parseFloat(document.getElementById('sale-price').value);
+
+            if (!productNameWithStock || !quantity || !salePrice) {
+                showMessage('Por favor, complete todos los campos', 'error');
+                return;
+            }
+            
+            const product = productsCache.find(p => `${p.name} - Stock: ${p.stock}` === productNameWithStock);
+
+            if (!product) {
+                showMessage('Producto no válido. Por favor, seleccione un producto de la lista.', 'error');
+                return;
+            }
+
+            const productId = product.id;
+
+            try {
+                if (quantity > product.stock) {
+                    showMessage('Cantidad excede el stock disponible', 'error');
+                    return;
+                }
+
+                // Registrar la venta usando transacción
+                await runTransaction(db, async (transaction) => {
+                    const productRef = doc(db, 'products', productId);
+                    const productDoc = await transaction.get(productRef);
+                    
+                    if (!productDoc.exists()) {
+                        throw new Error('El producto no existe');
+                    }
+
+                    const productData = productDoc.data();
+                    const newStock = productData.stock - quantity;
+
+                    if (newStock < 0) {
+                        throw new Error('Stock insuficiente');
+                    }
+
+                    // Actualizar stock del producto
+                    transaction.update(productRef, { stock: newStock });
+
+                    // Crear registro de venta
+                    const saleData = {
+                        productId: productId,
+                        productName: product.name,
+                        productCode: product.code || '',
+                        quantity: quantity,
+                        salePrice: salePrice,
+                        totalAmount: quantity * salePrice,
+                        vendorEmail: auth.currentUser.email,
+                        timestamp: new Date()
+                    };
+
+                    const salesRef = collection(db, 'sales');
+                    transaction.set(doc(salesRef), saleData);
+                });
+
+                showMessage('Venta registrada exitosamente', 'success');
+                document.getElementById('sale-form').reset();
+                await loadProducts(); // Recargar productos para actualizar stock
+                loadRecentSales(auth.currentUser.email);
+                
+            } catch (error) {
+                console.error('Error al registrar venta:', error);
+                showMessage('Error al registrar la venta: ' + error.message, 'error');
+            }
+        }
+
+        async function loadRecentSales(userEmail) {
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const salesQuery = query(
+                    collection(db, 'sales'),
+                    where('vendorEmail', '==', userEmail),
+                    where('timestamp', '>=', today),
+                    orderBy('timestamp', 'desc')
+                );
+
+                const salesSnapshot = await getDocs(salesQuery);
+                const recentSalesContainer = document.getElementById('recent-sales');
+                
+                if (salesSnapshot.empty) {
+                    recentSalesContainer.innerHTML = '<p class="text-gray-500">No hay ventas registradas hoy</p>';
+                    updateDaySummary(0, 0, 0);
+                    return;
+                }
+
+                let salesHTML = '';
+                let totalSales = 0;
+                let totalAmount = 0;
+                let totalProductsSold = 0;
+                const salesDisplayed = [];
+
+                salesSnapshot.forEach((doc) => {
+                    const sale = doc.data();
+                    totalSales++;
+                    totalAmount += sale.totalAmount || 0;
+                    totalProductsSold += sale.quantity || 0;
+
+                    // Solo mostrar las primeras 5 ventas en la lista
+                    if (salesDisplayed.length < 5) {
+                        const time = sale.timestamp.toDate().toLocaleTimeString('es-PE', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        salesHTML += `
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium">${sale.productName}</p>
+                                    <p class="text-sm text-gray-600">Cantidad: ${sale.quantity} - ${time}</p>
+                                </div>
+                                <p class="font-bold text-green-600">S/ ${sale.totalAmount.toFixed(2)}</p>
+                            </div>
+                        `;
+                        salesDisplayed.push(sale);
+                    }
+                });
+
+                recentSalesContainer.innerHTML = salesHTML;
+                updateDaySummary(totalSales, totalAmount, totalProductsSold);
+                
+            } catch (error) {
+                console.error('Error al cargar ventas recientes:', error);
+                document.getElementById('recent-sales').innerHTML = '<p class="text-red-500">Error al cargar ventas recientes</p>';
+                updateDaySummary(0, 0, 0);
+            }
+        }
+
+        function updateDaySummary(salesCount, totalAmount, productsSold) {
+            document.getElementById('total-sales-count').textContent = salesCount;
+            document.getElementById('total-sales-amount').textContent = `S/ ${totalAmount.toFixed(2)}`;
+            document.getElementById('total-products-sold').textContent = productsSold;
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `p-4 rounded-md mb-4 ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            messageDiv.textContent = message;
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        main();
+    </script>
+</body>
+</html>

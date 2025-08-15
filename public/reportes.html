@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportes - Panel de Administración</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="logo.jpg" type="image/jpeg">
     <style>
@@ -42,34 +40,192 @@
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
         <!-- Formulario para Registrar Venta -->
         <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-bold mb-4">Registrar Nueva Venta</h2>
-            <form id="sale-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
-                <div class="md:col-span-2">
-                    <label for="product-select" class="block text-sm font-medium text-gray-700">Producto Vendido</label>
-                    <select id="product-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
-                        <option value="">Cargando productos...</option>
+            <h2 class="text-2xl font-bold mb-6 text-center">Registro de Ventas</h2>
+            
+            <!-- Información del Cliente -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+                    <input type="text" id="customer-name" class="w-full p-3 border border-gray-300 rounded-md focus:border-rose-500 focus:ring-rose-500" placeholder="Nombre del cliente" required>
+                </div>
+                <div>
+                    <label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-2">Número y/o Ubicación</label>
+                    <input type="text" id="customer-phone" class="w-full p-3 border border-gray-300 rounded-md focus:border-rose-500 focus:ring-rose-500" placeholder="Teléfono o dirección">
+                </div>
+            </div>
+
+            <!-- Selección de Producto -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-4">Agregar Productos</h3>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                    <div class="md:col-span-2 relative">
+                        <label for="product-search" class="block text-sm font-medium text-gray-700 mb-2">Producto</label>
+                        <input type="text" id="product-search" class="w-full p-3 border border-gray-300 rounded-md focus:border-rose-500 focus:ring-rose-500" placeholder="Escriba para buscar productos..." autocomplete="off">
+                        <div id="product-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                    </div>
+                    <div>
+                        <label for="product-quantity" class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
+                        <input type="number" id="product-quantity" min="1" value="1" class="w-full p-3 border border-gray-300 rounded-md focus:border-rose-500 focus:ring-rose-500">
+                    </div>
+                    <div>
+                        <label for="product-price" class="block text-sm font-medium text-gray-700 mb-2">Precio Unitario</label>
+                        <input type="number" step="0.01" id="product-price" class="w-full p-3 border border-gray-300 rounded-md focus:border-rose-500 focus:ring-rose-500">
+                    </div>
+                    <div>
+                        <button type="button" id="add-product-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded transition-colors">
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Productos -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-4">Productos en la Venta</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="border border-gray-300 px-4 py-2 text-left">Ítem</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">Producto</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">Cant.</th>
+                                <th class="border border-gray-300 px-4 py-2 text-right">Precio</th>
+                                <th class="border border-gray-300 px-4 py-2 text-right">Subtotal</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-table-body">
+                            <tr>
+                                <td colspan="6" class="border border-gray-300 px-4 py-8 text-center text-gray-500">
+                                    No hay productos agregados. Use el formulario de arriba para agregar productos.
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-gray-100 font-bold">
+                                <td colspan="4" class="border border-gray-300 px-4 py-3 text-right">SUBTOTAL:</td>
+                                <td class="border border-gray-300 px-4 py-3 text-right" id="sale-subtotal">S/ 0.00</td>
+                                <td class="border border-gray-300"></td>
+                            </tr>
+                            <tr class="bg-gray-100" id="delivery-cost-row" style="display: none;">
+                                <td colspan="4" class="border border-gray-300 px-4 py-3 text-right font-medium">COSTO DE ENTREGA:</td>
+                                <td class="border border-gray-300 px-4 py-3 text-right font-medium" id="display-delivery-cost">S/ 0.00</td>
+                                <td class="border border-gray-300"></td>
+                            </tr>
+                            <tr class="bg-gray-200 font-bold text-lg">
+                                <td colspan="4" class="border border-gray-300 px-4 py-3 text-right">TOTAL:</td>
+                                <td class="border border-gray-300 px-4 py-3 text-right" id="sale-total">S/ 0.00</td>
+                                <td class="border border-gray-300"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Método de Pago y Entrega -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Método de Pago</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="payment-method" value="yape" class="mr-2" checked>
+                            <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">Yape</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="payment-method" value="plin" class="mr-2">
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Plin</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="payment-method" value="efectivo" class="mr-2">
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Efectivo</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Método de Entrega</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="delivery-method" value="oficina" class="mr-2" checked>
+                            <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">Oficina</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="delivery-method" value="delivery" class="mr-2">
+                            <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">Delivery</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="delivery-method" value="envio" class="mr-2">
+                            <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Envío</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Campos adicionales para delivery y envío -->
+                    <div id="delivery-details" class="mt-4 space-y-3 hidden">
+                        <div>
+                            <label for="delivery-location" class="block text-sm font-medium text-gray-700 mb-1">Ubicación de entrega</label>
+                            <input type="text" id="delivery-location" class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="Ingrese la dirección o ubicación">
+                        </div>
+                        <div>
+                            <label for="delivery-cost" class="block text-sm font-medium text-gray-700 mb-1">Costo de entrega</label>
+                            <input type="number" step="0.01" min="0" id="delivery-cost" class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de Registrar Venta -->
+            <div class="text-center">
+                <button type="button" id="register-sale-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Registrar Venta Completa
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel de Egresos (Solo para Super Admin y Super Vendedor) -->
+        <div id="expenses-panel" class="bg-white p-6 rounded-lg shadow-md mb-8 hidden">
+            <h2 class="text-2xl font-bold mb-6 text-center text-red-600">Registro de Egresos</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-6">
+                <div>
+                    <label for="expense-description" class="block text-sm font-medium text-gray-700 mb-2">Descripción del Egreso</label>
+                    <input type="text" id="expense-description" class="w-full p-3 border border-gray-300 rounded-md focus:border-red-500 focus:ring-red-500" placeholder="Ej: Alquiler, servicios, etc." required>
+                </div>
+                <div>
+                    <label for="expense-amount" class="block text-sm font-medium text-gray-700 mb-2">Monto</label>
+                    <input type="number" step="0.01" min="0" id="expense-amount" class="w-full p-3 border border-gray-300 rounded-md focus:border-red-500 focus:ring-red-500" placeholder="0.00" required>
+                </div>
+                <div>
+                    <label for="expense-category" class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                    <select id="expense-category" class="w-full p-3 border border-gray-300 rounded-md focus:border-red-500 focus:ring-red-500">
+                        <option value="alquiler">Alquiler</option>
+                        <option value="servicios">Servicios (luz, agua, internet)</option>
+                        <option value="transporte">Transporte</option>
+                        <option value="personal">Gastos de Personal</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="inventario">Compra de Inventario</option>
+                        <option value="sistema">Sistema</option>
+                        <option value="otros">Otros</option>
                     </select>
                 </div>
                 <div>
-                    <label for="quantity-sold" class="block text-sm font-medium text-gray-700">Cantidad</label>
-                    <input type="number" id="quantity-sold" value="1" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
-                </div>
-                <div>
-                    <label for="sale-price" class="block text-sm font-medium text-gray-700">Precio Venta (c/u)</label>
-                    <input type="number" step="0.01" id="sale-price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500" required>
-                </div>
-                <div class="md:col-span-1">
-                    <button type="submit" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
-                        Registrar
+                    <button type="button" id="add-expense-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded transition-colors">
+                        Registrar Egreso
                     </button>
                 </div>
-            </form>
+            </div>
+
+            <!-- Lista de Egresos Recientes -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Egresos Recientes</h3>
+                <div id="expenses-list" class="space-y-2 max-h-48 overflow-y-auto">
+                    <p class="text-gray-500 text-center">No hay egresos registrados.</p>
+                </div>
+            </div>
         </div>
 
         <!-- Sección de Reportes -->
         <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-bold mb-6">Resumen Financiero</h2>
-            <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+            <h2 id="financial-summary-title" class="text-2xl font-bold mb-6">Resumen Financiero</h2>
+            <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 text-center">
                 <div class="bg-blue-50 p-4 rounded-lg">
                     <p class="text-sm text-blue-800 font-semibold">INGRESOS TOTALES</p>
                     <p id="total-revenue" class="text-3xl font-bold text-blue-900">S/ 0.00</p>
@@ -78,14 +234,18 @@
                     <p class="text-sm text-red-800 font-semibold">COSTOS TOTALES</p>
                     <p id="total-cost" class="text-3xl font-bold text-red-900">S/ 0.00</p>
                 </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <p class="text-sm text-orange-800 font-semibold">EGRESOS TOTALES</p>
+                    <p id="total-expenses" class="text-3xl font-bold text-orange-900">S/ 0.00</p>
+                </div>
                 <div class="bg-green-50 p-4 rounded-lg">
-                    <p class="text-sm text-green-800 font-semibold">GANANCIA BRUTA</p>
-                    <p id="total-profit" class="text-3xl font-bold text-green-900">S/ 0.00</p>
+                    <p class="text-sm text-green-800 font-semibold">GANANCIA NETA</p>
+                    <p id="net-profit" class="text-3xl font-bold text-green-900">S/ 0.00</p>
                 </div>
             </div>
 
             <!-- ✨ NUEVA SECCIÓN DE GRÁFICOS ✨ -->
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
+            <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
                 <!-- Gráfico de Ventas (ocupa 3 columnas) -->
                 <div class="lg:col-span-3 bg-gray-50 p-6 rounded-lg">
                     <div class="flex justify-between items-center mb-4">
@@ -116,6 +276,21 @@
         </div>
     </main>
 
+    <!-- MODAL PARA VER DETALLES DE LA VENTA -->
+    <div id="sale-details-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Detalles de la Venta</h3>
+                <button id="close-details-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="sale-details-content"></div>
+        </div>
+    </div>
+
     <!-- MODAL DE CONFIRMACIÓN PARA ANULAR VENTA -->
     <div id="annul-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
@@ -128,17 +303,158 @@
         </div>
     </div>
 
+    <!-- MODAL DE CONFIRMACIÓN PARA ANULAR EGRESO -->
+    <div id="annul-expense-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+            <h3 class="text-xl font-bold mb-4 text-red-600">Confirmar Anulación de Egreso</h3>
+            <div id="expense-details" class="mb-4 p-4 bg-gray-50 rounded-lg text-left">
+                <!-- Los detalles del egreso se llenarán dinámicamente -->
+            </div>
+            <p class="mb-6 text-sm text-gray-600">¿Estás seguro de que quieres anular este egreso? El monto será devuelto al balance. Esta acción no se puede deshacer.</p>
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-annul-expense-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded">Cancelar</button>
+                <button id="confirm-annul-expense-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded">Sí, Anular Egreso</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías necesarias -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.7/dayjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 
     <script type="module">
         import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
+        const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
+        const SUPER_VENDEDOR_EMAILS = ['garyvv.1993@gmail.com', 'abrahamjimenez092003@gmail.com'];
+        const VENDEDOR_EMAILS = ['amvf280194@gmail.com', 'noeatlas28@gmail.com'];
         let auth, db;
         let productsCache = [];
-        let allSales = [];      
-        let salesChart, categoryChart; // Instancias de los gráficos
+        let allSales = [];
+        let salesChart, categoryChart;
+        let saleItems = []; // Productos en la venta actual
+        
+        // Variables para egresos
+        let allExpenses = [];
+        let totalExpenses = 0;
+        let expenseToAnnul = null; // Para almacenar el egreso que se va a anular
+
+        // Funciones para verificar roles
+        function isSuperAdmin(email) {
+            return SUPER_ADMIN_EMAILS.includes(email);
+        }
+
+        function isSuperVendedor(email) {
+            return SUPER_VENDEDOR_EMAILS.includes(email);
+        }
+
+        function isVendedor(email) {
+            return VENDEDOR_EMAILS.includes(email);
+        }
+
+        function isAdmin(email) {
+            return isSuperAdmin(email) || isSuperVendedor(email);
+        }
+
+        function hasAccessToSales(email) {
+            return isAdmin(email) || isVendedor(email);
+        }
+
+        function confirmAnnulExpense(expenseId) {
+            const expense = allExpenses.find(e => e.id === expenseId);
+            if (!expense) {
+                alert('Egreso no encontrado');
+                return;
+            }
+            
+            // Verificar permisos
+            const currentUser = auth.currentUser;
+            if (!currentUser || !isAdmin(currentUser.email)) {
+                alert('No tiene permisos para anular egresos');
+                return;
+            }
+            
+            expenseToAnnul = expense;
+            
+            // Mostrar detalles del egreso en el modal
+            let expenseDate;
+            if (expense.timestamp && expense.timestamp.toDate) {
+                expenseDate = expense.timestamp.toDate();
+            } else if (expense.timestamp) {
+                expenseDate = new Date(expense.timestamp);
+            } else {
+                expenseDate = new Date();
+            }
+            
+            document.getElementById('expense-details').innerHTML = `
+                <div class="text-sm">
+                    <p><strong>Descripción:</strong> ${expense.description}</p>
+                    <p><strong>Monto:</strong> S/ ${expense.amount.toFixed(2)}</p>
+                    <p><strong>Categoría:</strong> ${expense.category}</p>
+                    <p><strong>Fecha:</strong> ${expenseDate.toLocaleDateString('es-PE')} ${expenseDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</p>
+                    ${expense.registeredBy ? `<p><strong>Registrado por:</strong> ${expense.registeredBy}</p>` : ''}
+                </div>
+            `;
+            
+            document.getElementById('annul-expense-modal').classList.add('active');
+        }
+
+        async function handleAnnulExpense() {
+            if (!expenseToAnnul) {
+                alert('No hay egreso seleccionado para anular');
+                return;
+            }
+            
+            const confirmButton = document.getElementById('confirm-annul-expense-button');
+            const originalText = confirmButton.textContent;
+            confirmButton.disabled = true;
+            confirmButton.textContent = 'Anulando...';
+            
+            try {
+                // Verificar permisos nuevamente
+                const currentUser = auth.currentUser;
+                if (!currentUser || !isAdmin(currentUser.email)) {
+                    throw new Error('No tiene permisos para anular egresos');
+                }
+                
+                console.log('Anulando egreso:', expenseToAnnul.id);
+                
+                // Eliminar el egreso de Firestore
+                await deleteDoc(doc(db, "expenses", expenseToAnnul.id));
+                
+                console.log('✅ Egreso anulado exitosamente');
+                
+                // Cerrar modal
+                document.getElementById('annul-expense-modal').classList.remove('active');
+                
+                // Recargar datos
+                await loadExpenses();
+                await loadSalesAndCalculateReports();
+                
+                alert(`Egreso anulado exitosamente.\n\nDescripción: ${expenseToAnnul.description}\nMonto devuelto: S/ ${expenseToAnnul.amount.toFixed(2)}`);
+                
+                expenseToAnnul = null;
+                
+            } catch (error) {
+                console.error("Error anulando egreso:", error);
+                
+                if (error.code === 'permission-denied') {
+                    alert(`Error de permisos: No tiene autorización para anular egresos.\n\nDetalles: ${error.message}`);
+                } else if (error.message.includes('No tiene permisos')) {
+                    alert(error.message);
+                } else {
+                    alert(`Error al anular el egreso: ${error.message}\n\nPor favor intente nuevamente o contacte al administrador.`);
+                }
+            } finally {
+                confirmButton.disabled = false;
+                confirmButton.textContent = originalText;
+            }
+        }
+
+        // Función para hacer accesibles las funciones globales
+        window.confirmAnnulExpense = confirmAnnulExpense;
 
         async function main() {
             try {
@@ -154,178 +470,897 @@
 
         function setupPage() {
             onAuthStateChanged(auth, (user) => {
-                if (user && ADMIN_EMAILS.includes(user.email)) {
-                    document.body.style.opacity = '1';
-                    setupEventListeners();
-                    loadInitialData();
+                if (user) {
+                    console.log('Usuario autenticado:', user.email);
+                    console.log('Es Super Admin:', isSuperAdmin(user.email));
+                    console.log('Es Super Vendedor:', isSuperVendedor(user.email));
+                    console.log('Es Vendedor:', isVendedor(user.email));
+                    console.log('Tiene acceso a ventas:', hasAccessToSales(user.email));
+                    
+                    if (hasAccessToSales(user.email)) {
+                        document.body.style.opacity = '1';
+                        setupEventListeners();
+                        loadInitialData();
+                        
+                        // Configurar la interfaz según el rol del usuario
+                        setupUserInterface(user.email);
+                    } else {
+                        console.log('Usuario sin acceso, redirigiendo a index');
+                        window.location.href = '/index.html';
+                    }
                 } else {
+                    console.log('Usuario no autenticado, redirigiendo a index');
                     window.location.href = '/index.html';
                 }
             });
         }
 
+        function setupUserInterface(userEmail) {
+            // Los vendedores pueden registrar ventas y ver el historial
+            if (isVendedor(userEmail)) {
+                // Cambiar el título para vendedores
+                const pageTitle = document.querySelector('h1');
+                if (pageTitle) {
+                    pageTitle.textContent = 'Registro de Ventas';
+                }
+                
+                // OCULTAR resumen financiero y gráficos para vendedores
+                const financialSummaryTitle = document.getElementById('financial-summary-title');
+                const summaryCards = document.getElementById('summary-cards');
+                const chartsContainer = document.getElementById('charts-container');
+                
+                if (financialSummaryTitle) {
+                    financialSummaryTitle.style.display = 'none';
+                }
+                if (summaryCards) {
+                    summaryCards.style.display = 'none';
+                }
+                if (chartsContainer) {
+                    chartsContainer.style.display = 'none';
+                }
+            }
+            
+            // Mostrar panel de egresos solo para Super Admin y Super Vendedor
+            if (isAdmin(userEmail)) {
+                const expensesPanel = document.getElementById('expenses-panel');
+                if (expensesPanel) {
+                    expensesPanel.classList.remove('hidden');
+                }
+            }
+        }
+
         function setupEventListeners() {
-            document.getElementById('sale-form').addEventListener('submit', handleSaleSubmit);
+            // Eventos del nuevo formulario
+            document.getElementById('product-search').addEventListener('input', handleProductSearch);
+            document.getElementById('product-search').addEventListener('focus', showProductSuggestions);
+            document.getElementById('add-product-btn').addEventListener('click', addProductToSale);
+            document.getElementById('register-sale-btn').addEventListener('click', handleCompleteSubmit);
+            
+            // Eventos para métodos de entrega
+            document.querySelectorAll('input[name="delivery-method"]').forEach(radio => {
+                radio.addEventListener('change', handleDeliveryMethodChange);
+            });
+            
+            document.getElementById('delivery-cost').addEventListener('input', updateTotals);
+            
+            // Eventos para modales
+            document.getElementById('close-details-modal').addEventListener('click', () => {
+                document.getElementById('sale-details-modal').classList.remove('active');
+            });
+            document.getElementById('cancel-annul-button').addEventListener('click', () => {
+                document.getElementById('annul-modal').classList.remove('active');
+            });
+            document.getElementById('confirm-annul-button').addEventListener('click', handleAnnulSale);
+            
+            // Eventos para modal de anular egreso
+            document.getElementById('cancel-annul-expense-button').addEventListener('click', () => {
+                document.getElementById('annul-expense-modal').classList.remove('active');
+            });
+            document.getElementById('confirm-annul-expense-button').addEventListener('click', handleAnnulExpense);
+            
+            // Eventos existentes
             document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
             setupNavigation();
-            document.getElementById('sales-list').addEventListener('click', openAnnulModal);
-            document.getElementById('cancel-annul-button').addEventListener('click', () => document.getElementById('annul-modal').classList.remove('active'));
-            document.getElementById('confirm-annul-button').addEventListener('click', handleAnnulSale);
 
-            document.querySelectorAll('.filter-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.remove('bg-rose-500', 'text-white'); btn.classList.add('bg-gray-200'); });
-                    e.target.classList.add('bg-rose-500', 'text-white');
-                    renderSalesChart(e.target.dataset.period);
+            // Eventos para egresos
+            const addExpenseBtn = document.getElementById('add-expense-btn');
+            if (addExpenseBtn) {
+                addExpenseBtn.addEventListener('click', handleAddExpense);
+            }
+
+            // Eventos para filtros de gráficos (solo para admins)
+            const currentUser = auth.currentUser;
+            if (currentUser && !isVendedor(currentUser.email)) {
+                document.querySelectorAll('.filter-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.remove('bg-rose-500', 'text-white'); btn.classList.add('bg-gray-200'); });
+                        e.target.classList.add('bg-rose-500', 'text-white');
+                        renderSalesChart(e.target.dataset.period);
+                    });
                 });
+            }
+
+            // Cerrar sugerencias al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#product-search') && !e.target.closest('#product-suggestions')) {
+                    document.getElementById('product-suggestions').classList.add('hidden');
+                }
             });
         }
 
         async function loadInitialData() {
-            await loadProductsIntoSelect();
-            await loadSalesAndCalculateReports();
+            try {
+                console.log('Iniciando carga de datos...');
+                
+                // Prueba de conectividad y permisos
+                await testFirestorePermissions();
+                
+                await loadProducts();
+                
+                // Solo cargar egresos para admins (Super Admin y Super Vendedor)
+                const currentUser = auth.currentUser;
+                if (currentUser && isAdmin(currentUser.email)) {
+                    await loadExpenses();
+                }
+                
+                await loadSalesAndCalculateReports();
+                
+                console.log('Datos cargados exitosamente');
+            } catch (error) {
+                console.error('Error en carga inicial de datos:', error);
+            }
+        }
+        
+        async function testFirestorePermissions() {
+            try {
+                console.log('Probando permisos de Firestore...');
+                const currentUser = auth.currentUser;
+                
+                if (!currentUser) {
+                    console.log('Usuario no autenticado para prueba de permisos');
+                    return;
+                }
+                
+                // Intentar leer productos (todos los usuarios autenticados deberían poder)
+                console.log('Probando lectura de productos...');
+                const productsSnapshot = await getDocs(collection(db, "products"));
+                console.log(`✅ Lectura de productos exitosa: ${productsSnapshot.size} productos`);
+                
+                // Intentar leer ventas (solo usuarios con acceso a ventas)
+                if (hasAccessToSales(currentUser.email)) {
+                    console.log('Probando lectura de ventas...');
+                    const salesSnapshot = await getDocs(collection(db, "sales"));
+                    console.log(`✅ Lectura de ventas exitosa: ${salesSnapshot.size} ventas`);
+                }
+                
+                // Intentar leer egresos (solo admins)
+                if (isAdmin(currentUser.email)) {
+                    console.log('Probando lectura de egresos...');
+                    const expensesSnapshot = await getDocs(collection(db, "expenses"));
+                    console.log(`✅ Lectura de egresos exitosa: ${expensesSnapshot.size} egresos`);
+                }
+                
+                console.log('✅ Todas las pruebas de permisos pasaron correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error en prueba de permisos:', error);
+                
+                if (error.code === 'permission-denied') {
+                    console.error('❌ Error de permisos detectado en Firestore');
+                    
+                    // Mostrar mensaje informativo al usuario
+                    const warningDiv = document.createElement('div');
+                    warningDiv.className = 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4';
+                    warningDiv.innerHTML = `
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm">
+                                    <strong>Aviso:</strong> Se detectaron problemas de permisos en la base de datos. 
+                                    Algunas funciones pueden no estar disponibles temporalmente. 
+                                    Contacte al administrador para resolver este problema.
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const main = document.querySelector('main');
+                    main.insertBefore(warningDiv, main.firstChild);
+                }
+            }
         }
 
-        async function loadProductsIntoSelect() {
-            const productSelect = document.getElementById('product-select');
+        async function loadProducts() {
             try {
                 const querySnapshot = await getDocs(collection(db, "products"));
                 productsCache = [];
                 querySnapshot.forEach((doc) => productsCache.push({ id: doc.id, ...doc.data() }));
                 productsCache.sort((a, b) => a.name.localeCompare(b.name));
-                productSelect.innerHTML = '<option value="">-- Selecciona un producto --</option>';
-                productsCache.forEach(product => {
-                    productSelect.innerHTML += `<option value="${product.id}">${product.name} (Stock: ${product.stock || 0})</option>`;
-                });
             } catch (error) {
                 console.error("Error cargando productos:", error);
             }
         }
 
-        async function handleSaleSubmit(e) {
-            e.preventDefault();
-            const productId = document.getElementById('product-select').value;
-            const quantitySold = parseInt(document.getElementById('quantity-sold').value, 10);
-            const salePrice = parseFloat(document.getElementById('sale-price').value);
+        let selectedProduct = null;
 
-            if (!productId || isNaN(quantitySold) || isNaN(salePrice)) return;
-
-            const productSold = productsCache.find(p => p.id === productId);
-            if (quantitySold > (productSold.stock || 0)) {
-                alert(`Error: No hay suficiente stock. Stock actual: ${productSold.stock || 0}`);
+        function handleProductSearch(event) {
+            const query = event.target.value.toLowerCase().trim();
+            const suggestionsDiv = document.getElementById('product-suggestions');
+            
+            if (query.length < 2) {
+                suggestionsDiv.classList.add('hidden');
+                selectedProduct = null;
+                clearProductFields();
                 return;
             }
+            
+            const filteredProducts = productsCache.filter(product => 
+                product.stock > 0 && product.name.toLowerCase().includes(query)
+            );
+            
+            if (filteredProducts.length === 0) {
+                suggestionsDiv.innerHTML = '<div class="p-3 text-gray-500">No se encontraron productos</div>';
+                suggestionsDiv.classList.remove('hidden');
+                return;
+            }
+            
+            suggestionsDiv.innerHTML = filteredProducts.map(product => `
+                <div class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0" 
+                     onclick="selectProduct('${product.id}')">
+                    <div class="font-medium">${product.name}</div>
+                    <div class="text-sm text-gray-600">Stock: ${product.stock} | Precio: S/ ${product.price}</div>
+                </div>
+            `).join('');
+            
+            suggestionsDiv.classList.remove('hidden');
+        }
 
-            const saleData = {
-                productId: productId,
-                productName: productSold.name,
-                // ✨ MEJORA: Guardamos la categoría directamente en la venta ✨
-                category: productSold.category || 'Sin Categoría',
-                quantity: quantitySold,
-                salePricePerUnit: salePrice,
-                totalSale: quantitySold * salePrice,
-                acquisitionCostPerUnit: productSold.acquisitionCost || 0,
-                totalCost: quantitySold * (productSold.acquisitionCost || 0),
-                profit: (quantitySold * salePrice) - (quantitySold * (productSold.acquisitionCost || 0)),
-                soldAt: new Date()
-            };
-
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const productRef = doc(db, "products", productId);
-                    const productDoc = await transaction.get(productRef);
-                    if (!productDoc.exists()) throw "¡El producto no existe!";
-                    const newStock = (productDoc.data().stock || 0) - quantitySold;
-                    transaction.update(productRef, { stock: newStock });
-                    transaction.set(doc(collection(db, "sales")), saleData);
-                });
-                document.getElementById('sale-form').reset();
-                loadInitialData();
-            } catch (error) {
-                console.error("Error al registrar la venta: ", error);
+        function showProductSuggestions() {
+            const query = document.getElementById('product-search').value.toLowerCase().trim();
+            if (query.length >= 2) {
+                handleProductSearch({ target: { value: query } });
             }
         }
-        
-        function openAnnulModal(e) {
-            if (!e.target.classList.contains('annul-sale-button')) return;
-            const button = e.target;
-            const modal = document.getElementById('annul-modal');
-            const confirmButton = document.getElementById('confirm-annul-button');
-            confirmButton.dataset.saleId = button.dataset.saleId;
-            confirmButton.dataset.productId = button.dataset.productId;
-            confirmButton.dataset.quantity = button.dataset.quantity;
-            modal.classList.add('active');
+
+        function selectProduct(productId) {
+            const product = productsCache.find(p => p.id === productId);
+            if (product) {
+                selectedProduct = product;
+                document.getElementById('product-search').value = product.name;
+                document.getElementById('product-price').value = product.price;
+                document.getElementById('product-quantity').max = product.stock;
+                document.getElementById('product-quantity').value = 1;
+                document.getElementById('product-suggestions').classList.add('hidden');
+            }
         }
 
-        async function handleAnnulSale() {
-            const confirmButton = document.getElementById('confirm-annul-button');
-            const { saleId, productId, quantity } = confirmButton.dataset;
-            
-            if (!saleId || !productId || !quantity) return;
+        function clearProductFields() {
+            document.getElementById('product-price').value = '';
+            document.getElementById('product-quantity').max = '';
+        }
 
+        function handleDeliveryMethodChange(event) {
+            const deliveryDetails = document.getElementById('delivery-details');
+            const deliveryCostRow = document.getElementById('delivery-cost-row');
+            
+            if (event.target.value === 'delivery' || event.target.value === 'envio') {
+                deliveryDetails.classList.remove('hidden');
+                deliveryCostRow.style.display = 'table-row';
+            } else {
+                deliveryDetails.classList.add('hidden');
+                deliveryCostRow.style.display = 'none';
+                document.getElementById('delivery-location').value = '';
+                document.getElementById('delivery-cost').value = '';
+            }
+            updateTotals();
+        }
+
+        function handleProductSelect() {
+            const select = document.getElementById('product-select');
+            const priceInput = document.getElementById('product-price');
+            const quantityInput = document.getElementById('product-quantity');
+            
+            if (select.value) {
+                const selectedOption = select.options[select.selectedIndex];
+                priceInput.value = selectedOption.dataset.price;
+                quantityInput.max = selectedOption.dataset.stock;
+                quantityInput.value = 1;
+            } else {
+                priceInput.value = '';
+                quantityInput.max = '';
+            }
+        }
+
+        function addProductToSale() {
+            const quantity = parseInt(document.getElementById('product-quantity').value);
+            const price = parseFloat(document.getElementById('product-price').value);
+            
+            if (!selectedProduct || !quantity || !price) {
+                alert('Por favor busque y seleccione un producto, y complete todos los campos.');
+                return;
+            }
+            
+            if (quantity > selectedProduct.stock) {
+                alert(`Stock insuficiente. Disponible: ${selectedProduct.stock}`);
+                return;
+            }
+            
+            const product = {
+                id: selectedProduct.id,
+                name: selectedProduct.name,
+                quantity: quantity,
+                price: price,
+                cost: selectedProduct.cost || 0,
+                category: selectedProduct.category,
+                stock: selectedProduct.stock
+            };
+            
+            // Verificar si el producto ya está en la lista
+            const existingIndex = saleItems.findIndex(item => item.id === product.id);
+            if (existingIndex >= 0) {
+                const newQuantity = saleItems[existingIndex].quantity + quantity;
+                if (newQuantity > selectedProduct.stock) {
+                    alert(`Stock insuficiente. Ya tiene ${saleItems[existingIndex].quantity} en la venta. Máximo disponible: ${selectedProduct.stock}`);
+                    return;
+                }
+                saleItems[existingIndex].quantity = newQuantity;
+            } else {
+                saleItems.push(product);
+            }
+            
+            updateProductsTable();
+            clearProductForm();
+        }
+
+        function updateProductsTable() {
+            const tbody = document.getElementById('products-table-body');
+            
+            if (saleItems.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="border border-gray-300 px-4 py-8 text-center text-gray-500">
+                            No hay productos agregados. Use el formulario de arriba para agregar productos.
+                        </td>
+                    </tr>
+                `;
+                updateTotals();
+                return;
+            }
+            
+            tbody.innerHTML = saleItems.map((item, index) => `
+                <tr>
+                    <td class="border border-gray-300 px-4 py-2">${index + 1}</td>
+                    <td class="border border-gray-300 px-4 py-2">${item.name}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">${item.quantity}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-right">S/ ${item.price.toFixed(2)}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-right">S/ ${(item.quantity * item.price).toFixed(2)}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">
+                        <button onclick="removeProduct(${index})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm">
+                            Quitar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            updateTotals();
+        }
+
+        function removeProduct(index) {
+            saleItems.splice(index, 1);
+            updateProductsTable();
+        }
+
+        function updateTotals() {
+            const subtotal = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const deliveryCost = parseFloat(document.getElementById('delivery-cost').value) || 0;
+            const total = subtotal + deliveryCost;
+            
+            document.getElementById('sale-subtotal').textContent = `S/ ${subtotal.toFixed(2)}`;
+            document.getElementById('display-delivery-cost').textContent = `S/ ${deliveryCost.toFixed(2)}`;
+            document.getElementById('sale-total').textContent = `S/ ${total.toFixed(2)}`;
+            
+            // Habilitar/deshabilitar botón de registro
+            const registerBtn = document.getElementById('register-sale-btn');
+            registerBtn.disabled = saleItems.length === 0;
+        }
+
+        function clearProductForm() {
+            document.getElementById('product-search').value = '';
+            document.getElementById('product-quantity').value = 1;
+            document.getElementById('product-price').value = '';
+            document.getElementById('product-suggestions').classList.add('hidden');
+            selectedProduct = null;
+        }
+
+        async function handleCompleteSubmit() {
+            if (saleItems.length === 0) {
+                alert('Debe agregar al menos un producto a la venta.');
+                return;
+            }
+            
+            const customerName = document.getElementById('customer-name').value.trim();
+            if (!customerName) {
+                alert('Por favor ingrese el nombre del cliente.');
+                return;
+            }
+            
+            const deliveryMethod = document.querySelector('input[name="delivery-method"]:checked').value;
+            if ((deliveryMethod === 'delivery' || deliveryMethod === 'envio')) {
+                const deliveryLocation = document.getElementById('delivery-location').value.trim();
+                if (!deliveryLocation) {
+                    alert('Por favor ingrese la ubicación de entrega.');
+                    return;
+                }
+            }
+            
+            const registerBtn = document.getElementById('register-sale-btn');
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Registrando...';
+            
+            let saleRegistered = false;
+            let stockUpdateErrors = [];
+            
             try {
-                await runTransaction(db, async (transaction) => {
-                    const saleRef = doc(db, "sales", saleId);
-                    const productRef = doc(db, "products", productId);
-                    const productDoc = await transaction.get(productRef);
-                    if (productDoc.exists()) {
-                        const restoredStock = (productDoc.data().stock || 0) + parseInt(quantity, 10);
-                        transaction.update(productRef, { stock: restoredStock });
+                // Verificar permisos antes de intentar la operación
+                console.log('Verificando permisos del usuario actual...');
+                const currentUser = auth.currentUser;
+                if (!currentUser) {
+                    throw new Error('Usuario no autenticado');
+                }
+                
+                console.log('Usuario actual:', currentUser.email);
+                console.log('Tiene acceso a ventas:', hasAccessToSales(currentUser.email));
+                
+                if (!hasAccessToSales(currentUser.email)) {
+                    throw new Error('El usuario no tiene permisos para registrar ventas');
+                }
+                
+                const customerPhone = document.getElementById('customer-phone').value.trim();
+                const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+                const deliveryLocation = document.getElementById('delivery-location').value.trim();
+                const deliveryCost = parseFloat(document.getElementById('delivery-cost').value) || 0;
+                
+                // Calcular totales
+                const subtotalSale = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                const totalSale = subtotalSale + deliveryCost;
+                const totalCost = saleItems.reduce((sum, item) => sum + (item.quantity * item.cost), 0);
+                
+                // Crear la venta
+                const saleData = {
+                    customerName,
+                    customerPhone,
+                    paymentMethod,
+                    deliveryMethod,
+                    deliveryLocation: deliveryLocation || null,
+                    deliveryCost,
+                    items: saleItems,
+                    subtotalSale,
+                    totalSale,
+                    totalCost,
+                    profit: totalSale - totalCost,
+                    timestamp: serverTimestamp(),
+                    date: new Date().toISOString().split('T')[0],
+                    soldBy: currentUser.email
+                };
+                
+                console.log('Intentando crear venta con datos:', saleData);
+                
+                // Intentar crear la venta en Firestore
+                const docRef = await addDoc(collection(db, "sales"), saleData);
+                console.log('✅ Venta creada exitosamente con ID:', docRef.id);
+                saleRegistered = true;
+                
+                // Intentar actualizar stock de productos
+                console.log('Actualizando stock de productos...');
+                for (const item of saleItems) {
+                    try {
+                        const productRef = doc(db, "products", item.id);
+                        await runTransaction(db, async (transaction) => {
+                            const productDoc = await transaction.get(productRef);
+                            if (productDoc.exists()) {
+                                const currentStock = productDoc.data().stock;
+                                transaction.update(productRef, {
+                                    stock: currentStock - item.quantity
+                                });
+                            }
+                        });
+                        console.log(`✅ Stock actualizado para ${item.name}`);
+                    } catch (stockError) {
+                        console.error(`❌ Error actualizando stock para ${item.name}:`, stockError);
+                        stockUpdateErrors.push(`${item.name}: ${stockError.message}`);
                     }
-                    transaction.delete(saleRef);
-                });
-                document.getElementById('annul-modal').classList.remove('active');
-                loadInitialData();
+                }
+                
+                // Mostrar mensaje de éxito apropiado
+                if (stockUpdateErrors.length === 0) {
+                    alert('¡Venta registrada exitosamente y stock actualizado!');
+                } else {
+                    alert(`¡Venta registrada exitosamente!\n\nAdvertencia: Algunos productos no pudieron actualizar su stock:\n${stockUpdateErrors.join('\n')}\n\nContacte al administrador para verificar el inventario.`);
+                }
+                
+                clearCompleteForm();
+                
+                // Intentar recargar datos (sin mostrar errores si falla)
+                try {
+                    await loadProducts();
+                    await loadSalesAndCalculateReports();
+                    console.log('✅ Datos recargados exitosamente');
+                } catch (reloadError) {
+                    console.log('⚠️ No se pudieron recargar todos los datos, pero la venta se registró correctamente:', reloadError);
+                }
+                
             } catch (error) {
-                console.error("Error al anular la venta:", error);
-                alert("Error al anular la venta: " + error);
+                console.error("Error detallado al registrar venta:", error);
+                
+                // Si la venta se registró pero falló algo más
+                if (saleRegistered) {
+                    alert(`La venta se registró correctamente, pero ocurrieron algunos problemas:\n\n${error.message}\n\nLa venta está guardada en el sistema. Contacte al administrador si es necesario.`);
+                    clearCompleteForm();
+                    return;
+                }
+                
+                // Manejo específico de errores de permisos
+                if (error.code === 'permission-denied') {
+                    alert(`Error de permisos: No tiene autorización para realizar esta operación. Contacte al administrador.\n\nDetalles: ${error.message}`);
+                } else if (error.message.includes('permission-denied')) {
+                    alert(`Error de permisos de Firestore: Las reglas de seguridad están bloqueando la operación. Contacte al administrador.\n\nDetalles: ${error.message}`);
+                } else if (error.message.includes('Usuario no autenticado')) {
+                    alert('Sesión expirada. Por favor, vuelva a iniciar sesión.');
+                    window.location.href = '/login.html';
+                } else if (error.message.includes('no tiene permisos')) {
+                    alert(`Su cuenta (${auth.currentUser?.email}) no tiene permisos para registrar ventas. Contacte al administrador.`);
+                } else {
+                    alert(`Error al registrar la venta: ${error.message}\n\nPor favor intente nuevamente o contacte al administrador.`);
+                }
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.textContent = 'Registrar Venta Completa';
+            }
+        }
+
+        function clearCompleteForm() {
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-phone').value = '';
+            document.querySelector('input[name="payment-method"]:checked').checked = false;
+            document.querySelector('input[value="yape"]').checked = true;
+            document.querySelector('input[name="delivery-method"]:checked').checked = false;
+            document.querySelector('input[value="oficina"]').checked = true;
+            document.getElementById('delivery-location').value = '';
+            document.getElementById('delivery-cost').value = '';
+            document.getElementById('delivery-details').classList.add('hidden');
+            document.getElementById('delivery-cost-row').style.display = 'none';
+            saleItems = [];
+            updateProductsTable();
+            clearProductForm();
+        }
+
+        // ===== FUNCIONES DE EGRESOS =====
+        
+        async function loadExpenses() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "expenses"));
+                allExpenses = [];
+                querySnapshot.forEach((doc) => {
+                    allExpenses.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Ordenar por fecha (más reciente primero)
+                allExpenses.sort((a, b) => {
+                    let dateA, dateB;
+                    if (a.timestamp && a.timestamp.toDate) {
+                        dateA = a.timestamp.toDate();
+                    } else if (a.timestamp) {
+                        dateA = new Date(a.timestamp);
+                    } else {
+                        dateA = new Date();
+                    }
+                    
+                    if (b.timestamp && b.timestamp.toDate) {
+                        dateB = b.timestamp.toDate();
+                    } else if (b.timestamp) {
+                        dateB = new Date(b.timestamp);
+                    } else {
+                        dateB = new Date();
+                    }
+                    
+                    return dateB - dateA;
+                });
+                
+                // Calcular total de egresos
+                totalExpenses = allExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+                
+                displayExpenses();
+            } catch (error) {
+                console.error("Error cargando egresos:", error);
+            }
+        }
+
+        function displayExpenses() {
+            const expensesList = document.getElementById('expenses-list');
+            if (!expensesList) return;
+            
+            if (allExpenses.length === 0) {
+                expensesList.innerHTML = '<p class="text-gray-500 text-center">No hay egresos registrados.</p>';
+                return;
+            }
+            
+            // Mostrar solo los últimos 10 egresos
+            const recentExpenses = allExpenses.slice(0, 10);
+            
+            expensesList.innerHTML = recentExpenses.map(expense => {
+                let expenseDate;
+                if (expense.timestamp && expense.timestamp.toDate) {
+                    expenseDate = expense.timestamp.toDate();
+                } else if (expense.timestamp) {
+                    expenseDate = new Date(expense.timestamp);
+                } else {
+                    expenseDate = new Date();
+                }
+                
+                return `
+                <div class="bg-white p-3 rounded border flex justify-between items-center">
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-800">${expense.description}</p>
+                        <p class="text-sm text-gray-600">Categoría: ${expense.category}</p>
+                        <p class="text-sm text-gray-500">${expenseDate.toLocaleDateString('es-PE')} - ${expenseDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</p>
+                        ${expense.registeredBy ? `<p class="text-xs text-gray-400">Por: ${expense.registeredBy}</p>` : ''}
+                    </div>
+                    <div class="text-right flex items-center space-x-2">
+                        <div>
+                            <p class="font-bold text-red-600">-S/ ${expense.amount.toFixed(2)}</p>
+                        </div>
+                        <button onclick="confirmAnnulExpense('${expense.id}')" 
+                                class="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1 rounded text-xs font-medium transition-colors"
+                                title="Anular egreso">
+                            Anular
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function handleAddExpense() {
+            const description = document.getElementById('expense-description').value.trim();
+            const amount = parseFloat(document.getElementById('expense-amount').value);
+            const category = document.getElementById('expense-category').value;
+            
+            if (!description || !amount || amount <= 0) {
+                alert('Por favor complete todos los campos correctamente.');
+                return;
+            }
+            
+            const addExpenseBtn = document.getElementById('add-expense-btn');
+            addExpenseBtn.disabled = true;
+            addExpenseBtn.textContent = 'Registrando...';
+            
+            try {
+                // Verificar permisos antes de intentar la operación
+                const currentUser = auth.currentUser;
+                if (!currentUser) {
+                    throw new Error('Usuario no autenticado');
+                }
+                
+                console.log('Verificando permisos para egresos:', currentUser.email);
+                console.log('Es Admin:', isAdmin(currentUser.email));
+                
+                if (!isAdmin(currentUser.email)) {
+                    throw new Error('El usuario no tiene permisos para registrar egresos');
+                }
+                
+                const expenseData = {
+                    description,
+                    amount,
+                    category,
+                    timestamp: serverTimestamp(),
+                    date: new Date().toISOString().split('T')[0],
+                    registeredBy: currentUser.email
+                };
+                
+                console.log('Intentando crear egreso:', expenseData);
+                
+                await addDoc(collection(db, "expenses"), expenseData);
+                
+                // Limpiar formulario
+                document.getElementById('expense-description').value = '';
+                document.getElementById('expense-amount').value = '';
+                document.getElementById('expense-category').value = 'alquiler';
+                
+                // Recargar datos
+                await loadExpenses();
+                await loadSalesAndCalculateReports(); // Para actualizar las ganancias netas
+                
+                alert('Egreso registrado exitosamente.');
+                
+            } catch (error) {
+                console.error("Error detallado al registrar egreso:", error);
+                
+                // Manejo específico de errores de permisos
+                if (error.code === 'permission-denied') {
+                    alert(`Error de permisos: No tiene autorización para registrar egresos. Contacte al administrador.\n\nDetalles técnicos: ${error.message}`);
+                } else if (error.message.includes('permission-denied')) {
+                    alert(`Error de permisos de Firestore: Las reglas de seguridad están bloqueando la operación. Contacte al administrador.\n\nDetalles: ${error.message}`);
+                } else if (error.message.includes('Usuario no autenticado')) {
+                    alert('Sesión expirada. Por favor, vuelva a iniciar sesión.');
+                    window.location.href = '/login.html';
+                } else if (error.message.includes('no tiene permisos')) {
+                    alert(`Su cuenta (${auth.currentUser?.email}) no tiene permisos para registrar egresos. Esta función es solo para Super Admins y Super Vendedores.`);
+                } else {
+                    alert(`Error al registrar el egreso: ${error.message}\n\nPor favor intente nuevamente o contacte al administrador.`);
+                }
+            } finally {
+                addExpenseBtn.disabled = false;
+                addExpenseBtn.textContent = 'Registrar Egreso';
             }
         }
 
         async function loadSalesAndCalculateReports() {
-            const salesListDiv = document.getElementById('sales-list');
-            salesListDiv.innerHTML = '<p>Cargando ventas...</p>';
             try {
                 const querySnapshot = await getDocs(collection(db, "sales"));
                 allSales = [];
-                querySnapshot.forEach((doc) => allSales.push({ id: doc.id, ...doc.data() }));
-                allSales.sort((a, b) => (a.soldAt?.toMillis() || 0) - (b.soldAt?.toMillis() || 0));
-
-                let totalRevenue = 0, totalCost = 0, salesHtml = '';
-                const salesToDisplay = [...allSales].reverse();
-                if (salesToDisplay.length === 0) {
-                    salesListDiv.innerHTML = '<p>No hay ventas registradas.</p>';
-                } else {
-                    salesToDisplay.forEach(sale => {
-                        totalRevenue += sale.totalSale;
-                        totalCost += sale.totalCost;
-                        salesHtml += `
-                            <div class="grid grid-cols-6 gap-4 text-sm p-3 border-b items-center">
-                                <div>${new Date(sale.soldAt.seconds * 1000).toLocaleDateString()}</div>
-                                <div class="font-semibold col-span-2">${sale.productName} (x${sale.quantity})</div>
-                                <div>Venta: S/ ${sale.totalSale.toFixed(2)}</div>
-                                <div class="font-bold text-green-700">Ganancia: S/ ${sale.profit.toFixed(2)}</div>
-                                <div class="text-right">
-                                    <button data-sale-id="${sale.id}" data-product-id="${sale.productId}" data-quantity="${sale.quantity}" class="annul-sale-button text-xs bg-gray-200 hover:bg-red-200 text-gray-700 hover:text-red-800 font-semibold py-1 px-2 rounded">
-                                        Anular
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    salesListDiv.innerHTML = salesHtml;
-                }
-
-                document.getElementById('total-revenue').textContent = `S/ ${totalRevenue.toFixed(2)}`;
-                document.getElementById('total-cost').textContent = `S/ ${totalCost.toFixed(2)}`;
-                document.getElementById('total-profit').textContent = `S/ ${(totalRevenue - totalCost).toFixed(2)}`;
+                querySnapshot.forEach((doc) => {
+                    allSales.push({ id: doc.id, ...doc.data() });
+                });
                 
-                renderSalesChart('month');
-                // ✨ Llamamos a la nueva función para renderizar el gráfico de torta ✨
-                renderCategoryChart();
+                console.log(`Cargadas ${allSales.length} ventas desde Firestore`);
+                
+                // Corregir el ordenamiento para manejar diferentes tipos de timestamp
+                allSales.sort((a, b) => {
+                    let dateA, dateB;
+                    
+                    // Función helper para obtener timestamp
+                    function getTimestamp(sale) {
+                        if (sale.timestamp && sale.timestamp.toDate) {
+                            return sale.timestamp.toDate().getTime();
+                        } else if (sale.timestamp) {
+                            return new Date(sale.timestamp).getTime();
+                        } else if (sale.soldAt && sale.soldAt.toDate) {
+                            return sale.soldAt.toDate().getTime();
+                        } else if (sale.soldAt) {
+                            return new Date(sale.soldAt).getTime();
+                        } else if (sale.date) {
+                            return new Date(sale.date).getTime();
+                        } else {
+                            return new Date('2024-01-01').getTime(); // Fecha fija para ventas sin timestamp
+                        }
+                    }
+                    
+                    dateA = getTimestamp(a);
+                    dateB = getTimestamp(b);
+                    
+                    return dateB - dateA; // Más reciente primero
+                });
+                
+                console.log('Ventas ordenadas por fecha');
+                
+                // Solo calcular resumen financiero y gráficos para admins y super vendedores
+                const currentUser = auth.currentUser;
+                if (currentUser && !isVendedor(currentUser.email)) {
+                    updateFinancialSummary();
+                    renderSalesChart('month');
+                    renderCategoryChart();
+                }
+                
+                // Mostrar historial de ventas para todos los usuarios autorizados
+                displaySales();
             } catch (error) {
                 console.error("Error cargando ventas:", error);
             }
+        }
+
+        function updateFinancialSummary() {
+            const totalRevenue = allSales.reduce((sum, sale) => sum + (sale.totalSale || 0), 0);
+            const totalCost = allSales.reduce((sum, sale) => sum + (sale.totalCost || 0), 0);
+            const netProfit = totalRevenue - totalCost - totalExpenses;
+            
+            document.getElementById('total-revenue').textContent = `S/ ${totalRevenue.toFixed(2)}`;
+            document.getElementById('total-cost').textContent = `S/ ${totalCost.toFixed(2)}`;
+            document.getElementById('total-expenses').textContent = `S/ ${totalExpenses.toFixed(2)}`;
+            document.getElementById('net-profit').textContent = `S/ ${netProfit.toFixed(2)}`;
+        }
+
+        function displaySales() {
+            const salesList = document.getElementById('sales-list');
+            if (!salesList) return;
+            
+            console.log(`Mostrando ${allSales.length} ventas en el historial`);
+            
+            if (allSales.length === 0) {
+                salesList.innerHTML = '<p class="text-gray-500 text-center">No hay ventas registradas.</p>';
+                return;
+            }
+            
+            salesList.innerHTML = allSales.map(sale => {
+                // Manejar diferentes formatos de timestamp
+                let saleDate;
+                
+                // Debug: Ver qué tipo de timestamp tenemos
+                console.log('Sale ID:', sale.id, 'Timestamp type:', typeof sale.timestamp, 'Timestamp value:', sale.timestamp);
+                console.log('Sale date field:', sale.date, 'SoldAt field:', sale.soldAt);
+                
+                if (sale.timestamp && sale.timestamp.toDate) {
+                    // Timestamp de Firestore
+                    saleDate = sale.timestamp.toDate();
+                    console.log('Usando timestamp de Firestore:', saleDate);
+                } else if (sale.timestamp) {
+                    // Timestamp de JavaScript
+                    saleDate = new Date(sale.timestamp);
+                    console.log('Usando timestamp de JavaScript:', saleDate);
+                } else if (sale.soldAt && sale.soldAt.toDate) {
+                    // Usar soldAt si existe (ventas antiguas)
+                    saleDate = sale.soldAt.toDate();
+                    console.log('Usando soldAt de Firestore:', saleDate);
+                } else if (sale.soldAt) {
+                    // Usar soldAt como JavaScript Date
+                    saleDate = new Date(sale.soldAt);
+                    console.log('Usando soldAt de JavaScript:', saleDate);
+                } else if (sale.date) {
+                    // Usar el campo date si existe
+                    saleDate = new Date(sale.date);
+                    console.log('Usando campo date:', saleDate);
+                } else {
+                    // Fallback más inteligente - usar una fecha antigua para identificar ventas sin fecha
+                    saleDate = new Date('2024-01-01'); // Fecha fija para identificar ventas sin timestamp
+                    console.log('Usando fallback con fecha fija:', saleDate);
+                }
+                
+                // Manejar tanto ventas nuevas (con items) como ventas antiguas (producto único)
+                let productsDisplay = '';
+                if (sale.items && Array.isArray(sale.items)) {
+                    // Venta nueva con múltiples productos
+                    productsDisplay = sale.items.map(item => `${item.name} (${item.quantity}x)`).join(', ');
+                } else if (sale.productName) {
+                    // Venta antigua con un solo producto
+                    productsDisplay = `${sale.productName} (${sale.quantitySold || 1}x)`;
+                } else {
+                    productsDisplay = 'Productos no especificados';
+                }
+
+                return `
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="font-semibold">${sale.customerName || 'Cliente no especificado'}</p>
+                            <p class="text-sm text-gray-600">${sale.customerPhone || 'Sin teléfono'}</p>
+                            ${sale.deliveryLocation ? `<p class="text-sm text-gray-600">📍 ${sale.deliveryLocation}</p>` : ''}
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-green-600">S/ ${(sale.totalSale || 0).toFixed(2)}</p>
+                            ${sale.deliveryCost && sale.deliveryCost > 0 ? `<p class="text-xs text-gray-500">+ S/ ${sale.deliveryCost.toFixed(2)} entrega</p>` : ''}
+                            <p class="text-sm text-gray-500">${saleDate.toLocaleDateString()}</p>
+                            ${!sale.timestamp && !sale.soldAt && !sale.date ? '<p class="text-xs text-red-500">⚠️ Sin fecha original</p>' : ''}
+                            ${sale.profit !== undefined ? `<p class="text-xs ${sale.profit >= 0 ? 'text-green-600' : 'text-red-600'}">Ganancia: S/ ${sale.profit.toFixed(2)}</p>` : ''}
+                        </div>
+                    </div>
+                    ${sale.paymentMethod || sale.deliveryMethod ? `
+                    <div class="text-sm text-gray-600 mb-2">
+                        ${sale.paymentMethod ? `<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs mr-2">${sale.paymentMethod}</span>` : ''}
+                        ${sale.deliveryMethod ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">${sale.deliveryMethod}</span>` : ''}
+                    </div>
+                    ` : ''}
+                    <div class="text-sm mb-3">
+                        <strong>Productos:</strong> ${productsDisplay}
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs text-gray-500">
+                            Vendido por: ${sale.soldBy || 'No especificado'}
+                        </div>
+                        <div class="space-x-2">
+                            <button onclick="showSaleDetails('${sale.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">
+                                Ver Detalles
+                            </button>
+                            <button onclick="confirmAnnulSale('${sale.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">
+                                Anular
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
         }
 
         function renderSalesChart(period = 'month') {
@@ -341,11 +1376,26 @@
             }
 
             allSales.forEach(sale => {
-                const saleDate = dayjs(sale.soldAt.toDate());
+                let saleDate;
+                if (sale.timestamp && sale.timestamp.toDate) {
+                    saleDate = dayjs(sale.timestamp.toDate());
+                } else if (sale.timestamp) {
+                    saleDate = dayjs(sale.timestamp);
+                } else if (sale.soldAt && sale.soldAt.toDate) {
+                    saleDate = dayjs(sale.soldAt.toDate());
+                } else if (sale.soldAt) {
+                    saleDate = dayjs(sale.soldAt);
+                } else if (sale.date) {
+                    saleDate = dayjs(sale.date);
+                } else {
+                    // Skip ventas sin fecha válida para el gráfico
+                    return;
+                }
+                
                 if (saleDate.isAfter(startDate.startOf('day')) || saleDate.isSame(startDate.startOf('day'))) {
                     const dateKey = saleDate.format('YYYY-MM-DD');
                     if (salesByDay[dateKey] !== undefined) {
-                        salesByDay[dateKey] += sale.totalSale;
+                        salesByDay[dateKey] += (sale.totalSale || 0);
                     }
                 }
             });
@@ -384,11 +1434,23 @@
             // 1. Agrupar ventas por categoría
             const salesByCategory = {};
             allSales.forEach(sale => {
-                const category = sale.category || 'Sin Categoría';
-                if (!salesByCategory[category]) {
-                    salesByCategory[category] = 0;
+                if (sale.items && Array.isArray(sale.items)) {
+                    // Ventas nuevas con múltiples productos
+                    sale.items.forEach(item => {
+                        const category = item.category || 'Sin Categoría';
+                        if (!salesByCategory[category]) {
+                            salesByCategory[category] = 0;
+                        }
+                        salesByCategory[category] += item.quantity * item.price;
+                    });
+                } else {
+                    // Ventas antiguas con un solo producto
+                    const category = sale.category || 'Sin Categoría';
+                    if (!salesByCategory[category]) {
+                        salesByCategory[category] = 0;
+                    }
+                    salesByCategory[category] += sale.totalSale || 0;
                 }
-                salesByCategory[category] += sale.totalSale;
             });
 
             // 2. Preparar datos para el gráfico
@@ -428,6 +1490,154 @@
                 }
             });
         }
+
+        function showSaleDetails(saleId) {
+            const sale = allSales.find(s => s.id === saleId);
+            if (!sale) return;
+            
+            let saleDate;
+            if (sale.timestamp && sale.timestamp.toDate) {
+                saleDate = sale.timestamp.toDate();
+            } else if (sale.timestamp) {
+                saleDate = new Date(sale.timestamp);
+            } else {
+                saleDate = new Date();
+            }
+            
+            let productsTable = '';
+            if (sale.items && Array.isArray(sale.items)) {
+                productsTable = `
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="border border-gray-300 px-3 py-2 text-left">Producto</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center">Cant.</th>
+                                <th class="border border-gray-300 px-3 py-2 text-right">Precio</th>
+                                <th class="border border-gray-300 px-3 py-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sale.items.map(item => `
+                                <tr>
+                                    <td class="border border-gray-300 px-3 py-2">${item.name}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">${item.quantity}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-right">S/ ${item.price.toFixed(2)}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-right">S/ ${(item.quantity * item.price).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-gray-100 font-bold">
+                                <td colspan="3" class="border border-gray-300 px-3 py-2 text-right">Subtotal:</td>
+                                <td class="border border-gray-300 px-3 py-2 text-right">S/ ${(sale.subtotalSale || sale.totalSale).toFixed(2)}</td>
+                            </tr>
+                            ${sale.deliveryCost ? `
+                            <tr>
+                                <td colspan="3" class="border border-gray-300 px-3 py-2 text-right">Costo de entrega:</td>
+                                <td class="border border-gray-300 px-3 py-2 text-right">S/ ${sale.deliveryCost.toFixed(2)}</td>
+                            </tr>
+                            ` : ''}
+                            <tr class="bg-gray-200 font-bold">
+                                <td colspan="3" class="border border-gray-300 px-3 py-2 text-right">TOTAL:</td>
+                                <td class="border border-gray-300 px-3 py-2 text-right">S/ ${sale.totalSale.toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `;
+            } else {
+                productsTable = `<p><strong>Producto:</strong> ${sale.productName} (${sale.quantitySold || 1}x)</p>`;
+            }
+            
+            const content = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p><strong>Cliente:</strong> ${sale.customerName || 'No especificado'}</p>
+                            <p><strong>Teléfono:</strong> ${sale.customerPhone || 'No especificado'}</p>
+                            ${sale.deliveryLocation ? `<p><strong>Ubicación:</strong> ${sale.deliveryLocation}</p>` : ''}
+                        </div>
+                        <div>
+                            <p><strong>Fecha:</strong> ${saleDate.toLocaleDateString()} ${saleDate.toLocaleTimeString()}</p>
+                            <p><strong>Método de pago:</strong> ${sale.paymentMethod || 'No especificado'}</p>
+                            <p><strong>Método de entrega:</strong> ${sale.deliveryMethod || 'No especificado'}</p>
+                            <p><strong>Vendedor:</strong> ${sale.soldBy || 'No especificado'}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold mb-2">Productos vendidos:</h4>
+                        ${productsTable}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('sale-details-content').innerHTML = content;
+            document.getElementById('sale-details-modal').classList.add('active');
+        }
+
+        function confirmAnnulSale(saleId) {
+            document.getElementById('confirm-annul-button').dataset.saleId = saleId;
+            document.getElementById('annul-modal').classList.add('active');
+        }
+
+        async function handleAnnulSale() {
+            const saleId = document.getElementById('confirm-annul-button').dataset.saleId;
+            if (!saleId) return;
+            
+            try {
+                const sale = allSales.find(s => s.id === saleId);
+                if (!sale) {
+                    alert('No se pudo encontrar la venta.');
+                    return;
+                }
+                
+                // Restaurar stock para ventas con múltiples productos
+                if (sale.items && Array.isArray(sale.items)) {
+                    for (const item of sale.items) {
+                        const productRef = doc(db, "products", item.id);
+                        await runTransaction(db, async (transaction) => {
+                            const productDoc = await transaction.get(productRef);
+                            if (productDoc.exists()) {
+                                const currentStock = productDoc.data().stock;
+                                transaction.update(productRef, {
+                                    stock: currentStock + item.quantity
+                                });
+                            }
+                        });
+                    }
+                } else if (sale.productId) {
+                    // Ventas antiguas con un solo producto
+                    const productRef = doc(db, "products", sale.productId);
+                    await runTransaction(db, async (transaction) => {
+                        const productDoc = await transaction.get(productRef);
+                        if (productDoc.exists()) {
+                            const currentStock = productDoc.data().stock;
+                            transaction.update(productRef, {
+                                stock: currentStock + (sale.quantitySold || 1)
+                            });
+                        }
+                    });
+                }
+                
+                // Eliminar la venta
+                await deleteDoc(doc(db, "sales", saleId));
+                
+                alert('Venta anulada exitosamente. El stock ha sido restaurado.');
+                document.getElementById('annul-modal').classList.remove('active');
+                await loadProducts();
+                await loadSalesAndCalculateReports();
+                
+            } catch (error) {
+                console.error("Error anulando venta:", error);
+                alert('Error al anular la venta. Por favor intente nuevamente.');
+            }
+        }
+
+        // Hacer funciones globales para que funcionen desde el HTML
+        window.removeProduct = removeProduct;
+        window.selectProduct = selectProduct;
+        window.showSaleDetails = showSaleDetails;
+        window.confirmAnnulSale = confirmAnnulSale;
 
         main();
     </script>

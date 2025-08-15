@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualización de Stock Inicial - Admin Milka</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f9fafb;
+            line-height: 1.6;
+            color: #374151;
+            opacity: 0; 
+            transition: opacity 0.5s; 
+        }
+        
+        .header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .header-content {
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .back-btn {
+            color: #ef4444;
+            text-decoration: none;
+            margin-right: 1rem;
+            font-size: 1.2rem;
+            transition: color 0.2s;
+        }
+        
+        .back-btn:hover {
+            color: #dc2626;
+        }
+        
+        .logo {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 4px;
+            margin-right: 0.75rem;
+        }
+        
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .user-info {
+            font-size: 0.875rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-subtitle {
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .search-input, .select-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            min-width: 200px;
+        }
+        
+        .search-input:focus, .select-input:focus {
+            outline: none;
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .stat-card {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-blue {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        
+        .stat-yellow {
+            background-color: #fffbeb;
+            border-color: #fed7aa;
+        }
+        
+        .stat-green {
+            background-color: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        
+        .stat-purple {
+            background-color: #faf5ff;
+            border-color: #e9d5ff;
+        }
+        
+        .stat-icon {
+            font-size: 2rem;
+            margin-right: 0.75rem;
+        }
+        
+        .stat-icon.blue { color: #3b82f6; }
+        .stat-icon.yellow { color: #f59e0b; }
+        .stat-icon.green { color: #10b981; }
+        .stat-icon.purple { color: #8b5cf6; }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .stat-blue .stat-label { color: #1e40af; }
+        .stat-blue .stat-value { color: #1e3a8a; }
+        .stat-yellow .stat-label { color: #d97706; }
+        .stat-yellow .stat-value { color: #92400e; }
+        .stat-green .stat-label { color: #047857; }
+        .stat-green .stat-value { color: #065f46; }
+        .stat-purple .stat-label { color: #7c3aed; }
+        .stat-purple .stat-value { color: #5b21b6; }
+        
+        .products-section {
+            padding: 1.5rem;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .btn:hover:not(:disabled) {
+            background-color: #dc2626;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .product-card.has-stock {
+            border-color: #bbf7d0;
+            background-color: #f0fdf4;
+        }
+        
+        .product-card.no-stock {
+            border-color: #fed7aa;
+            background-color: #fffbeb;
+        }
+        
+        .product-info {
+            margin-bottom: 1rem;
+        }
+        
+        .product-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
+        }
+        
+        .product-category {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .input-group {
+            margin-bottom: 0.75rem;
+        }
+        
+        .input-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        
+        .input-field.modified {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+        
+        .product-footer {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .loading-container {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .loading-icon {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+        
+        .loading-text {
+            color: #6b7280;
+        }
+        
+        .no-products {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: #10b981;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toast.error {
+            background-color: #ef4444;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .fa-spin {
+            animation: fa-spin 2s infinite linear;
+        }
+        
+        @keyframes fa-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 1rem;
+            }
+            
+            .title {
+                font-size: 1.25rem;
+            }
+            
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .search-input, .select-input {
+                min-width: 100%;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="admin-layout.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <img src="logo.jpg" alt="Milka" class="logo">
+                <h1 class="title">Actualización de Stock Inicial</h1>
+            </div>
+            <div class="user-info">
+                <i class="fas fa-user" style="margin-right: 0.5rem;"></i>
+                <span id="user-email">Cargando...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Información y filtros -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Productos Registrados</h2>
+                    <p class="card-subtitle">Actualiza el stock inicial de productos que no lo tenían registrado</p>
+                </div>
+                <div class="controls">
+                    <div style="position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #9ca3af;"></i>
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="Buscar productos..." 
+                            class="search-input"
+                            style="padding-left: 2.5rem;"
+                        >
+                    </div>
+                    <select id="filter-category" class="select-input">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+                
+                <!-- Estadísticas -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-blue">
+                        <i class="fas fa-boxes stat-icon blue"></i>
+                        <div>
+                            <p class="stat-label">Total Productos</p>
+                            <p class="stat-value" id="total-products">-</p>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-yellow">
+                        <i class="fas fa-exclamation-triangle stat-icon yellow"></i>
+                        <div>
+                            <p class="stat-label">Sin Stock Inicial</p>
+                            <p class="stat-value" id="without-stock">-</p>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-green">
+                        <i class="fas fa-check-circle stat-icon green"></i>
+                        <div>
+                            <p class="stat-label">Con Stock Inicial</p>
+                            <p class="stat-value" id="with-stock">-</p>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-purple">
+                        <i class="fas fa-edit stat-icon purple"></i>
+                        <div>
+                            <p class="stat-label">Modificados</p>
+                            <p class="stat-value" id="modified-count">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de productos -->
+        <div class="card">
+            <div class="products-section">
+                <div class="section-header">
+                    <h3 class="section-title">Lista de Productos</h3>
+                    <button 
+                        id="save-all-btn" 
+                        class="btn"
+                        disabled
+                    >
+                        <i class="fas fa-save" style="margin-right: 0.5rem;"></i>
+                        Guardar Cambios
+                    </button>
+                </div>
+                
+                <div id="products-container">
+                    <!-- Loading -->
+                    <div id="loading-container" class="loading-container">
+                        <i class="fas fa-spinner fa-spin loading-icon"></i>
+                        <p class="loading-text">Cargando productos...</p>
+                    </div>
+                    
+                    <!-- Products Grid -->
+                    <div id="products-grid" class="products-grid hidden">
+                        <!-- Los productos se cargarán aquí dinámicamente -->
+                    </div>
+                    
+                    <!-- No products message -->
+                    <div id="no-products" class="no-products hidden">
+                        <i class="fas fa-box-open" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+                        <p style="color: #6b7280;">No se encontraron productos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+        <span id="toast-message">Cambios guardados correctamente</span>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    
+    <script src="js/sw-helper.js"></script>
+    <script src="js/admin-stock-inicial.js"></script>
+</body>
+</html>

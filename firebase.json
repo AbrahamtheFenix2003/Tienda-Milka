@@ -14,11 +14,35 @@
     ],
     "rewrites": [
       {
-        "source": "/producto/:productId",
+        "source": "/admin",
+        "destination": "/admin-layout.html"
+      },
+      {
+        "source": "/admin/dashboard",
+        "destination": "/admin-layout.html"
+      },
+      {
+        "source": "/admin/productos",
+        "destination": "/admin-layout.html"
+      },
+      {
+        "source": "/admin/ventas",
+        "destination": "/admin-layout.html"
+      },
+      {
+        "source": "/admin/reportes",
+        "destination": "/admin-layout.html"
+      },
+      {
+        "source": "/admin/egresos",
+        "destination": "/admin-layout.html"
+      },
+      {
+        "source": "/producto/**",
         "function": "ssr"
       },
       {
-        "source": "**",
+        "source": "!/(*.*)",
         "destination": "/index.html"
       }
     ]

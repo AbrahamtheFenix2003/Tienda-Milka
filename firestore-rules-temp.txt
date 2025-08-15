@@ -1,3 +1,7 @@
+REGLAS DE FIRESTORE TEMPORALES - COPIAR Y PEGAR EN FIREBASE CONSOLE
+
+Ve a Firebase Console > Firestore Database > Rules y reemplaza todo el contenido con esto:
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -61,3 +65,46 @@ service cloud.firestore {
     }
   }
 }
+
+INSTRUCCIONES ACTUALIZADAS:
+1. Ve a https://console.firebase.google.com
+2. Selecciona tu proyecto
+3. Ve a Firestore Database
+4. Haz clic en "Rules" en la parte superior
+5. Reemplaza todo el contenido con las reglas de arriba (ESPECIALMENTE LA NUEVA REGLA DE PRODUCTOS)
+6. Haz clic en "Publish"
+7. Espera unos minutos para que se propaguen los cambios
+8. Prueba nuevamente la aplicación
+
+PROBLEMA IDENTIFICADO:
+- Las ventas SÍ se están registrando correctamente
+- El problema está en la actualización del stock de productos
+- Los Super Vendedores necesitan permisos para actualizar SOLO el campo "stock" de los productos
+- La nueva regla permite esto manteniendo la seguridad
+
+CAMBIOS REALIZADOS:
+✅ Reglas de Firestore actualizadas para permitir actualización de stock por Super Vendedores
+✅ Reglas de Firestore actualizadas para permitir anulación de egresos por admins  
+✅ Código JavaScript mejorado para manejar errores parciales en ventas
+✅ Funcionalidad completa de anulación de egresos implementada
+✅ Modal de confirmación para anular egresos con detalles
+✅ Botones de "Anular" en cada egreso de la lista
+✅ Actualización automática del resumen financiero al anular egresos
+✅ Mensajes de usuario más claros sobre el estado de las operaciones
+
+FUNCIONALIDADES NUEVAS DE EGRESOS:
+- Super Admins y Super Vendedores pueden anular cualquier egreso
+- Al anular un egreso, el monto se "devuelve" (se elimina del total de egresos)
+- Confirmación con detalles antes de anular
+- Actualización automática de ganancias netas
+- Control de permisos estricto
+
+USUARIOS Y ROLES ACTUALIZADOS:
+📧 Super Admins: elinquisidor09@gmail.com, milkavv.2001@gmail.com
+📧 Super Vendedores: garyvv.1993@gmail.com, abrahamjimenez092003@gmail.com  
+📧 Vendedores: amvf280194@gmail.com, noeatlas28@gmail.com
+
+PERMISOS POR ROL:
+✅ Super Admin: Gestión completa de productos, ventas, egresos y categorías
+✅ Super Vendedor: Crear ventas, actualizar stock, gestionar egresos, ver reportes
+✅ Vendedor: Crear ventas, actualizar stock, ver historial de ventas

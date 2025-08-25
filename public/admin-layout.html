@@ -21,19 +21,223 @@
             transition: opacity 0.5s; 
             scroll-behavior: smooth; 
         }
-        .modal { display: none; }
-        .modal.active { display: flex; }
+        .modal { 
+            display: none !important; 
+            z-index: 9999;
+        }
+        .modal.active { 
+            display: flex !important; 
+        }
+        
+        /* Mejorar la visualización de modales */
+        .modal .bg-white {
+            position: relative;
+            z-index: 10000;
+        }
+        
+        /* Asegurar que los botones de cierre sean clickeables */
+        .modal button[id*="close-"],
+        .modal button[id*="cancel-"] {
+            cursor: pointer;
+            z-index: 10001;
+        }
+        
+        .modal button[id*="close-"]:hover,
+        .modal button[id*="cancel-"]:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        
+        #sidebar {
+            width: 16rem;
+            transition: width 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
         .sidebar-collapsed {
-            width: 4rem;
+            width: 4rem !important;
         }
+        
+        /* Estilo para el header del sidebar */
+        .sidebar-header {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar-collapsed .sidebar-header {
+            text-align: center;
+        }
+        
+        /* Texto del sidebar */
+        .sidebar-text {
+            display: inline-block;
+            white-space: nowrap;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
         .sidebar-collapsed .sidebar-text {
-            display: none;
+            opacity: 0 !important;
+            transform: translateX(-20px) !important;
+            pointer-events: none;
         }
+        
+        /* Logo text */
+        .sidebar-logo-text {
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .sidebar-collapsed .sidebar-logo-text {
+            opacity: 0 !important;
+            transform: translateX(-20px) !important;
+        }
+        
+        /* Iconos del sidebar */
+        .sidebar-icon {
+            display: inline-block;
+            width: 1.25rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
         .sidebar-collapsed .sidebar-icon {
+            margin-right: 0 !important;
+        }
+        
+        /* Links del sidebar */
+        .nav-link {
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar-collapsed .nav-link {
+            justify-content: center;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+        
+        /* Botón de toggle mejorado */
+        #sidebar-toggle {
+            transition: all 0.3s ease;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sidebar-collapsed #sidebar-toggle {
             margin: 0 auto;
         }
+        
+        /* Content wrapper */
+        #content-wrapper {
+            margin-left: 16rem;
+            transition: margin-left 0.3s ease;
+        }
+        
         .content-expanded {
-            margin-left: 4rem;
+            margin-left: 4rem !important;
+        }
+        
+        /* Botones del footer */
+        .sidebar-footer-btn {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar-collapsed .sidebar-footer-btn {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            text-align: center;
+        }
+        
+        /* Scroll en el sidebar */
+        .sidebar-nav {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        /* Estilo del scrollbar */
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+        
+        .sidebar-nav::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Ocultar completamente el scrollbar cuando esté colapsado */
+        .sidebar-collapsed .sidebar-nav {
+            overflow-x: visible;
+        }
+        
+        .sidebar-collapsed .sidebar-nav::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Asegurar que no se vea nada de texto cuando esté colapsado */
+        .sidebar-collapsed * {
+            overflow: hidden !important;
+        }
+        
+        .sidebar-collapsed .sidebar-text {
+            display: none !important;
+        }
+        
+        .sidebar-collapsed .sidebar-logo-text {
+            display: none !important;
+        }
+        
+        /* Centrar perfectamente los iconos cuando esté colapsado */
+        .sidebar-collapsed .nav-link {
+            justify-content: center !important;
+            padding: 0.75rem !important;
+        }
+        
+        .sidebar-collapsed .sidebar-icon {
+            margin: 0 !important;
+        }
+        
+        /* Tooltip para mostrar el nombre cuando esté colapsado */
+        .sidebar-collapsed .nav-link {
+            position: relative;
+        }
+        
+        .sidebar-collapsed .nav-link:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-left: 0.5rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
         }
         
         /* Estilos para filtros */
@@ -115,70 +319,94 @@
     
     <!-- Sidebar -->
     <div id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-rose-500 text-white z-50 transition-all duration-300">
-        <div class="p-4 border-b border-rose-600 flex items-center justify-between">
-            <div class="flex items-center">
-                <img src="/logo.jpg" alt="Milka" class="w-8 h-8 rounded mr-2">
-                <h2 class="sidebar-text text-xl font-bold">Admin Milka</h2>
+        <div class="sidebar-header p-4 border-b border-rose-600 flex items-center justify-between">
+            <div class="flex items-center overflow-hidden">
+                <img src="/logo.jpg" alt="Milka" class="w-8 h-8 rounded mr-2 flex-shrink-0">
+                <h2 class="sidebar-text sidebar-logo-text text-xl font-bold">Admin Milka</h2>
             </div>
-            <button id="sidebar-toggle" class="text-white hover:bg-rose-600 p-2 rounded">
+            <button id="sidebar-toggle" class="text-white hover:bg-rose-600 transition-all">
                 <i class="fas fa-chevron-left"></i>
             </button>
         </div>
         
-        <nav class="mt-6">
-            <ul>
+        <nav class="sidebar-nav mt-6">
+            <ul class="px-2">
                 <li class="mb-2">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors" data-section="dashboard">
-                        <i class="sidebar-icon fas fa-tachometer-alt mr-2"></i>
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="dashboard" data-tooltip="Dashboard">
+                        <i class="sidebar-icon fas fa-tachometer-alt mr-3"></i>
                         <span class="sidebar-text">Dashboard</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-productos-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors" data-section="productos">
-                        <i class="sidebar-icon fas fa-box mr-2"></i>
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="productos" data-tooltip="Productos">
+                        <i class="sidebar-icon fas fa-box mr-3"></i>
                         <span class="sidebar-text">Productos</span>
                     </a>
                 </li>
                 <li class="mb-2">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors" data-section="ventas">
-                        <i class="sidebar-icon fas fa-shopping-cart mr-2"></i>
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="ventas" data-tooltip="Ventas">
+                        <i class="sidebar-icon fas fa-shopping-cart mr-3"></i>
                         <span class="sidebar-text">Ventas</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-reportes-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors" data-section="reportes">
-                        <i class="sidebar-icon fas fa-chart-bar mr-2"></i>
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="reportes" data-tooltip="Reportes">
+                        <i class="sidebar-icon fas fa-chart-bar mr-3"></i>
                         <span class="sidebar-text">Reportes</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-rentabilidad-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors" data-section="rentabilidad">
-                        <i class="sidebar-icon fas fa-chart-pie mr-2"></i>
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="rentabilidad" data-tooltip="Análisis de Rentabilidad">
+                        <i class="sidebar-icon fas fa-chart-pie mr-3"></i>
                         <span class="sidebar-text">Análisis de Rentabilidad</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-stockinicial-li">
-                    <a href="actualizacion-stock-inicial.html" class="block py-3 px-4 hover:bg-rose-600 transition-colors">
-                        <i class="sidebar-icon fas fa-warehouse mr-2"></i>
+                    <a href="actualizacion-stock-inicial.html" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-tooltip="Stock Inicial">
+                        <i class="sidebar-icon fas fa-warehouse mr-3"></i>
                         <span class="sidebar-text">Actualización de Stock Inicial</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-egresos-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors" data-section="egresos">
-                        <i class="sidebar-icon fas fa-credit-card mr-2"></i>
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="egresos" data-tooltip="Egresos">
+                        <i class="sidebar-icon fas fa-credit-card mr-3"></i>
                         <span class="sidebar-text">Egresos</span>
+                    </a>
+                </li>
+                <li class="mb-2" id="nav-almacen-li">
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="almacen" data-tooltip="Almacén">
+                        <i class="sidebar-icon fas fa-warehouse mr-3"></i>
+                        <span class="sidebar-text">Almacén 📦</span>
+                    </a>
+                </li>
+                <li class="mb-2" id="nav-compras-li">
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="compras" data-tooltip="Compras">
+                        <i class="sidebar-icon fas fa-shopping-basket mr-3"></i>
+                        <span class="sidebar-text">Compras 🛒</span>
+                    </a>
+                </li>
+                <li class="mb-2" id="nav-caja-li">
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="caja" data-tooltip="Caja">
+                        <i class="sidebar-icon fas fa-cash-register mr-3"></i>
+                        <span class="sidebar-text">Caja 💰</span>
+                    </a>
+                </li>
+                <li class="mb-2" id="nav-ingresos-egresos-li">
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="ingresos-egresos" data-tooltip="Ingresos y Egresos">
+                        <i class="sidebar-icon fas fa-chart-line mr-3"></i>
+                        <span class="sidebar-text">Ingresos y Egresos 📊</span>
                     </a>
                 </li>
             </ul>
         </nav>
         
         <div class="absolute bottom-0 w-full border-t border-rose-600 p-4">
-            <a href="/" class="block py-2 text-center bg-white text-rose-500 rounded hover:bg-gray-100 transition-colors mb-2">
-                <i class="fas fa-arrow-left mr-2"></i>
+            <a href="/" class="sidebar-footer-btn nav-link block py-2 text-center bg-white text-rose-500 rounded hover:bg-gray-100 transition-colors mb-2" data-tooltip="Tienda">
+                <i class="sidebar-icon fas fa-arrow-left mr-2"></i>
                 <span class="sidebar-text">Tienda</span>
             </a>
-            <button id="logout-btn" class="block w-full py-2 text-center bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors">
-                <i class="fas fa-sign-out-alt mr-2"></i>
+            <button id="logout-btn" class="sidebar-footer-btn nav-link block w-full py-2 text-center bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors" data-tooltip="Cerrar Sesión">
+                <i class="sidebar-icon fas fa-sign-out-alt mr-2"></i>
                 <span class="sidebar-text">Cerrar Sesión</span>
             </button>
         </div>
@@ -279,6 +507,7 @@
                 window.currentUser = null;
                 window.productsCache = [];
                 window.categoriesCache = [];
+                window.proveedoresCache = [];
                 window.allSales = [];
                 window.allExpenses = [];
                 
@@ -346,6 +575,11 @@
                 document.getElementById('nav-egresos-li').style.display = 'none';
                 // Ocultar actualización de stock inicial para vendedores simples
                 document.getElementById('nav-stockinicial-li').style.display = 'none';
+                // Ocultar nuevos módulos para vendedores simples
+                document.getElementById('nav-almacen-li').style.display = 'none';
+                document.getElementById('nav-compras-li').style.display = 'none';
+                document.getElementById('nav-caja-li').style.display = 'none';
+                document.getElementById('nav-ingresos-egresos-li').style.display = 'none';
             } else if (isSuperVendedor(userEmail)) {
                 // Los super vendedores pueden ver productos pero no editarlos
                 document.getElementById('nav-productos-li').style.display = 'block';
@@ -353,6 +587,10 @@
                 document.getElementById('nav-rentabilidad-li').style.display = 'block';
                 document.getElementById('nav-egresos-li').style.display = 'block';
                 document.getElementById('nav-stockinicial-li').style.display = 'block';
+                document.getElementById('nav-almacen-li').style.display = 'block';
+                document.getElementById('nav-compras-li').style.display = 'block';
+                document.getElementById('nav-caja-li').style.display = 'block';
+                document.getElementById('nav-ingresos-egresos-li').style.display = 'block';
             } else if (isSuperAdmin(userEmail)) {
                 // Los super admins tienen acceso completo
                 document.getElementById('nav-productos-li').style.display = 'block';
@@ -360,6 +598,10 @@
                 document.getElementById('nav-rentabilidad-li').style.display = 'block';
                 document.getElementById('nav-egresos-li').style.display = 'block';
                 document.getElementById('nav-stockinicial-li').style.display = 'block';
+                document.getElementById('nav-almacen-li').style.display = 'block';
+                document.getElementById('nav-compras-li').style.display = 'block';
+                document.getElementById('nav-caja-li').style.display = 'block';
+                document.getElementById('nav-ingresos-egresos-li').style.display = 'block';
             }
         }
 
@@ -396,6 +638,50 @@
             });
         }
 
+        // Función global para cerrar modales con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.modal.active');
+                if (activeModal) {
+                    activeModal.classList.remove('active');
+                }
+            }
+        });
+
+        // Función global para cerrar todos los modales
+        window.closeAllModals = function() {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.classList.remove('active');
+            });
+        };
+
+        // Función de emergencia para limpiar modales problemáticos
+        window.emergencyCloseModals = function() {
+            // Remover todas las clases 'active' de todos los modales
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            });
+            
+            // Forzar ocultación con setTimeout
+            setTimeout(() => {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('active');
+                    modal.style.display = 'none';
+                });
+            }, 100);
+        };
+
+        // Ejecutar limpieza al cambiar de sección
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('nav-link')) {
+                setTimeout(() => {
+                    window.emergencyCloseModals();
+                }, 500);
+            }
+        });
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const contentWrapper = document.getElementById('content-wrapper');
@@ -405,11 +691,9 @@
             
             if (sidebar.classList.contains('sidebar-collapsed')) {
                 contentWrapper.classList.add('content-expanded');
-                contentWrapper.style.marginLeft = '4rem';
                 toggleIcon.className = 'fas fa-chevron-right';
             } else {
                 contentWrapper.classList.remove('content-expanded');
-                contentWrapper.style.marginLeft = '16rem';
                 toggleIcon.className = 'fas fa-chevron-left';
             }
         }
@@ -438,6 +722,8 @@
                 // Cargar categorías si tiene acceso a gestión de productos
                 if (isAdmin(currentUser.email)) {
                     await loadCategories();
+                    // Cargar proveedores para gestión de compras
+                    await loadProveedores();
                 }
                 
                 // Cargar ventas
@@ -485,6 +771,28 @@
             }
         }
 
+        async function loadProveedores() {
+            try {
+                const querySnapshot = await db.collection("proveedores").get();
+                proveedoresCache = [];
+                querySnapshot.forEach((doc) => {
+                    proveedoresCache.push({ id: doc.id, ...doc.data() });
+                });
+                proveedoresCache.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+                window.proveedoresCache = proveedoresCache;
+                console.log(`Cargados ${proveedoresCache.length} proveedores`);
+                
+                // Disparar evento para notificar que los proveedores están cargados
+                window.dispatchEvent(new CustomEvent('proveedoresLoaded', { 
+                    detail: { proveedores: proveedoresCache } 
+                }));
+                
+            } catch (error) {
+                console.error("Error cargando proveedores:", error);
+                window.proveedoresCache = [];
+            }
+        }
+
         async function loadSales() {
             try {
                 const querySnapshot = await db.collection("sales").get();
@@ -496,10 +804,15 @@
                 // Ordenar por fecha
                 allSales.sort((a, b) => {
                     const getTimestamp = (sale) => {
+                        // Prioridad: timestamp (nuevo) -> soldAt (antiguo) -> date -> 0
                         if (sale.timestamp && sale.timestamp.toDate) {
                             return sale.timestamp.toDate().getTime();
                         } else if (sale.timestamp) {
                             return new Date(sale.timestamp).getTime();
+                        } else if (sale.soldAt && sale.soldAt.toDate) {
+                            return sale.soldAt.toDate().getTime();
+                        } else if (sale.soldAt) {
+                            return new Date(sale.soldAt).getTime();
                         } else if (sale.date) {
                             return new Date(sale.date).getTime();
                         }
@@ -548,6 +861,7 @@
         // Hacer funciones de carga disponibles globalmente
         window.loadProducts = loadProducts;
         window.loadCategories = loadCategories;
+        window.loadProveedores = loadProveedores;
         window.loadSales = loadSales;
         window.loadExpenses = loadExpenses;
 
@@ -583,7 +897,11 @@
                 'ventas': 'Registro de Ventas',
                 'reportes': 'Reportes',
                 'rentabilidad': 'Análisis de Rentabilidad',
-                'egresos': 'Gestión de Egresos'
+                'egresos': 'Gestión de Egresos',
+                'almacen': 'Gestión de Almacén',
+                'compras': 'Gestión de Compras',
+                'caja': 'Gestión de Caja',
+                'ingresos-egresos': 'Ingresos y Egresos'
             };
             
             document.getElementById('page-title').textContent = titles[section] || 'Panel Admin';
@@ -687,6 +1005,70 @@
                         }, 1000);
                     }
                     break;
+                case 'almacen':
+                    if (typeof loadAlmacen === 'function') {
+                        console.log('Cargando almacén...');
+                        loadAlmacen();
+                    } else {
+                        console.log('loadAlmacen no está disponible');
+                        showLoading('Cargando Almacén...');
+                        setTimeout(() => {
+                            if (typeof loadAlmacen === 'function') {
+                                loadAlmacen();
+                            } else {
+                                showError('Error: No se pudo cargar la gestión de almacén');
+                            }
+                        }, 1000);
+                    }
+                    break;
+                case 'compras':
+                    if (typeof loadCompras === 'function') {
+                        console.log('Cargando compras...');
+                        loadCompras();
+                    } else {
+                        console.log('loadCompras no está disponible');
+                        showLoading('Cargando Compras...');
+                        setTimeout(() => {
+                            if (typeof loadCompras === 'function') {
+                                loadCompras();
+                            } else {
+                                showError('Error: No se pudo cargar la gestión de compras');
+                            }
+                        }, 1000);
+                    }
+                    break;
+                case 'caja':
+                    if (typeof loadCaja === 'function') {
+                        console.log('Cargando caja...');
+                        loadCaja();
+                    } else {
+                        console.log('loadCaja no está disponible');
+                        showLoading('Cargando Caja...');
+                        setTimeout(() => {
+                            if (typeof loadCaja === 'function') {
+                                loadCaja();
+                            } else {
+                                showError('Error: No se pudo cargar la gestión de caja');
+                            }
+                        }, 1000);
+                    }
+                    break;
+                case 'ingresos-egresos':
+                    if (typeof loadIngresosEgresos === 'function') {
+                        console.log('Cargando ingresos y egresos...');
+                        loadIngresosEgresos();
+                    } else {
+                        console.log('loadIngresosEgresos no está disponible');
+                        showLoading('Cargando Ingresos y Egresos...');
+                        setTimeout(() => {
+                            if (typeof loadIngresosEgresos === 'function') {
+                                loadIngresosEgresos();
+                            } else {
+                                showError('Error: No se pudo cargar ingresos y egresos');
+                            }
+                        }, 1000);
+                    }
+                    break;
                 default:
                     if (typeof loadDashboard === 'function') {
                         loadDashboard();
@@ -739,6 +1121,10 @@
             console.log('loadReportes:', typeof loadReportes);
             console.log('loadRentabilidad:', typeof loadRentabilidad);
             console.log('loadEgresos:', typeof loadEgresos);
+            console.log('loadAlmacen:', typeof loadAlmacen);
+            console.log('loadCompras:', typeof loadCompras);
+            console.log('loadCaja:', typeof loadCaja);
+            console.log('loadIngresosEgresos:', typeof loadIngresosEgresos);
         });
     </script>
     
@@ -749,5 +1135,16 @@
     <script src="/js/admin-reportes.js"></script>
     <script src="/js/admin-rentabilidad.js"></script>
     <script src="/js/admin-egresos.js"></script>
+    <script src="/js/admin-almacen.js"></script>
+    
+    <!-- Módulos de compras refactorizados -->
+    <script src="/js/admin-compras-utils.js"></script>
+    <script src="/js/admin-compras-data.js"></script>
+    <script src="/js/admin-compras-modals.js"></script>
+    <script src="/js/admin-compras-ui.js"></script>
+    <script src="/js/admin-compras-main.js"></script>
+    
+    <script src="/js/admin-caja.js"></script>
+    <script src="/js/admin-ingresos-egresos.js"></script>
 </body>
 </html>

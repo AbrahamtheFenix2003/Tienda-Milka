@@ -59,5 +59,45 @@ service cloud.firestore {
       // Solo admins (Super Admin y Super Vendedor) pueden leer, escribir y eliminar egresos
       allow read, write, delete: if isAdmin();
     }
+
+    // Colección de Movimientos de Inventario
+    match /movimientos_inventario/{movimientoId} {
+      // Todos los que pueden hacer ventas pueden crear movimientos de inventario
+      allow create: if hasAccessToSales();
+      // Solo admins pueden leer, modificar y eliminar
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Colección de Movimientos de Caja
+    match /movimientos_caja/{movimientoId} {
+      // Todos los que pueden hacer ventas pueden crear movimientos de caja
+      allow create: if hasAccessToSales();
+      // Solo admins pueden leer, modificar y eliminar
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Colección de Compras
+    match /compras/{compraId} {
+      // Solo admins pueden gestionar compras
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Colección de Proveedores
+    match /proveedores/{proveedorId} {
+      // Solo admins pueden gestionar proveedores
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Colección de Historial de Lotes
+    match /historial_lotes/{historialId} {
+      // Solo admins pueden gestionar historial de lotes
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Colección de Stock por Lote
+    match /stock_por_lote/{stockId} {
+      // Solo admins pueden gestionar stock por lote
+      allow read, write, delete: if isAdmin();
+    }
   }
 }

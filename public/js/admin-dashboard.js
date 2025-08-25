@@ -1,6 +1,23 @@
 // admin-dashboard.js - Funciones para la sección Dashboard
 console.log('Cargando admin-dashboard.js...');
 
+// Función helper para obtener la fecha de una venta considerando campos legacy
+function getSaleDate(sale) {
+    // Prioridad: timestamp (nuevo) -> soldAt (antiguo) -> date -> null
+    if (sale.timestamp && sale.timestamp.toDate) {
+        return sale.timestamp.toDate();
+    } else if (sale.timestamp) {
+        return new Date(sale.timestamp);
+    } else if (sale.soldAt && sale.soldAt.toDate) {
+        return sale.soldAt.toDate();
+    } else if (sale.soldAt) {
+        return new Date(sale.soldAt);
+    } else if (sale.date) {
+        return new Date(sale.date);
+    }
+    return null;
+}
+
 window.loadDashboard = function() {
     console.log('Ejecutando loadDashboard...');
     const content = `
@@ -137,16 +154,8 @@ function renderDashboardChart() {
     // Contar ventas por día
     if (window.allSales) {
         window.allSales.forEach(sale => {
-            let saleDate;
-            if (sale.timestamp && sale.timestamp.toDate) {
-                saleDate = sale.timestamp.toDate();
-            } else if (sale.timestamp) {
-                saleDate = new Date(sale.timestamp);
-            } else if (sale.date) {
-                saleDate = new Date(sale.date);
-            } else {
-                return;
-            }
+            const saleDate = getSaleDate(sale);
+            if (!saleDate) return;
             
             const dateStr = saleDate.toISOString().split('T')[0];
             if (salesByDay[dateStr] !== undefined) {
@@ -267,16 +276,7 @@ function loadRecentActivity() {
     // Agregar ventas recientes
     if (window.allSales) {
         window.allSales.slice(0, 5).forEach(sale => {
-            let date;
-            if (sale.timestamp && sale.timestamp.toDate) {
-                date = sale.timestamp.toDate();
-            } else if (sale.timestamp) {
-                date = new Date(sale.timestamp);
-            } else if (sale.date) {
-                date = new Date(sale.date);
-            } else {
-                date = new Date();
-            }
+            const date = getSaleDate(sale) || new Date();
             
             activities.push({
                 type: 'sale',

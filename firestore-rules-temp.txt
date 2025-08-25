@@ -63,6 +63,23 @@ service cloud.firestore {
       // Solo admins (Super Admin y Super Vendedor) pueden leer, escribir y eliminar egresos
       allow read, write, delete: if isAdmin();
     }
+    // Colección de Compras
+    match /compras/{compraId} {
+      // Solo admins pueden gestionar compras
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Colección de Proveedores
+    match /proveedores/{proveedorId} {
+      // Solo admins pueden gestionar proveedores
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Colección de Historial de Lotes
+    match /historial_lotes/{historialId} {
+      // Solo admins pueden gestionar historial de lotes
+      allow read, write, delete: if isAdmin();
+    }
   }
 }
 

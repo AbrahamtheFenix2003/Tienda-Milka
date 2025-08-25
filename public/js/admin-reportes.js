@@ -1,6 +1,23 @@
 // admin-reportes.js - Funciones para reportes y análisis
 console.log('Cargando admin-reportes.js...');
 
+// Función helper para obtener la fecha de una venta considerando campos legacy
+function getSaleDate(sale) {
+    // Prioridad: timestamp (nuevo) -> soldAt (antiguo) -> date -> null
+    if (sale.timestamp && sale.timestamp.toDate) {
+        return sale.timestamp.toDate();
+    } else if (sale.timestamp) {
+        return new Date(sale.timestamp);
+    } else if (sale.soldAt && sale.soldAt.toDate) {
+        return sale.soldAt.toDate();
+    } else if (sale.soldAt) {
+        return new Date(sale.soldAt);
+    } else if (sale.date) {
+        return new Date(sale.date);
+    }
+    return null;
+}
+
 window.loadReportes = function() {
     console.log('Ejecutando loadReportes...');
     const isVendedor = window.isVendedor && window.isVendedor(window.currentUser?.email);
@@ -224,16 +241,8 @@ function renderSalesChart(period = 'month') {
     
     // Contar ventas por día
     window.allSales.forEach(sale => {
-        let saleDate;
-        if (sale.timestamp && sale.timestamp.toDate) {
-            saleDate = sale.timestamp.toDate();
-        } else if (sale.timestamp) {
-            saleDate = new Date(sale.timestamp);
-        } else if (sale.date) {
-            saleDate = new Date(sale.date);
-        } else {
-            return;
-        }
+        const saleDate = getSaleDate(sale);
+        if (!saleDate) return;
         
         const dateStr = saleDate.toISOString().split('T')[0];
         if (salesByDay[dateStr] !== undefined) {
@@ -368,16 +377,7 @@ function displaySalesHistory(filteredSales = null) {
     const canAnnul = window.isAdmin && window.isAdmin(window.currentUser?.email);
     
     container.innerHTML = salesToShow.map(sale => {
-        let saleDate;
-        if (sale.timestamp && sale.timestamp.toDate) {
-            saleDate = sale.timestamp.toDate();
-        } else if (sale.timestamp) {
-            saleDate = new Date(sale.timestamp);
-        } else if (sale.date) {
-            saleDate = new Date(sale.date);
-        } else {
-            saleDate = new Date();
-        }
+        const saleDate = getSaleDate(sale) || new Date();
         
         let productsDisplay = '';
         if (sale.items && Array.isArray(sale.items)) {
@@ -462,36 +462,16 @@ function filterSalesHistory() {
         }
         
         filteredSales = filteredSales.filter(sale => {
-            let saleDate;
-            if (sale.timestamp && sale.timestamp.toDate) {
-                saleDate = sale.timestamp.toDate();
-            } else if (sale.timestamp) {
-                saleDate = new Date(sale.timestamp);
-            } else if (sale.date) {
-                saleDate = new Date(sale.date);
-            } else {
-                return false;
-            }
-            
-            return saleDate >= startDate;
+            const saleDate = getSaleDate(sale);
+            return saleDate && saleDate >= startDate;
         });
     }
     
     if (dateFilter) {
         const filterDate = new Date(dateFilter);
         filteredSales = filteredSales.filter(sale => {
-            let saleDate;
-            if (sale.timestamp && sale.timestamp.toDate) {
-                saleDate = sale.timestamp.toDate();
-            } else if (sale.timestamp) {
-                saleDate = new Date(sale.timestamp);
-            } else if (sale.date) {
-                saleDate = new Date(sale.date);
-            } else {
-                return false;
-            }
-            
-            return saleDate.toDateString() === filterDate.toDateString();
+            const saleDate = getSaleDate(sale);
+            return saleDate && saleDate.toDateString() === filterDate.toDateString();
         });
     }
     
@@ -512,16 +492,7 @@ function showSaleDetails(saleId) {
     const sale = window.allSales.find(s => s.id === saleId);
     if (!sale) return;
     
-    let saleDate;
-    if (sale.timestamp && sale.timestamp.toDate) {
-        saleDate = sale.timestamp.toDate();
-    } else if (sale.timestamp) {
-        saleDate = new Date(sale.timestamp);
-    } else if (sale.date) {
-        saleDate = new Date(sale.date);
-    } else {
-        saleDate = new Date();
-    }
+    const saleDate = getSaleDate(sale) || new Date();
     
     let productsTable = '';
     if (sale.items && Array.isArray(sale.items)) {
@@ -625,8 +596,26 @@ async function handleAnnulSale() {
             return;
         }
         
-        // Restaurar stock para ventas con múltiples productos
-        if (sale.items && Array.isArray(sale.items)) {
+        // Verificar si se descontó stock originalmente consultando movimientos de inventario
+        let stockFueDescontado = false;
+        try {
+            const movimientosQuery = await window.db.collection('movimientos_inventario')
+                .where('relatedTo', '==', 'venta')
+                .where('relatedId', '==', saleToAnnul)
+                .where('tipo', '==', 'salida')
+                .get();
+            
+            stockFueDescontado = !movimientosQuery.empty;
+            console.log(`Stock fue descontado para venta ${saleToAnnul}:`, stockFueDescontado);
+        } catch (error) {
+            console.warn('Error verificando movimientos de inventario:', error);
+            // En caso de error, asumir que sí se descontó para mantener compatibilidad
+            stockFueDescontado = true;
+        }
+        
+        // Solo restaurar stock si realmente se había descontado
+        if (stockFueDescontado && sale.items && Array.isArray(sale.items)) {
+            console.log('Restaurando stock de productos...');
             for (const item of sale.items) {
                 const productRef = window.doc(window.db, "products", item.id);
                 await window.runTransaction(window.db, async (transaction) => {
@@ -639,7 +628,8 @@ async function handleAnnulSale() {
                     }
                 });
             }
-        } else if (sale.productId) {
+        } else if (stockFueDescontado && sale.productId) {
+            console.log('Restaurando stock de producto individual...');
             // Ventas antiguas con un solo producto
             const productRef = window.doc(window.db, "products", sale.productId);
             await window.runTransaction(window.db, async (transaction) => {
@@ -651,12 +641,36 @@ async function handleAnnulSale() {
                     });
                 }
             });
+        } else {
+            console.log('No se restaura stock porque no fue descontado originalmente');
         }
         
         // Eliminar la venta
         await window.deleteDoc(window.doc(window.db, "sales", saleToAnnul));
         
-        alert('Venta anulada exitosamente. El stock ha sido restaurado.');
+        // Eliminar movimiento de caja asociado a esta venta
+        try {
+            console.log('Buscando movimientos de caja asociados a la venta...');
+            const movimientosCajaQuery = await window.db.collection('movimientos_caja')
+                .where('relatedTo', '==', 'venta')
+                .where('relatedId', '==', saleToAnnul)
+                .get();
+            
+            if (!movimientosCajaQuery.empty) {
+                console.log(`Eliminando ${movimientosCajaQuery.size} movimiento(s) de caja asociado(s)...`);
+                for (const doc of movimientosCajaQuery.docs) {
+                    await window.deleteDoc(doc.ref);
+                    console.log(`Movimiento de caja ${doc.id} eliminado`);
+                }
+            } else {
+                console.log('No se encontraron movimientos de caja asociados a esta venta');
+            }
+        } catch (error) {
+            console.warn('Error eliminando movimientos de caja asociados:', error);
+            // No fallar la anulación por esto, solo advertir
+        }
+        
+        alert('Venta anulada exitosamente. Stock restaurado y movimientos de caja eliminados.');
         
         // Recargar datos
         await window.loadProducts();

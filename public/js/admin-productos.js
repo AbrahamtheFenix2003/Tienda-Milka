@@ -100,6 +100,26 @@ window.loadProductos = function() {
     }
 };
 
+// Función auxiliar para calcular stock real de un producto
+async function calcularStockRealProducto(productoId) {
+    try {
+        const lotesSnapshot = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productoId)
+            .get();
+        
+        let stockReal = 0;
+        lotesSnapshot.forEach(doc => {
+            const lote = doc.data();
+            stockReal += lote.cantidad || 0;
+        });
+        
+        return stockReal;
+    } catch (error) {
+        console.log('Error calculando stock real para producto', productoId, ':', error);
+        return null; // Retorna null si hay error
+    }
+}
+
 function displayProducts(productos = null) {
     const productsList = document.getElementById('products-list');
     const productsToShow = productos || window.productsCache || [];
@@ -122,7 +142,7 @@ function displayProducts(productos = null) {
     }
 
     const productsHTML = productsToShow.map(product => {
-        // Determinar clase de stock
+        // Usar stock del producto como valor inicial
         const stock = parseInt(product.stock) || 0;
         let stockClass = 'bg-green-100 text-green-800';
         if (stock === 0) {
@@ -130,6 +150,31 @@ function displayProducts(productos = null) {
         } else if (stock <= 5) {
             stockClass = 'bg-yellow-100 text-yellow-800';
         }
+        
+        // Actualizar stock real en background
+        setTimeout(() => {
+            calcularStockRealProducto(product.id).then(stockReal => {
+                if (stockReal !== null && stockReal !== stock) {
+                    const stockElement = document.querySelector(`[data-product-stock="${product.id}"]`);
+                    if (stockElement) {
+                        // Actualizar texto
+                        stockElement.innerHTML = `Stock: ${stockReal} <i class="fas fa-boxes text-xs ml-1"></i>`;
+                        
+                        // Actualizar clase de color
+                        let nuevaClase = 'bg-green-100 text-green-800';
+                        if (stockReal === 0) {
+                            nuevaClase = 'bg-red-100 text-red-800';
+                        } else if (stockReal <= 5) {
+                            nuevaClase = 'bg-yellow-100 text-yellow-800';
+                        }
+                        stockElement.className = `${nuevaClase} px-2 py-1 rounded text-sm font-medium cursor-pointer`;
+                        stockElement.title = `Stock real calculado desde lotes: ${stockReal}`;
+                    }
+                }
+            });
+        }, 100);
+        
+        // Determinar clase de stock
 
         const isVendedor = window.isVendedor && window.isVendedor(window.currentUser.email);
         
@@ -186,8 +231,11 @@ function displayProducts(productos = null) {
                         ` : ''}
                         
                         <div class="flex flex-wrap gap-2 mb-3">
-                            <span class="${stockClass} px-2 py-1 rounded text-sm font-medium">
-                                Stock: ${stock}
+                            <span class="${stockClass} px-2 py-1 rounded text-sm font-medium cursor-pointer" 
+                                  data-product-stock="${product.id}"
+                                  onclick="verStockPorLotes('${product.id}', '${product.name || product.nombre}')" 
+                                  title="Ver stock por lotes">
+                                Stock: ${stock} <i class="fas fa-boxes text-xs ml-1"></i>
                             </span>
                             <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
                                 S/ ${product.price || product.precio || '0.00'}
@@ -209,6 +257,27 @@ function displayProducts(productos = null) {
                             ` : ''}
                         </div>
                         
+                        <!-- Acciones adicionales para gestión de lotes -->
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <button onclick="mostrarLotesProducto('${product.id}')" 
+                                    class="text-blue-600 hover:text-blue-800 px-2 py-1 rounded border border-blue-300 hover:bg-blue-50 text-xs"
+                                    title="Gestionar lotes del producto">
+                                <i class="fas fa-layer-group mr-1"></i>Ver Lotes
+                            </button>
+                            <button onclick="mostrarHistorialMovimientos('${product.id}')" 
+                                    class="text-green-600 hover:text-green-800 px-2 py-1 rounded border border-green-300 hover:bg-green-50 text-xs"
+                                    title="Ver historial de movimientos">
+                                <i class="fas fa-history mr-1"></i>Historial
+                            </button>
+                            ${!isVendedor ? `
+                            <button onclick="ajustarStockProducto('${product.id}')" 
+                                    class="text-orange-600 hover:text-orange-800 px-2 py-1 rounded border border-orange-300 hover:bg-orange-50 text-xs"
+                                    title="Ajustar stock manualmente">
+                                <i class="fas fa-edit mr-1"></i>Ajustar Stock
+                            </button>
+                            ` : ''}
+                        </div>
+                        
                         ${(product.acquisitionCost || product.cost) && product.price ? `
                         <div class="text-xs text-gray-500">
                             Margen: ${(((product.price - (product.acquisitionCost || product.cost)) / product.price) * 100).toFixed(1)}%
@@ -219,9 +288,9 @@ function displayProducts(productos = null) {
                 </div>
             </div>
         `;
-    }).join('');
+    });
 
-    productsList.innerHTML = productsHTML;
+    productsList.innerHTML = productsHTML.join('');
 }
 
 function showAddProductModal() {
@@ -1278,6 +1347,1030 @@ function closeImageModal() {
     }
 }
 
+// Función para ver stock por lotes
+window.verStockPorLotes = async function(productId, productName) {
+    try {
+        // Cargar stock por lotes del producto
+        const stockSnapshot = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productId)
+            .get();
+        
+        const lotesStock = [];
+        stockSnapshot.forEach(doc => {
+            const loteData = doc.data();
+            // Filtrar por estado activo y que tengan cantidad
+            if ((loteData.estado === 'activo' || !loteData.estado) && (loteData.cantidad > 0)) {
+                lotesStock.push({ id: doc.id, ...loteData });
+            }
+        });
+        
+        // Ordenar manualmente por fecha de ingreso (más reciente primero)
+        lotesStock.sort((a, b) => {
+            const fechaA = a.fechaIngreso ? 
+                (a.fechaIngreso.toDate ? a.fechaIngreso.toDate() : new Date(a.fechaIngreso)) : 
+                new Date(0);
+            const fechaB = b.fechaIngreso ? 
+                (b.fechaIngreso.toDate ? b.fechaIngreso.toDate() : new Date(b.fechaIngreso)) : 
+                new Date(0);
+            return fechaB - fechaA;
+        });
+        
+        // Cargar información de proveedores para mostrar nombres
+        const proveedoresSnapshot = await window.db.collection('proveedores').get();
+        const proveedores = {};
+        proveedoresSnapshot.forEach(doc => {
+            proveedores[doc.id] = doc.data().nombre;
+        });
+        
+        mostrarModalStockPorLotes(productId, productName, lotesStock, proveedores);
+        
+    } catch (error) {
+        console.error('Error cargando stock por lotes:', error);
+        alert('Error cargando información de lotes');
+    }
+};
+
+function mostrarModalStockPorLotes(productId, productName, lotesStock, proveedores) {
+    const stockTotal = lotesStock.reduce((sum, lote) => sum + (lote.cantidad || 0), 0);
+    const costoPromedio = lotesStock.length > 0 ? 
+        lotesStock.reduce((sum, lote) => sum + (lote.costoUnitario * lote.cantidad), 0) / stockTotal : 0;
+    
+    const modalHTML = `
+        <div id="modal-stock-lotes" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 1000;">
+            <div class="bg-white rounded-lg p-6 w-full max-w-6xl max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-xl font-semibold">Stock por Lotes</h3>
+                        <p class="text-gray-600">${productName}</p>
+                    </div>
+                    <button onclick="cerrarModalStockLotes()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Resumen -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="text-sm text-blue-600 font-medium">Stock Total</div>
+                        <div class="text-2xl font-bold text-blue-700">${stockTotal}</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <div class="text-sm text-green-600 font-medium">Lotes Activos</div>
+                        <div class="text-2xl font-bold text-green-700">${lotesStock.length}</div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg">
+                        <div class="text-sm text-orange-600 font-medium">Costo Promedio</div>
+                        <div class="text-2xl font-bold text-orange-700">S/ ${costoPromedio.toFixed(2)}</div>
+                    </div>
+                </div>
+                
+                <!-- Tabla de lotes -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lote ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Ingreso</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Original</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Costo Unitario</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${lotesStock.length > 0 ? lotesStock.map(lote => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                        ${lote.loteId || 'Sin lote'}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        ${lote.fechaIngreso ? 
+                                            (lote.fechaIngreso.toDate ? lote.fechaIngreso.toDate() : new Date(lote.fechaIngreso))
+                                            .toLocaleDateString('es-ES') : 'Sin fecha'}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span class="font-semibold ${lote.cantidad === 0 ? 'text-red-600' : 'text-green-600'}">
+                                            ${lote.cantidad || 0}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        ${lote.cantidadOriginal || 0}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        S/ ${(lote.costoUnitario || 0).toFixed(2)}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        ${proveedores[lote.proveedorId] || 'Desconocido'}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            ${lote.cantidad > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${lote.cantidad > 0 ? 'Activo' : 'Agotado'}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                        <button onclick="ajustarStockLote('${lote.id}', '${lote.loteId}', ${lote.cantidad})" 
+                                                class="text-blue-600 hover:text-blue-900" title="Ajustar stock">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="verHistorialLote('${lote.loteId}')" 
+                                                class="text-green-600 hover:text-green-900" title="Ver historial">
+                                            <i class="fas fa-history"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('') : `
+                                <tr>
+                                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                        Este producto no tiene lotes registrados.
+                                        <br><small class="text-xs">El stock actual se considera como "Lote Legacy" hasta la próxima compra.</small>
+                                    </td>
+                                </tr>
+                            `}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="mt-6 flex justify-between">
+                    <button onclick="crearLoteLegacy('${productId}')" 
+                            class="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600">
+                        <i class="fas fa-box mr-2"></i>Crear Lote Legacy
+                    </button>
+                    <button onclick="exportarStockLotes('${productId}', '${productName}')" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                        <i class="fas fa-download mr-2"></i>Exportar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+window.cerrarModalStockLotes = function() {
+    const modal = document.getElementById('modal-stock-lotes');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+window.ajustarStockLote = function(stockId, loteId, cantidadActual) {
+    const nuevaCantidad = prompt(`Ajustar stock del lote ${loteId}\nCantidad actual: ${cantidadActual}\nNueva cantidad:`, cantidadActual);
+    
+    if (nuevaCantidad !== null && !isNaN(nuevaCantidad) && parseInt(nuevaCantidad) >= 0) {
+        ajustarStockLoteEnBD(stockId, loteId, parseInt(nuevaCantidad), cantidadActual);
+    }
+};
+
+async function ajustarStockLoteEnBD(stockId, loteId, nuevaCantidad, cantidadAnterior) {
+    try {
+        // Actualizar stock del lote
+        await window.db.collection('stock_por_lote').doc(stockId).update({
+            cantidad: nuevaCantidad,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Registrar movimiento de inventario
+        const diferencia = nuevaCantidad - cantidadAnterior;
+        if (diferencia !== 0) {
+            await window.db.collection('movimientos_inventario').add({
+                loteId: loteId,
+                tipo: diferencia > 0 ? 'ajuste_entrada' : 'ajuste_salida',
+                cantidad: Math.abs(diferencia),
+                stockAnterior: cantidadAnterior,
+                stockNuevo: nuevaCantidad,
+                observacion: `Ajuste manual de stock - Lote: ${loteId}`,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                usuario: window.currentUser ? window.currentUser.email : 'sistema'
+            });
+        }
+        
+        // Recalcular stock total del producto
+        await recalcularStockTotalProducto(stockId);
+        
+        alert('Stock ajustado correctamente');
+        cerrarModalStockLotes();
+        
+        // Recargar productos para mostrar el nuevo stock
+        if (window.productsCache) {
+            displayProducts();
+        }
+        
+    } catch (error) {
+        console.error('Error ajustando stock:', error);
+        alert('Error ajustando el stock');
+    }
+}
+
+async function recalcularStockTotalProducto(stockId) {
+    try {
+        // Obtener el producto del stock
+        const stockDoc = await window.db.collection('stock_por_lote').doc(stockId).get();
+        if (!stockDoc.exists) return;
+        
+        const productoId = stockDoc.data().productoId;
+        
+        // Sumar todo el stock activo de este producto
+        const stockSnapshot = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productoId)
+            .where('estado', '==', 'activo')
+            .get();
+        
+        let stockTotal = 0;
+        stockSnapshot.forEach(doc => {
+            stockTotal += doc.data().cantidad || 0;
+        });
+        
+        // Actualizar el stock total en el producto
+        await window.db.collection('products').doc(productoId).update({
+            stock: stockTotal,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Actualizar cache local
+        if (window.productsCache) {
+            const productIndex = window.productsCache.findIndex(p => p.id === productoId);
+            if (productIndex !== -1) {
+                window.productsCache[productIndex].stock = stockTotal;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error recalculando stock total:', error);
+    }
+}
+
+window.crearLoteLegacy = async function(productId) {
+    const producto = window.productsCache.find(p => p.id === productId);
+    if (!producto) {
+        alert('Producto no encontrado');
+        return;
+    }
+    
+    // Usar stockInicial para cantidadOriginal (permitir 0)
+    const stockInicial = producto.stockInicial !== undefined ? producto.stockInicial : null;
+    if (stockInicial === null) {
+        alert('El producto no tiene stock inicial definido para crear un lote legacy');
+        return;
+    }
+    
+    // Usar stock actual para cantidad (permitir 0)
+    const stockActual = parseInt(producto.stock) || 0;
+    
+    // Usar precioCompraInicial para el costo unitario
+    const costoUnitario = producto.precioCompraInicial || producto.acquisitionCost || producto.cost || 0;
+    
+    // Usar createdAt para la fecha de ingreso
+    const fechaIngreso = producto.createdAt ? 
+        (producto.createdAt.toDate ? producto.createdAt.toDate() : new Date(producto.createdAt)) : 
+        new Date();
+    
+    const fechaIngresoFormateada = fechaIngreso.toLocaleDateString('es-ES');
+    
+    const estadoLote = stockActual === 0 ? 'AGOTADO' : 'ACTIVO';
+    const descripcionEstado = stockActual === 0 ? 
+        'Este lote representará el inventario original del producto (actualmente agotado).' :
+        'Este lote representará el inventario original del producto.';
+    
+    if (!confirm(`¿Crear lote legacy con los siguientes datos?\n\n` +
+                `Stock original: ${stockInicial} unidades\n` +
+                `Stock actual: ${stockActual} unidades (${estadoLote})\n` +
+                `Costo unitario: S/ ${costoUnitario.toFixed(2)}\n` +
+                `Fecha de ingreso: ${fechaIngresoFormateada}\n\n` +
+                `${descripcionEstado}`)) return;
+    
+    try {
+        // Obtener el siguiente número de lote para este producto
+        const lotesExistentes = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productId)
+            .get();
+        
+        const numeroLote = lotesExistentes.size + 1;
+        const loteId = `lote${numeroLote}`;
+        
+        // Datos del lote legacy
+        const loteData = {
+            productoId: productId,
+            productoNombre: producto.name || producto.nombre,
+            loteId: loteId,
+            cantidad: stockActual, // Stock actual del producto
+            cantidadOriginal: stockInicial, // Stock inicial histórico
+            costoUnitario: costoUnitario,
+            fechaIngreso: firebase.firestore.Timestamp.fromDate(fechaIngreso),
+            fechaVencimiento: null,
+            proveedorId: null,
+            proveedorNombre: 'Legacy - Stock Inicial',
+            compraId: null,
+            esLegacy: true,
+            usuario: window.currentUser?.email || 'sistema',
+            creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        // Crear el lote legacy
+        await window.db.collection('stock_por_lote').add(loteData);
+        
+        // Registrar movimiento de inventario
+        await window.db.collection('movimientos_inventario').add({
+            fecha: firebase.firestore.Timestamp.fromDate(fechaIngreso),
+            productoId: productId,
+            productoNombre: producto.name || producto.nombre,
+            loteId: loteId,
+            cantidad: stockActual,
+            tipo: 'entrada',
+            subtipo: 'lote_legacy',
+            usuario: window.currentUser?.email || 'sistema',
+            observaciones: `Lote legacy creado. Stock original: ${stockInicial}, stock actual: ${stockActual} unidades`,
+            costoUnitario: costoUnitario,
+            proveedorNombre: 'Legacy - Stock Inicial'
+        });
+        
+        const estadoFinal = stockActual === 0 ? '(AGOTADO)' : '(ACTIVO)';
+        alert(`Lote legacy creado correctamente\n\n` +
+              `ID: ${loteId}\n` +
+              `Stock actual: ${stockActual} unidades ${estadoFinal}\n` +
+              `Stock original: ${stockInicial} unidades\n` +
+              `Fecha: ${fechaIngresoFormateada}`);
+        
+        // Refrescar modal si está abierto
+        const modalLotes = document.getElementById('modal-lotes-producto');
+        if (modalLotes) {
+            window.cerrarModalLotesProducto();
+            setTimeout(() => {
+                window.mostrarLotesProducto(productId);
+            }, 100);
+        }
+        
+    } catch (error) {
+        console.error('Error creando lote legacy:', error);
+        alert('Error creando el lote legacy: ' + (error.message || error));
+    }
+};
+
+window.verHistorialLote = function(loteId) {
+    alert(`Función de historial del lote ${loteId} en desarrollo`);
+};
+
+window.exportarStockLotes = function(productId, productName) {
+    alert(`Exportando stock por lotes de ${productName}...`);
+};
+
+// ====================================================================
+// NUEVAS FUNCIONES PARA GESTIÓN AVANZADA DE LOTES
+// ====================================================================
+
+// Función principal para mostrar lotes de un producto
+window.mostrarLotesProducto = async function(productoId) {
+    try {
+        console.log('Cargando lotes para producto:', productoId);
+        
+        // Obtener información del producto
+        const producto = window.productsCache?.find(p => p.id === productoId);
+        if (!producto) {
+            alert('Producto no encontrado');
+            return;
+        }
+        
+        // Obtener todos los lotes del producto
+        const snapshot = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productoId)
+            .get();
+            
+        const lotes = [];
+        snapshot.forEach(doc => {
+            lotes.push({id: doc.id, ...doc.data()});
+        });
+        
+        // Ordenar manualmente por fecha de ingreso (más reciente primero)
+        lotes.sort((a, b) => {
+            const fechaA = a.fechaIngreso ? 
+                (a.fechaIngreso.toDate ? a.fechaIngreso.toDate() : new Date(a.fechaIngreso)) : 
+                new Date(0);
+            const fechaB = b.fechaIngreso ? 
+                (b.fechaIngreso.toDate ? b.fechaIngreso.toDate() : new Date(b.fechaIngreso)) : 
+                new Date(0);
+            return fechaB - fechaA; // Orden descendente
+        });
+        
+        // Obtener información de proveedores para mostrar nombres
+        const proveedores = {};
+        if (window.proveedoresCache) {
+            window.proveedoresCache.forEach(p => {
+                proveedores[p.id] = p.nombre;
+            });
+        }
+        
+        mostrarModalLotesProducto(producto, lotes, proveedores);
+        
+    } catch (error) {
+        console.error('Error al cargar lotes del producto:', error);
+        alert('Error al cargar los lotes del producto');
+    }
+};
+
+// Función para mostrar el modal con los lotes
+function mostrarModalLotesProducto(producto, lotes, proveedores) {
+    // Calcular estadísticas
+    const stockTotal = lotes.reduce((sum, lote) => sum + (lote.cantidad || 0), 0);
+    const costoPromedio = calcularCostoPromedioLotes(lotes);
+    const lotesActivos = lotes.filter(l => l.cantidad > 0).length;
+    
+    let contenidoTabla = '';
+    
+    if (lotes.length === 0) {
+        contenidoTabla = `
+            <tr>
+                <td colspan="8" class="px-4 py-6 text-center text-gray-500">
+                    <i class="fas fa-box-open text-3xl mb-3 block"></i>
+                    Este producto no tiene lotes registrados.
+                    <br><small class="text-xs mt-2 block">Los lotes se crean automáticamente al registrar compras.</small>
+                </td>
+            </tr>
+        `;
+    } else {
+        contenidoTabla = lotes.map(lote => {
+            const fechaIngreso = lote.fechaIngreso ? 
+                (lote.fechaIngreso.toDate ? lote.fechaIngreso.toDate() : new Date(lote.fechaIngreso))
+                .toLocaleDateString('es-ES') : 'Sin fecha';
+            
+            const fechaVencimiento = lote.fechaVencimiento ? 
+                (lote.fechaVencimiento.toDate ? lote.fechaVencimiento.toDate() : new Date(lote.fechaVencimiento))
+                .toLocaleDateString('es-ES') : 'No aplica';
+            
+            // Determinar clase para fecha de vencimiento
+            let vencimientoClass = '';
+            if (lote.fechaVencimiento) {
+                const hoy = new Date();
+                const fechaVenc = lote.fechaVencimiento.toDate ? lote.fechaVencimiento.toDate() : new Date(lote.fechaVencimiento);
+                const diasRestantes = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+                
+                if (diasRestantes < 0) {
+                    vencimientoClass = 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs';
+                    fechaVencimiento = `⚠️ ${fechaVencimiento}`;
+                } else if (diasRestantes < 30) {
+                    vencimientoClass = 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs';
+                    fechaVencimiento = `⏰ ${fechaVencimiento}`;
+                }
+            }
+            
+            const estadoLote = lote.cantidad > 0 ? 'Activo' : 'Agotado';
+            const estadoClass = lote.cantidad > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 border-b">
+                        <div class="font-medium text-blue-600">${lote.loteId || 'Sin ID'}</div>
+                        ${lote.esLegacy ? '<span class="text-xs text-orange-600">Legacy</span>' : ''}
+                    </td>
+                    <td class="px-4 py-3 border-b">${fechaIngreso}</td>
+                    <td class="px-4 py-3 border-b text-center">
+                        <span class="font-semibold ${lote.cantidad === 0 ? 'text-red-600' : 'text-green-600'}">
+                            ${lote.cantidad || 0}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 border-b text-center text-gray-500">${lote.cantidadOriginal || 0}</td>
+                    <td class="px-4 py-3 border-b text-right">S/ ${(lote.costoUnitario || 0).toFixed(2)}</td>
+                    <td class="px-4 py-3 border-b">${proveedores[lote.proveedorId] || 'Sin proveedor'}</td>
+                    <td class="px-4 py-3 border-b">
+                        <span class="${vencimientoClass}">${fechaVencimiento}</span>
+                    </td>
+                    <td class="px-4 py-3 border-b">
+                        <span class="px-2 py-1 rounded text-xs font-medium ${estadoClass}">
+                            ${estadoLote}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 border-b text-center">
+                        <div class="flex justify-center space-x-1">
+                            <button onclick="verDetalleLote('${lote.id}')" 
+                                    class="text-blue-600 hover:text-blue-800 p-1" title="Ver detalle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="ajustarStockLote('${lote.id}', '${lote.loteId}', ${lote.cantidad})" 
+                                    class="text-green-600 hover:text-green-800 p-1" title="Ajustar stock">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="transferirStockLote('${lote.id}')" 
+                                    class="text-orange-600 hover:text-orange-800 p-1" title="Transferir stock">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    const modalHTML = `
+        <div id="modal-lotes-producto" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg w-full max-w-7xl max-h-[90vh] overflow-hidden">
+                <div class="p-6 border-b">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-gray-800">
+                            <i class="fas fa-boxes mr-2 text-blue-600"></i>
+                            Gestión de Lotes: ${producto.name || producto.nombre}
+                        </h3>
+                        <button onclick="cerrarModalLotesProducto()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas -->
+                <div class="p-6 bg-gray-50 border-b">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div class="text-sm text-blue-600 font-medium">Stock Total</div>
+                            <div class="text-2xl font-bold text-blue-700">${stockTotal}</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <div class="text-sm text-green-600 font-medium">Lotes Activos</div>
+                            <div class="text-2xl font-bold text-green-700">${lotesActivos}</div>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-lg">
+                            <div class="text-sm text-orange-600 font-medium">Total Lotes</div>
+                            <div class="text-2xl font-bold text-orange-700">${lotes.length}</div>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <div class="text-sm text-purple-600 font-medium">Costo Promedio</div>
+                            <div class="text-2xl font-bold text-purple-700">S/ ${costoPromedio.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tabla de lotes -->
+                <div class="flex-1 overflow-auto p-6">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lote ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Ingreso</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stock Actual</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stock Original</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Costo Unitario</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vencimiento</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white">
+                                ${contenidoTabla}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="p-6 border-t bg-gray-50">
+                    <div class="flex justify-between items-center">
+                        <div class="flex space-x-3">
+                            <button onclick="crearLoteLegacy('${producto.id}')" 
+                                    class="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600">
+                                <i class="fas fa-box mr-2"></i>Crear Lote Legacy
+                            </button>
+                            <button onclick="exportarLotesProducto('${producto.id}', '${producto.name || producto.nombre}')" 
+                                    class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                                <i class="fas fa-download mr-2"></i>Exportar
+                            </button>
+                        </div>
+                        <button onclick="cerrarModalLotesProducto()" 
+                                class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Función para cerrar el modal de lotes
+window.cerrarModalLotesProducto = function() {
+    const modal = document.getElementById('modal-lotes-producto');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// Función para calcular costo promedio de lotes
+function calcularCostoPromedioLotes(lotes) {
+    if (!lotes || lotes.length === 0) return 0;
+    
+    const totalUnidades = lotes.reduce((sum, lote) => sum + (lote.cantidad || 0), 0);
+    if (totalUnidades === 0) return 0;
+    
+    const valorTotal = lotes.reduce((sum, lote) => 
+        sum + ((lote.cantidad || 0) * (lote.costoUnitario || 0)), 0);
+    
+    return valorTotal / totalUnidades;
+}
+
+// Función para ver detalle de un lote específico
+window.verDetalleLote = async function(loteId) {
+    try {
+        const loteDoc = await window.db.collection('stock_por_lote').doc(loteId).get();
+        if (!loteDoc.exists) {
+            alert('El lote no existe');
+            return;
+        }
+        
+        const lote = loteDoc.data();
+        
+        // Obtener información del producto
+        let productoNombre = 'Producto no encontrado';
+        if (lote.productoId) {
+            const producto = window.productsCache?.find(p => p.id === lote.productoId);
+            if (producto) {
+                productoNombre = producto.name || producto.nombre;
+            }
+        }
+        
+        // Obtener información del proveedor
+        let proveedorNombre = 'Sin proveedor';
+        if (lote.proveedorId) {
+            // Asegurar que tenemos el cache de proveedores
+            if (!window.proveedoresCache) {
+                try {
+                    const proveedoresSnapshot = await window.db.collection('proveedores').get();
+                    window.proveedoresCache = [];
+                    proveedoresSnapshot.forEach(doc => {
+                        window.proveedoresCache.push({id: doc.id, ...doc.data()});
+                    });
+                } catch (error) {
+                    console.log('Error cargando proveedores:', error);
+                    window.proveedoresCache = [];
+                }
+            }
+            
+            const proveedor = window.proveedoresCache?.find(p => p.id === lote.proveedorId);
+            if (proveedor) {
+                proveedorNombre = proveedor.nombre;
+            }
+        } else if (lote.proveedorNombre) {
+            // Fallback para lotes legacy que pueden tener proveedorNombre directamente
+            proveedorNombre = lote.proveedorNombre;
+        }
+        
+        // Obtener información de la compra
+        let compraInfo = 'Sin compra asociada';
+        if (lote.compraId) {
+            try {
+                const compraDoc = await window.db.collection('compras').doc(lote.compraId).get();
+                if (compraDoc.exists) {
+                    const compra = compraDoc.data();
+                    const fechaCompra = compra.fecha ? 
+                        (compra.fecha.toDate ? compra.fecha.toDate() : new Date(compra.fecha))
+                        .toLocaleDateString('es-ES') : 'Sin fecha';
+                    compraInfo = `Compra del ${fechaCompra} - Total: S/ ${compra.totalInvertido?.toFixed(2) || '0.00'}`;
+                }
+            } catch (error) {
+                console.log('Error cargando compra:', error);
+            }
+        }
+        
+        const fechaIngreso = lote.fechaIngreso ? 
+            (lote.fechaIngreso.toDate ? lote.fechaIngreso.toDate() : new Date(lote.fechaIngreso))
+            .toLocaleDateString('es-ES') : 'Sin fecha';
+            
+        const fechaVencimiento = lote.fechaVencimiento ? 
+            (lote.fechaVencimiento.toDate ? lote.fechaVencimiento.toDate() : new Date(lote.fechaVencimiento))
+            .toLocaleDateString('es-ES') : 'No aplica';
+        
+        const contenido = `
+            <div class="space-y-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-3">Información del Lote</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">ID de Lote</p>
+                            <p class="font-medium">${lote.loteId || 'Sin ID'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Producto</p>
+                            <p class="font-medium">${productoNombre}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Cantidad Actual</p>
+                            <p class="font-medium text-lg ${lote.cantidad > 0 ? 'text-green-600' : 'text-red-600'}">${lote.cantidad || 0} unidades</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Cantidad Original</p>
+                            <p class="font-medium">${lote.cantidadOriginal || 'N/A'} unidades</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Costo Unitario</p>
+                            <p class="font-medium">S/ ${(lote.costoUnitario || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Valor Total del Lote</p>
+                            <p class="font-medium">S/ ${((lote.cantidad || 0) * (lote.costoUnitario || 0)).toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Fecha de Ingreso</p>
+                            <p class="font-medium">${fechaIngreso}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Fecha de Vencimiento</p>
+                            <p class="font-medium">${fechaVencimiento}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-green-800 mb-3">Información de Compra</h3>
+                    <div class="space-y-2">
+                        <div>
+                            <p class="text-sm text-gray-600">Compra</p>
+                            <p class="font-medium">${compraInfo}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Proveedor</p>
+                            <p class="font-medium">${proveedorNombre}</p>
+                        </div>
+                        ${lote.compraId ? `
+                        <div class="mt-3">
+                            <button onclick="window.open('#compras', '_blank')" 
+                                    class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                                <i class="fas fa-external-link-alt mr-1"></i>Ver Módulo de Compras
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-purple-800 mb-3">Acciones Disponibles</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="ajustarStockLote('${loteId}', '${lote.loteId}', ${lote.cantidad}); cerrarModalDetalleLote();" 
+                                class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            <i class="fas fa-edit mr-1"></i>Ajustar Stock
+                        </button>
+                        <button onclick="transferirStockLote('${loteId}'); cerrarModalDetalleLote();" 
+                                class="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                            <i class="fas fa-exchange-alt mr-1"></i>Transferir Stock
+                        </button>
+                        <button onclick="mostrarHistorialMovimientosLote('${loteId}')" 
+                                class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                            <i class="fas fa-history mr-1"></i>Ver Historial
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        mostrarModal(`Detalle del Lote: ${lote.loteId || loteId}`, contenido);
+        
+    } catch (error) {
+        console.error('Error al cargar detalle del lote:', error);
+        alert('Error al cargar el detalle del lote');
+    }
+};
+
+// Función para cerrar modal de detalle de lote
+window.cerrarModalDetalleLote = function() {
+    const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// Función para mostrar historial de movimientos de un producto
+window.mostrarHistorialMovimientos = async function(productoId) {
+    try {
+        console.log('Cargando historial de movimientos para producto:', productoId);
+        
+        // Obtener movimientos de inventario
+        const snapshot = await window.db.collection('movimientos_inventario')
+            .where('productoId', '==', productoId)
+            .limit(50)
+            .get();
+            
+        const movimientos = [];
+        snapshot.forEach(doc => {
+            movimientos.push({id: doc.id, ...doc.data()});
+        });
+        
+        // Ordenar manualmente por fecha (más reciente primero)
+        movimientos.sort((a, b) => {
+            const fechaA = a.fecha ? 
+                (a.fecha.toDate ? a.fecha.toDate() : new Date(a.fecha)) : 
+                new Date(0);
+            const fechaB = b.fecha ? 
+                (b.fecha.toDate ? b.fecha.toDate() : new Date(b.fecha)) : 
+                new Date(0);
+            return fechaB - fechaA; // Orden descendente
+        });
+        
+        const producto = window.productsCache?.find(p => p.id === productoId);
+        const nombreProducto = producto ? (producto.name || producto.nombre) : 'Producto no encontrado';
+        
+        let contenidoTabla = '';
+        
+        if (movimientos.length === 0) {
+            contenidoTabla = `
+                <tr>
+                    <td colspan="6" class="px-4 py-6 text-center text-gray-500">
+                        <i class="fas fa-history text-3xl mb-3 block"></i>
+                        No hay movimientos registrados para este producto.
+                    </td>
+                </tr>
+            `;
+        } else {
+            contenidoTabla = movimientos.map(mov => {
+                const fecha = mov.fecha ? 
+                    (mov.fecha.toDate ? mov.fecha.toDate() : new Date(mov.fecha))
+                    .toLocaleDateString('es-ES') + ' ' + 
+                    (mov.fecha.toDate ? mov.fecha.toDate() : new Date(mov.fecha))
+                    .toLocaleTimeString('es-ES') : 'Sin fecha';
+                
+                const tipoClass = mov.tipo === 'entrada' ? 'text-green-600' : 'text-red-600';
+                const tipoIcon = mov.tipo === 'entrada' ? 'fa-arrow-up' : 'fa-arrow-down';
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 border-b">${fecha}</td>
+                        <td class="px-4 py-3 border-b">
+                            <span class="${tipoClass}">
+                                <i class="fas ${tipoIcon} mr-1"></i>
+                                ${mov.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 border-b text-center">
+                            <span class="font-medium ${tipoClass}">${mov.cantidad || 0}</span>
+                        </td>
+                        <td class="px-4 py-3 border-b">${mov.proveedorNombre || 'N/A'}</td>
+                        <td class="px-4 py-3 border-b text-right">
+                            ${mov.costoUnitario ? 'S/ ' + mov.costoUnitario.toFixed(2) : 'N/A'}
+                        </td>
+                        <td class="px-4 py-3 border-b text-sm text-gray-600">
+                            ${mov.observaciones || 'Sin observaciones'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        const modalHTML = `
+            <div id="modal-historial-movimientos" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+                    <div class="p-6 border-b">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-semibold text-gray-800">
+                                <i class="fas fa-history mr-2 text-green-600"></i>
+                                Historial de Movimientos: ${nombreProducto}
+                            </h3>
+                            <button onclick="cerrarModalHistorialMovimientos()" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-auto p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha/Hora</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Costo Unit.</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white">
+                                    ${contenidoTabla}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 border-t bg-gray-50">
+                        <div class="flex justify-end">
+                            <button onclick="cerrarModalHistorialMovimientos()" 
+                                    class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+    } catch (error) {
+        console.error('Error al cargar historial de movimientos:', error);
+        alert('Error al cargar el historial de movimientos');
+    }
+};
+
+// Función para cerrar modal de historial
+window.cerrarModalHistorialMovimientos = function() {
+    const modal = document.getElementById('modal-historial-movimientos');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// Función para ajustar stock de un producto (sin lote específico)
+window.ajustarStockProducto = function(productoId) {
+    const producto = window.productsCache?.find(p => p.id === productoId);
+    if (!producto) {
+        alert('Producto no encontrado');
+        return;
+    }
+    
+    const nuevoStock = prompt(`Stock actual: ${producto.stock || 0}\n\nIngresa el nuevo stock para ${producto.name || producto.nombre}:`, producto.stock || 0);
+    
+    if (nuevoStock === null) return; // Usuario canceló
+    
+    const stockNumerico = parseInt(nuevoStock);
+    if (isNaN(stockNumerico) || stockNumerico < 0) {
+        alert('El stock debe ser un número válido mayor o igual a 0');
+        return;
+    }
+    
+    if (confirm(`¿Confirmar ajuste de stock?\n\nProducto: ${producto.name || producto.nombre}\nStock actual: ${producto.stock || 0}\nNuevo stock: ${stockNumerico}`)) {
+        ajustarStockProductoConfirmar(productoId, stockNumerico);
+    }
+};
+
+// Función para confirmar ajuste de stock
+async function ajustarStockProductoConfirmar(productoId, nuevoStock) {
+    try {
+        await window.db.collection('products').doc(productoId).update({
+            stock: nuevoStock
+        });
+        
+        // Actualizar cache
+        const productoIndex = window.productsCache?.findIndex(p => p.id === productoId);
+        if (productoIndex !== -1 && window.productsCache) {
+            window.productsCache[productoIndex].stock = nuevoStock;
+        }
+        
+        // Registrar movimiento
+        await window.db.collection('movimientos_inventario').add({
+            fecha: firebase.firestore.FieldValue.serverTimestamp(),
+            productoId: productoId,
+            productoNombre: window.productsCache[productoIndex]?.name || window.productsCache[productoIndex]?.nombre || 'Producto',
+            cantidad: nuevoStock,
+            tipo: 'ajuste',
+            usuario: window.currentUser?.email || 'sistema',
+            observaciones: 'Ajuste manual de stock desde módulo de productos'
+        });
+        
+        alert('Stock ajustado correctamente');
+        displayProducts(); // Refrescar vista
+        
+    } catch (error) {
+        console.error('Error ajustando stock:', error);
+        alert('Error al ajustar el stock');
+    }
+}
+
+// Función helper para mostrar modales
+function mostrarModal(titulo, contenido) {
+    const modalHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+                <div class="p-6 border-b">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-gray-800">${titulo}</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    ${contenido}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Funciones placeholder para funcionalidades futuras
+window.transferirStockLote = function(loteId) {
+    alert('Función de transferencia de stock entre lotes en desarrollo');
+};
+
+window.mostrarHistorialMovimientosLote = function(loteId) {
+    alert('Función de historial de movimientos por lote en desarrollo');
+};
+
+window.exportarLotesProducto = function(productoId, nombreProducto) {
+    alert(`Función de exportación de lotes para ${nombreProducto} en desarrollo`);
+};
+
 // Hacer las funciones globales para que funcionen los onclick
 window.showCategoryModal = showCategoryModal;
 window.closeCategoryModal = closeCategoryModal;
@@ -1287,3 +2380,106 @@ window.previewImage = previewImage;
 window.showImageModal = showImageModal;
 window.closeImageModal = closeImageModal;
 window.closeProductModal = closeProductModal;
+
+// ====================================================================
+// FUNCIONES PARA AJUSTE DE STOCK POR LOTES
+// ====================================================================
+
+// Función para ajustar stock de un lote específico
+window.ajustarStockLote = function(loteId, loteIdTexto, stockActual) {
+    const nuevoStock = prompt(`Stock actual del lote ${loteIdTexto}: ${stockActual}\n\nIngresa el nuevo stock:`, stockActual);
+    
+    if (nuevoStock === null) return; // Usuario canceló
+    
+    const stockNumerico = parseInt(nuevoStock);
+    if (isNaN(stockNumerico) || stockNumerico < 0) {
+        alert('El stock debe ser un número válido mayor o igual a 0');
+        return;
+    }
+    
+    if (confirm(`¿Confirmar ajuste de stock?\n\nLote: ${loteIdTexto}\nStock actual: ${stockActual}\nNuevo stock: ${stockNumerico}`)) {
+        ajustarStockLoteConfirmar(loteId, loteIdTexto, stockNumerico, stockActual);
+    }
+};
+
+// Función para confirmar ajuste de stock de lote
+async function ajustarStockLoteConfirmar(loteId, loteIdTexto, nuevoStock, stockAnterior) {
+    try {
+        // Obtener información del lote
+        const loteDoc = await window.db.collection('stock_por_lote').doc(loteId).get();
+        if (!loteDoc.exists) {
+            alert('El lote no existe');
+            return;
+        }
+        
+        const loteData = loteDoc.data();
+        const diferencia = nuevoStock - stockAnterior;
+        
+        // Actualizar stock del lote
+        await window.db.collection('stock_por_lote').doc(loteId).update({
+            cantidad: nuevoStock
+        });
+        
+        // Actualizar stock total del producto si es posible
+        if (loteData.productoId) {
+            // Obtener todos los lotes del producto para calcular stock total
+            const lotesSnapshot = await window.db.collection('stock_por_lote')
+                .where('productoId', '==', loteData.productoId)
+                .get();
+            
+            let stockTotal = 0;
+            lotesSnapshot.forEach(doc => {
+                const lote = doc.data();
+                if (doc.id === loteId) {
+                    stockTotal += nuevoStock; // Usar el nuevo stock para este lote
+                } else {
+                    stockTotal += lote.cantidad || 0;
+                }
+            });
+            
+            // Actualizar stock del producto
+            await window.db.collection('products').doc(loteData.productoId).update({
+                stock: stockTotal
+            });
+            
+            // Actualizar cache si existe
+            const productoIndex = window.productsCache?.findIndex(p => p.id === loteData.productoId);
+            if (productoIndex !== -1 && window.productsCache) {
+                window.productsCache[productoIndex].stock = stockTotal;
+            }
+        }
+        
+        // Registrar movimiento de inventario
+        await window.db.collection('movimientos_inventario').add({
+            fecha: firebase.firestore.FieldValue.serverTimestamp(),
+            productoId: loteData.productoId,
+            productoNombre: loteData.productoNombre || 'Producto',
+            loteId: loteData.loteId || loteIdTexto,
+            cantidad: Math.abs(diferencia),
+            tipo: diferencia > 0 ? 'entrada' : 'salida',
+            subtipo: 'ajuste_lote',
+            usuario: window.currentUser?.email || 'sistema',
+            observaciones: `Ajuste manual de lote ${loteIdTexto}. Stock anterior: ${stockAnterior}, nuevo: ${nuevoStock}`,
+            costoUnitario: loteData.costoUnitario || 0
+        });
+        
+        alert('Stock del lote ajustado correctamente');
+        
+        // Refrescar vista si estamos en el modal de lotes
+        const modalLotes = document.getElementById('modal-lotes-producto');
+        if (modalLotes) {
+            // Re-cargar el modal de lotes
+            window.cerrarModalLotesProducto();
+            setTimeout(() => {
+                window.mostrarLotesProducto(loteData.productoId);
+            }, 100);
+        }
+        
+        // Refrescar vista principal
+        displayProducts();
+        
+    } catch (error) {
+        console.error('Error ajustando stock de lote:', error);
+        alert('Error al ajustar el stock del lote');
+    }
+}

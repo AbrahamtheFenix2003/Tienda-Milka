@@ -192,7 +192,7 @@ function setupVentasEvents() {
     });
 }
 
-function handleProductSearch(event) {
+async function handleProductSearch(event) {
     const query = event.target.value.toLowerCase().trim();
     const suggestionsDiv = document.getElementById('product-suggestions');
     
@@ -213,33 +213,53 @@ function handleProductSearch(event) {
         return;
     }
     
-    suggestionsDiv.innerHTML = filteredProducts.map(product => `
-        <div class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0" 
-             onclick="selectProduct('${product.id}')">
-            <div class="font-medium">${product.name}</div>
-            <div class="text-sm text-gray-600">Stock: ${product.stock} | Precio: S/ ${product.price}</div>
-        </div>
-    `).join('');
+    // Generar sugerencias con stock real calculado de forma asíncrona
+    const productSuggestions = await Promise.all(
+        filteredProducts.map(async (product) => {
+            const stockReal = await calcularStockRealProducto(product.id);
+            return `
+                <div class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0" 
+                     onclick="selectProduct('${product.id}')">
+                    <div class="font-medium">${product.name}</div>
+                    <div class="text-sm text-gray-600">
+                        Stock en lotes: ${stockReal} 
+                        ${stockReal !== product.stock ? `(Reg: ${product.stock})` : ''} 
+                        | Precio: S/ ${product.price}
+                    </div>
+                </div>
+            `;
+        })
+    );
+    
+    suggestionsDiv.innerHTML = productSuggestions.join('');
     
     suggestionsDiv.classList.remove('hidden');
 }
 
-function showProductSuggestions() {
+async function showProductSuggestions() {
     const query = document.getElementById('product-search').value.toLowerCase().trim();
     if (query.length >= 2) {
-        handleProductSearch({ target: { value: query } });
+        await handleProductSearch({ target: { value: query } });
     }
 }
 
-window.selectProduct = function(productId) {
+window.selectProduct = async function(productId) {
     const product = window.productsCache.find(p => p.id === productId);
     if (product) {
         currentSelectedProduct = product;
         document.getElementById('product-search').value = product.name;
         document.getElementById('product-price').value = product.price;
-        document.getElementById('product-quantity').max = product.stock;
+        
+        // Calcular stock real desde lotes
+        const stockReal = await calcularStockRealProducto(productId);
+        document.getElementById('product-quantity').max = stockReal;
         document.getElementById('product-quantity').value = 1;
         document.getElementById('product-suggestions').classList.add('hidden');
+        
+        // Mostrar stock real vs stock registrado (para debug)
+        if (stockReal !== product.stock) {
+            console.warn(`Diferencia de stock en producto ${product.name}: Registrado=${product.stock}, Real=${stockReal}`);
+        }
     }
 };
 
@@ -248,7 +268,7 @@ function clearProductFields() {
     document.getElementById('product-quantity').max = '';
 }
 
-function addProductToSale() {
+async function addProductToSale() {
     const quantity = parseInt(document.getElementById('product-quantity').value);
     const price = parseFloat(document.getElementById('product-price').value);
     
@@ -257,8 +277,10 @@ function addProductToSale() {
         return;
     }
     
-    if (quantity > currentSelectedProduct.stock) {
-        alert(`Stock insuficiente. Disponible: ${currentSelectedProduct.stock}`);
+    // Calcular stock real desde lotes
+    const stockReal = await calcularStockRealProducto(currentSelectedProduct.id);
+    if (quantity > stockReal) {
+        alert(`Stock insuficiente. Disponible en lotes: ${stockReal}`);
         return;
     }
     
@@ -275,9 +297,9 @@ function addProductToSale() {
     // Verificar si el producto ya está en la lista
     const existingIndex = currentSaleItems.findIndex(item => item.id === product.id);
     if (existingIndex >= 0) {
-    const newQuantity = currentSaleItems[existingIndex].quantity + quantity;
-        if (newQuantity > currentSelectedProduct.stock) {
-            alert(`Stock insuficiente. Ya tiene ${currentSaleItems[existingIndex].quantity} en la venta. Máximo disponible: ${currentSelectedProduct.stock}`);
+        const newQuantity = currentSaleItems[existingIndex].quantity + quantity;
+        if (newQuantity > stockReal) {
+            alert(`Stock insuficiente. Ya tiene ${currentSaleItems[existingIndex].quantity} en la venta. Máximo disponible en lotes: ${stockReal}`);
             return;
         }
         currentSaleItems[existingIndex].quantity = newQuantity;
@@ -399,9 +421,9 @@ async function handleRegisterSale() {
         // Calcular totales
         const subtotalSale = currentSaleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
         const totalSale = subtotalSale + deliveryCost;
-        const totalCost = currentSaleItems.reduce((sum, item) => sum + (item.quantity * item.cost), 0);
+        const totalCostEstimado = currentSaleItems.reduce((sum, item) => sum + (item.quantity * item.cost), 0);
         
-        // Crear la venta
+        // Crear la venta (se actualizará con costos reales después del procesamiento de lotes)
         const saleData = {
             customerName,
             customerPhone,
@@ -412,32 +434,109 @@ async function handleRegisterSale() {
             items: currentSaleItems,
             subtotalSale,
             totalSale,
-            totalCost,
-            profit: totalSale - totalCost,
+            totalCost: totalCostEstimado, // Se actualizará con costos reales
+            profit: totalSale - totalCostEstimado, // Se actualizará con ganancia real
             timestamp: window.serverTimestamp(),
             date: new Date().toISOString().split('T')[0],
-            soldBy: window.currentUser.email
+            soldBy: window.currentUser.email,
+            lotesInfo: [] // Se añadirá información de lotes procesados
         };
         
         // Registrar en Firestore
         const docRef = await window.addDoc(window.collection(window.db, "sales"), saleData);
         console.log('Venta creada con ID:', docRef.id);
         
-        // Actualizar stock de productos
+        // Procesar venta usando sistema de lotes FIFO
+        const resultadosLotes = [];
+        let costoRealTotal = 0;
+        
         for (const item of currentSaleItems) {
-            const productRef = window.doc(window.db, "products", item.id);
-            await window.runTransaction(window.db, async (transaction) => {
-                const productDoc = await transaction.get(productRef);
-                if (productDoc && productDoc.exists) {
-                    const currentStock = productDoc.data().stock;
-                    transaction.update(productRef, {
-                        stock: currentStock - item.quantity
-                    });
-                }
-            });
+            try {
+                console.log(`Procesando producto ${item.name} (${item.id}) - Cantidad: ${item.quantity}`);
+                
+                const resultado = await procesarVentaConLotes(
+                    item.id, 
+                    item.quantity, 
+                    docRef.id, 
+                    customerName
+                );
+                
+                resultadosLotes.push({
+                    productId: item.id,
+                    productName: item.name,
+                    ...resultado
+                });
+                
+                costoRealTotal += resultado.costoTotal;
+                
+                console.log(`Producto ${item.name} procesado exitosamente:`, resultado);
+                
+            } catch (error) {
+                console.error(`Error procesando producto ${item.name}:`, error);
+                throw new Error(`Error procesando ${item.name}: ${error.message}`);
+            }
         }
         
-        alert('¡Venta registrada exitosamente!');
+        // Actualizar la venta con costos reales y información de lotes
+        const gananciReal = totalSale - costoRealTotal;
+        await docRef.update({
+            totalCost: costoRealTotal,
+            profit: gananciReal,
+            lotesInfo: resultadosLotes.map(r => ({
+                productId: r.productId,
+                productName: r.productName,
+                lotesAfectados: r.lotesAfectados.length,
+                costoTotal: r.costoTotal,
+                costoUnitarioPromedio: r.costoUnitarioPromedio
+            }))
+        });
+        
+        console.log('Venta actualizada con costos reales:', {
+            costoEstimado: totalCostEstimado,
+            costoReal: costoRealTotal,
+            gananciReal: gananciReal,
+            diferencia: costoRealTotal - totalCostEstimado
+        });
+        
+        // Registrar entrada en caja automáticamente
+        if (window.registrarMovimientoCaja) {
+            await window.registrarMovimientoCaja(
+                'entrada',
+                totalSale,
+                'ventas',
+                `Venta a ${customerName} - ${currentSaleItems.length} productos`,
+                'venta',
+                docRef.id
+            );
+        } else {
+            // Fallback: registrar movimiento de caja manualmente
+            try {
+                await window.db.collection('movimientos_caja').add({
+                    tipo: 'entrada',
+                    monto: totalSale,
+                    categoria: 'ventas',
+                    descripcion: `Venta a ${customerName} - ${currentSaleItems.length} productos`,
+                    fecha: new Date().toISOString().split('T')[0],
+                    timestamp: window.serverTimestamp(),
+                    usuario: window.currentUser.email,
+                    relatedTo: 'venta',
+                    relatedId: docRef.id
+                });
+            } catch (error) {
+                console.error('Error registrando movimiento de caja:', error);
+            }
+        }
+        
+        // Mensaje de éxito detallado
+        const totalLotesAfectados = resultadosLotes.reduce((sum, r) => sum + r.lotesAfectados.length, 0);
+        const totalMovimientos = resultadosLotes.reduce((sum, r) => sum + r.movimientos, 0);
+        
+        alert(`¡Venta registrada exitosamente con sistema de lotes FIFO!\n\n` +
+              `📦 ${totalLotesAfectados} lotes procesados\n` +
+              `📋 ${totalMovimientos} movimientos de inventario registrados\n` +
+              `💰 Costo real: S/ ${costoRealTotal.toFixed(2)}\n` +
+              `📈 Ganancia real: S/ ${gananciReal.toFixed(2)}\n` +
+              `💳 Movimiento de caja registrado`);
         
         // Limpiar formulario
         clearSaleForm();
@@ -449,7 +548,16 @@ async function handleRegisterSale() {
         
     } catch (error) {
         console.error("Error registrando venta:", error);
-        alert('Error al registrar la venta: ' + error.message);
+        
+        // Mensaje de error más específico
+        let errorMessage = 'Error al registrar la venta: ';
+        if (error.message.includes('insufficient permissions') || error.message.includes('Missing or insufficient permissions')) {
+            errorMessage += 'Permisos insuficientes. La venta se registró pero puede haber problemas con el stock. Contacta al administrador.';
+        } else {
+            errorMessage += error.message;
+        }
+        
+        alert(errorMessage);
     } finally {
         registerBtn.disabled = false;
         registerBtn.textContent = 'Registrar Venta Completa';
@@ -537,6 +645,169 @@ function displayRecentSales() {
             </div>
         `;
     }).join('');
+}
+
+// ========================================================================
+// FUNCIONES DE APOYO PARA SISTEMA DE LOTES FIFO
+// ========================================================================
+
+/**
+ * Calcula el stock real de un producto sumando todos sus lotes activos
+ * @param {string} productId - ID del producto
+ * @returns {Promise<number>} - Stock real calculado desde lotes
+ */
+async function calcularStockRealProducto(productId) {
+    try {
+        const lotesSnapshot = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productId)
+            .where('cantidad', '>', 0)
+            .get();
+        
+        let stockReal = 0;
+        lotesSnapshot.forEach(doc => {
+            const lote = doc.data();
+            stockReal += lote.cantidad || 0;
+        });
+        
+        console.log(`Stock real calculado para producto ${productId}: ${stockReal}`);
+        return stockReal;
+    } catch (error) {
+        console.error('Error calculando stock real:', error);
+        return 0;
+    }
+}
+
+/**
+ * Obtiene todos los lotes disponibles de un producto ordenados por FIFO (más antiguos primero)
+ * @param {string} productId - ID del producto
+ * @returns {Promise<Array>} - Array de lotes ordenados por fecha de ingreso
+ */
+async function obtenerLotesDisponibles(productId) {
+    try {
+        const lotesSnapshot = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productId)
+            .where('cantidad', '>', 0)
+            .orderBy('fechaIngreso', 'asc') // FIFO: más antiguos primero
+            .get();
+        
+        const lotes = [];
+        lotesSnapshot.forEach(doc => {
+            lotes.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        console.log(`Lotes disponibles para producto ${productId}:`, lotes.length);
+        return lotes;
+    } catch (error) {
+        console.error('Error obteniendo lotes disponibles:', error);
+        return [];
+    }
+}
+
+/**
+ * Procesa una venta consumiendo lotes usando metodología FIFO
+ * @param {string} productId - ID del producto
+ * @param {number} cantidadVendida - Cantidad a vender
+ * @param {string} ventaId - ID de la venta
+ * @param {string} customerName - Nombre del cliente
+ * @returns {Promise<Object>} - Resultado del procesamiento con lotes afectados y costos
+ */
+async function procesarVentaConLotes(productId, cantidadVendida, ventaId, customerName) {
+    try {
+        const lotesDisponibles = await obtenerLotesDisponibles(productId);
+        
+        // Verificar si hay suficiente stock
+        const stockTotal = lotesDisponibles.reduce((sum, lote) => sum + lote.cantidad, 0);
+        if (stockTotal < cantidadVendida) {
+            throw new Error(`Stock insuficiente. Disponible: ${stockTotal}, Solicitado: ${cantidadVendida}`);
+        }
+        
+        const lotesAfectados = [];
+        const movimientos = [];
+        let cantidadPendiente = cantidadVendida;
+        let costoTotal = 0;
+        
+        // Procesar lotes usando FIFO
+        for (const lote of lotesDisponibles) {
+            if (cantidadPendiente <= 0) break;
+            
+            const cantidadTomada = Math.min(cantidadPendiente, lote.cantidad);
+            const nuevaCantidad = lote.cantidad - cantidadTomada;
+            const costoLote = cantidadTomada * (lote.costoUnitario || 0);
+            
+            // Actualizar lote en Firestore
+            const loteRef = window.db.collection('stock_por_lote').doc(lote.id);
+            await loteRef.update({
+                cantidad: nuevaCantidad
+            });
+            
+            // Registrar lote afectado
+            lotesAfectados.push({
+                loteId: lote.loteId,
+                docId: lote.id,
+                cantidadTomada,
+                cantidadRestante: nuevaCantidad,
+                costoUnitario: lote.costoUnitario || 0,
+                costoTotal: costoLote,
+                fechaVencimiento: lote.fechaVencimiento
+            });
+            
+            // Preparar movimiento de inventario
+            movimientos.push({
+                fecha: new Date().toISOString().split('T')[0],
+                timestamp: window.serverTimestamp(),
+                productoId: productId,
+                productoNombre: lote.productoNombre || '',
+                loteId: lote.loteId,
+                cantidad: cantidadTomada,
+                tipo: 'salida',
+                subtipo: 'venta',
+                ventaId: ventaId,
+                costoUnitario: lote.costoUnitario || 0,
+                costoTotal: costoLote,
+                usuario: window.currentUser?.email || '',
+                observaciones: `Venta a ${customerName} - ${ventaId}`
+            });
+            
+            cantidadPendiente -= cantidadTomada;
+            costoTotal += costoLote;
+        }
+        
+        // Registrar todos los movimientos de inventario
+        for (const movimiento of movimientos) {
+            await window.db.collection('movimientos_inventario').add(movimiento);
+        }
+        
+        // Actualizar stock del producto con el stock real calculado
+        const stockRealActualizado = await calcularStockRealProducto(productId);
+        const productRef = window.db.collection('products').doc(productId);
+        await productRef.update({
+            stock: stockRealActualizado
+        });
+        
+        console.log(`Venta procesada con lotes FIFO para producto ${productId}:`, {
+            cantidadVendida,
+            lotesAfectados: lotesAfectados.length,
+            costoTotal,
+            stockRestante: stockRealActualizado
+        });
+        
+        return {
+            success: true,
+            cantidadVendida,
+            lotesAfectados,
+            costoTotal,
+            costoUnitarioPromedio: costoTotal / cantidadVendida,
+            stockRestante: stockRealActualizado,
+            movimientos: movimientos.length
+        };
+        
+    } catch (error) {
+        console.error('Error procesando venta con lotes:', error);
+        throw error;
+    }
 }
 
 console.log('admin-ventas.js cargado completamente');

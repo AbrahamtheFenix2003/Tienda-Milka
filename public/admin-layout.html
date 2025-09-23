@@ -14,6 +14,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- Day.js para manejo de fechas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.7/dayjs.min.js"></script>
+    <!-- jsPDF para exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Asegurar compatibilidad global de jsPDF
+        if (typeof window.jsPDF === 'undefined' && typeof jsPDF !== 'undefined') {
+            window.jsPDF = jsPDF;
+        }
+    </script>
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
@@ -391,12 +399,6 @@
                         <span class="sidebar-text">Caja 💰</span>
                     </a>
                 </li>
-                <li class="mb-2" id="nav-ingresos-egresos-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="ingresos-egresos" data-tooltip="Ingresos y Egresos">
-                        <i class="sidebar-icon fas fa-chart-line mr-3"></i>
-                        <span class="sidebar-text">Ingresos y Egresos 📊</span>
-                    </a>
-                </li>
             </ul>
         </nav>
         
@@ -579,7 +581,6 @@
                 document.getElementById('nav-almacen-li').style.display = 'none';
                 document.getElementById('nav-compras-li').style.display = 'none';
                 document.getElementById('nav-caja-li').style.display = 'none';
-                document.getElementById('nav-ingresos-egresos-li').style.display = 'none';
             } else if (isSuperVendedor(userEmail)) {
                 // Los super vendedores pueden ver productos pero no editarlos
                 document.getElementById('nav-productos-li').style.display = 'block';
@@ -590,7 +591,6 @@
                 document.getElementById('nav-almacen-li').style.display = 'block';
                 document.getElementById('nav-compras-li').style.display = 'block';
                 document.getElementById('nav-caja-li').style.display = 'block';
-                document.getElementById('nav-ingresos-egresos-li').style.display = 'block';
             } else if (isSuperAdmin(userEmail)) {
                 // Los super admins tienen acceso completo
                 document.getElementById('nav-productos-li').style.display = 'block';
@@ -601,7 +601,6 @@
                 document.getElementById('nav-almacen-li').style.display = 'block';
                 document.getElementById('nav-compras-li').style.display = 'block';
                 document.getElementById('nav-caja-li').style.display = 'block';
-                document.getElementById('nav-ingresos-egresos-li').style.display = 'block';
             }
         }
 
@@ -609,9 +608,12 @@
             // Navegación del sidebar
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
-                    e.preventDefault();
                     const section = this.dataset.section;
-                    loadSection(section);
+                    if (section) {
+                        e.preventDefault();
+                        loadSection(section);
+                    }
+                    // Si no tiene data-section, se comporta como enlace normal
                 });
             });
 
@@ -901,7 +903,6 @@
                 'almacen': 'Gestión de Almacén',
                 'compras': 'Gestión de Compras',
                 'caja': 'Gestión de Caja',
-                'ingresos-egresos': 'Ingresos y Egresos'
             };
             
             document.getElementById('page-title').textContent = titles[section] || 'Panel Admin';
@@ -1053,22 +1054,6 @@
                         }, 1000);
                     }
                     break;
-                case 'ingresos-egresos':
-                    if (typeof loadIngresosEgresos === 'function') {
-                        console.log('Cargando ingresos y egresos...');
-                        loadIngresosEgresos();
-                    } else {
-                        console.log('loadIngresosEgresos no está disponible');
-                        showLoading('Cargando Ingresos y Egresos...');
-                        setTimeout(() => {
-                            if (typeof loadIngresosEgresos === 'function') {
-                                loadIngresosEgresos();
-                            } else {
-                                showError('Error: No se pudo cargar ingresos y egresos');
-                            }
-                        }, 1000);
-                    }
-                    break;
                 default:
                     if (typeof loadDashboard === 'function') {
                         loadDashboard();
@@ -1124,7 +1109,6 @@
             console.log('loadAlmacen:', typeof loadAlmacen);
             console.log('loadCompras:', typeof loadCompras);
             console.log('loadCaja:', typeof loadCaja);
-            console.log('loadIngresosEgresos:', typeof loadIngresosEgresos);
         });
     </script>
     
@@ -1145,6 +1129,5 @@
     <script src="/js/admin-compras-main.js"></script>
     
     <script src="/js/admin-caja.js"></script>
-    <script src="/js/admin-ingresos-egresos.js"></script>
 </body>
 </html>

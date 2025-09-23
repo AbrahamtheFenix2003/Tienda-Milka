@@ -614,33 +614,72 @@ async function handleAnnulSale() {
         }
         
         // Solo restaurar stock si realmente se había descontado
-        if (stockFueDescontado && sale.items && Array.isArray(sale.items)) {
-            console.log('Restaurando stock de productos...');
-            for (const item of sale.items) {
-                const productRef = window.doc(window.db, "products", item.id);
-                await window.runTransaction(window.db, async (transaction) => {
-                    const productDoc = await transaction.get(productRef);
-                    if (productDoc && productDoc.exists) {
-                        const currentStock = productDoc.data().stock;
-                        transaction.update(productRef, {
-                            stock: currentStock + item.quantity
+        if (stockFueDescontado) {
+            console.log('Restaurando stock usando movimientos de inventario...');
+            
+            // Buscar todos los movimientos de inventario de esta venta
+            const movimientosInventario = await window.db.collection('movimientos_inventario')
+                .where('relatedTo', '==', 'venta')
+                .where('relatedId', '==', saleToAnnul)
+                .where('tipo', '==', 'salida')
+                .get();
+            
+            if (!movimientosInventario.empty) {
+                console.log(`Encontrados ${movimientosInventario.size} movimientos de inventario para restaurar`);
+                
+                // Agrupar movimientos por producto
+                const movimientosPorProducto = {};
+                movimientosInventario.forEach(doc => {
+                    const mov = doc.data();
+                    if (!movimientosPorProducto[mov.productoId]) {
+                        movimientosPorProducto[mov.productoId] = [];
+                    }
+                    movimientosPorProducto[mov.productoId].push({
+                        id: doc.id,
+                        ...mov
+                    });
+                });
+                
+                // Restaurar lotes y stock por cada producto
+                for (const [productId, movimientos] of Object.entries(movimientosPorProducto)) {
+                    await restaurarLotesDesdeMovimientos(productId, movimientos);
+                }
+                
+                // Eliminar los movimientos de inventario ya procesados
+                for (const doc of movimientosInventario.docs) {
+                    await window.deleteDoc(doc.ref);
+                }
+                
+            } else {
+                console.log('No se encontraron movimientos de inventario, usando método legacy...');
+                
+                // Fallback al método anterior para ventas sin movimientos de inventario
+                if (sale.items && Array.isArray(sale.items)) {
+                    for (const item of sale.items) {
+                        const productRef = window.doc(window.db, "products", item.id);
+                        await window.runTransaction(window.db, async (transaction) => {
+                            const productDoc = await transaction.get(productRef);
+                            if (productDoc && productDoc.exists) {
+                                const currentStock = productDoc.data().stock;
+                                transaction.update(productRef, {
+                                    stock: currentStock + item.quantity
+                                });
+                            }
                         });
                     }
-                });
-            }
-        } else if (stockFueDescontado && sale.productId) {
-            console.log('Restaurando stock de producto individual...');
-            // Ventas antiguas con un solo producto
-            const productRef = window.doc(window.db, "products", sale.productId);
-            await window.runTransaction(window.db, async (transaction) => {
-                const productDoc = await transaction.get(productRef);
-                if (productDoc && productDoc.exists) {
-                    const currentStock = productDoc.data().stock;
-                    transaction.update(productRef, {
-                        stock: currentStock + (sale.quantitySold || 1)
+                } else if (sale.productId) {
+                    const productRef = window.doc(window.db, "products", sale.productId);
+                    await window.runTransaction(window.db, async (transaction) => {
+                        const productDoc = await transaction.get(productRef);
+                        if (productDoc && productDoc.exists) {
+                            const currentStock = productDoc.data().stock;
+                            transaction.update(productRef, {
+                                stock: currentStock + (sale.quantitySold || 1)
+                            });
+                        }
                     });
                 }
-            });
+            }
         } else {
             console.log('No se restaura stock porque no fue descontado originalmente');
         }
@@ -693,6 +732,128 @@ async function handleAnnulSale() {
     } finally {
         confirmBtn.disabled = false;
         confirmBtn.textContent = originalText;
+    }
+}
+
+/**
+ * Restaura los lotes específicos desde los movimientos de inventario
+ * @param {string} productId - ID del producto
+ * @param {Array} movimientos - Array de movimientos de inventario de la venta
+ */
+async function restaurarLotesDesdeMovimientos(productId, movimientos) {
+    try {
+        console.log(`Restaurando lotes para producto ${productId} desde ${movimientos.length} movimientos`);
+        
+        let stockRestauradoTotal = 0;
+        
+        for (const movimiento of movimientos) {
+            const { loteId, cantidad, costoUnitario } = movimiento;
+            
+            if (loteId && loteId !== 'sin-lote') {
+                // Restaurar lote específico
+                console.log(`Restaurando ${cantidad} unidades al lote ${loteId}`);
+                
+                const loteQuery = await window.db.collection('stock_por_lote')
+                    .where('productoId', '==', productId)
+                    .where('loteId', '==', loteId)
+                    .get();
+                
+                if (!loteQuery.empty) {
+                    // Lote existe, restaurar cantidad
+                    const loteDoc = loteQuery.docs[0];
+                    const loteData = loteDoc.data();
+                    const nuevaCantidad = (loteData.cantidad || 0) + cantidad;
+                    
+                    await loteDoc.ref.update({
+                        cantidad: nuevaCantidad
+                    });
+                    
+                    console.log(`Lote ${loteId} restaurado: ${loteData.cantidad} + ${cantidad} = ${nuevaCantidad}`);
+                } else {
+                    // Lote no existe, recrearlo
+                    console.log(`Recreando lote ${loteId} con ${cantidad} unidades`);
+                    
+                    await window.db.collection('stock_por_lote').add({
+                        productoId: productId,
+                        productoNombre: movimiento.productoNombre || '',
+                        loteId: loteId,
+                        cantidad: cantidad,
+                        costoUnitario: costoUnitario || 0,
+                        fechaIngreso: movimiento.timestamp || window.serverTimestamp(),
+                        fechaVencimiento: null,
+                        proveedor: 'Restaurado de venta anulada',
+                        estado: 'disponible',
+                        observaciones: `Lote restaurado de venta anulada ${movimiento.ventaId || movimiento.relatedId}`
+                    });
+                }
+                
+                stockRestauradoTotal += cantidad;
+            } else {
+                // Movimiento sin lote (modo legacy), solo sumar al stock total
+                console.log(`Restaurando ${cantidad} unidades al stock directo (sin lote)`);
+                stockRestauradoTotal += cantidad;
+            }
+            
+            // Registrar movimiento de entrada por la restauración
+            await window.db.collection('movimientos_inventario').add({
+                fecha: new Date().toISOString().split('T')[0],
+                timestamp: window.serverTimestamp(),
+                productoId: productId,
+                productoNombre: movimiento.productoNombre || '',
+                loteId: loteId || 'restaurado',
+                cantidad: cantidad,
+                tipo: 'entrada',
+                subtipo: 'anulacion_venta',
+                relatedTo: 'anulacion',
+                relatedId: movimiento.ventaId || movimiento.relatedId,
+                costoUnitario: costoUnitario || 0,
+                costoTotal: (costoUnitario || 0) * cantidad,
+                usuario: window.currentUser?.email || '',
+                observaciones: `Restauración por anulación de venta ${movimiento.ventaId || movimiento.relatedId}`
+            });
+        }
+        
+        // Actualizar stock total del producto calculando desde lotes
+        const stockRealActualizado = await calcularStockRealProducto(productId);
+        const productRef = window.db.collection('products').doc(productId);
+        await productRef.update({
+            stock: stockRealActualizado
+        });
+        
+        console.log(`Stock restaurado para producto ${productId}:`, {
+            stockRestauradoTotal,
+            stockRealActualizado,
+            movimientosProcesados: movimientos.length
+        });
+        
+    } catch (error) {
+        console.error('Error restaurando lotes desde movimientos:', error);
+        throw error;
+    }
+}
+
+/**
+ * Calcula el stock real de un producto sumando todos sus lotes activos
+ * @param {string} productId - ID del producto
+ * @returns {Promise<number>} - Stock real calculado desde lotes
+ */
+async function calcularStockRealProducto(productId) {
+    try {
+        const lotesSnapshot = await window.db.collection('stock_por_lote')
+            .where('productoId', '==', productId)
+            .where('cantidad', '>', 0)
+            .get();
+        
+        let stockReal = 0;
+        lotesSnapshot.forEach(doc => {
+            const lote = doc.data();
+            stockReal += lote.cantidad || 0;
+        });
+        
+        return stockReal;
+    } catch (error) {
+        console.error('Error calculando stock real:', error);
+        return 0;
     }
 }
 

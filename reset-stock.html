@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Stock - Tienda Milka</title>
+</head>
+<body>
+    <h1>Reset Stock de Productos</h1>
+    <button id="resetStockBtn">Resetear Stock a Cero</button>
+    <div id="progress"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // Inicializar Firebase
+        async function initFirebase() {
+            const response = await fetch('/__/firebase/init.json');
+            const config = await response.json();
+            return initializeApp(config);
+        }
+
+        async function resetAllProductStock() {
+            const progressDiv = document.getElementById('progress');
+            progressDiv.innerHTML = '<p>Inicializando Firebase...</p>';
+
+            try {
+                // Inicializar Firebase
+                const app = await initFirebase();
+                const db = getFirestore(app);
+
+                progressDiv.innerHTML += '<p>Obteniendo productos...</p>';
+                
+                // Obtener todos los productos
+                const productsRef = collection(db, 'products');
+                const querySnapshot = await getDocs(productsRef);
+                
+                const totalProducts = querySnapshot.docs.length;
+                progressDiv.innerHTML += `<p>Encontrados ${totalProducts} productos</p>`;
+                
+                let updatedCount = 0;
+                
+                // Actualizar cada producto
+                for (const docSnapshot of querySnapshot.docs) {
+                    try {
+                        const productRef = doc(db, 'products', docSnapshot.id);
+                        await updateDoc(productRef, {
+                            stock: 0,
+                            stockInicial: 0
+                        });
+                        
+                        updatedCount++;
+                        progressDiv.innerHTML = `<p>Procesados: ${updatedCount}/${totalProducts}</p>`;
+                        
+                        // Pequeña pausa para evitar sobrecarga
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                    } catch (error) {
+                        console.error(`Error actualizando producto ${docSnapshot.id}:`, error);
+                        progressDiv.innerHTML += `<p style="color: red;">Error en producto ${docSnapshot.id}: ${error.message}</p>`;
+                    }
+                }
+                
+                progressDiv.innerHTML += `<p style="color: green;">✅ Completado! Se actualizaron ${updatedCount} productos</p>`;
+                
+            } catch (error) {
+                console.error('Error general:', error);
+                progressDiv.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        document.getElementById('resetStockBtn').addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que quieres resetear el stock de TODOS los productos a cero?')) {
+                resetAllProductStock();
+            }
+        });
+    </script>
+</body>
+</html>

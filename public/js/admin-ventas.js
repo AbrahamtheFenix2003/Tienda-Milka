@@ -186,8 +186,9 @@ function setupVentasEvents() {
     
     // Cerrar sugerencias al hacer clic fuera
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('#product-search') && !e.target.closest('#product-suggestions')) {
-            document.getElementById('product-suggestions').classList.add('hidden');
+        const suggestionsElement = document.getElementById('product-suggestions');
+        if (suggestionsElement && !e.target.closest('#product-search') && !e.target.closest('#product-suggestions')) {
+            suggestionsElement.classList.add('hidden');
         }
     });
 }
@@ -471,6 +472,13 @@ async function handleRegisterSale() {
                 
                 console.log(`Producto ${item.name} procesado exitosamente:`, resultado);
                 
+                // Actualizar el stock en la caché local para evitar recargas innecesarias
+                const productIndex = window.productsCache.findIndex(p => p.id === item.id);
+                if (productIndex !== -1) {
+                    window.productsCache[productIndex].stock = resultado.stockRestante;
+                    console.log(`Stock en caché para ${item.name} actualizado a: ${resultado.stockRestante}`);
+                }
+                
             } catch (error) {
                 console.error(`Error procesando producto ${item.name}:`, error);
                 throw new Error(`Error procesando ${item.name}: ${error.message}`);
@@ -541,10 +549,14 @@ async function handleRegisterSale() {
         // Limpiar formulario
         clearSaleForm();
         
-        // Recargar datos
-        await window.loadProducts();
+        // Recargar datos (se elimina loadProducts para usar la caché actualizada)
         await window.loadSales();
         displayRecentSales();
+        
+        // Si estamos en la página de productos, refrescar la vista
+        if (document.getElementById('products-list')) {
+            window.displayProducts();
+        }
         
     } catch (error) {
         console.error("Error registrando venta:", error);
@@ -684,24 +696,72 @@ async function calcularStockRealProducto(productId) {
  */
 async function obtenerLotesDisponibles(productId) {
     try {
+        console.log(`Consultando lotes para producto: ${productId}`);
+        
+        // Consulta simplificada sin orderBy para evitar problemas de índice
         const lotesSnapshot = await window.db.collection('stock_por_lote')
             .where('productoId', '==', productId)
             .where('cantidad', '>', 0)
-            .orderBy('fechaIngreso', 'asc') // FIFO: más antiguos primero
             .get();
         
         const lotes = [];
         lotesSnapshot.forEach(doc => {
+            const loteData = doc.data();
             lotes.push({
                 id: doc.id,
-                ...doc.data()
+                ...loteData
             });
         });
         
-        console.log(`Lotes disponibles para producto ${productId}:`, lotes.length);
+        // Ordenar manualmente por fechaIngreso FIFO (más antiguos primero)
+        lotes.sort((a, b) => {
+            // Convertir fechas a timestamp para comparación
+            let fechaA, fechaB;
+            
+            if (a.fechaIngreso) {
+                if (a.fechaIngreso.toDate) {
+                    fechaA = a.fechaIngreso.toDate();
+                } else if (typeof a.fechaIngreso === 'string') {
+                    fechaA = new Date(a.fechaIngreso);
+                } else {
+                    fechaA = a.fechaIngreso;
+                }
+            } else {
+                fechaA = new Date(0); // Fecha muy antigua si no tiene fecha
+            }
+            
+            if (b.fechaIngreso) {
+                if (b.fechaIngreso.toDate) {
+                    fechaB = b.fechaIngreso.toDate();
+                } else if (typeof b.fechaIngreso === 'string') {
+                    fechaB = new Date(b.fechaIngreso);
+                } else {
+                    fechaB = b.fechaIngreso;
+                }
+            } else {
+                fechaB = new Date(0);
+            }
+            
+            // Si las fechas son iguales, usar loteId como criterio secundario
+            if (fechaA.getTime() === fechaB.getTime()) {
+                const loteIdA = a.loteId || '';
+                const loteIdB = b.loteId || '';
+                return loteIdA.localeCompare(loteIdB);
+            }
+            
+            return fechaA - fechaB; // FIFO: más antiguos primero
+        });
+        
+        console.log(`Lotes encontrados para producto ${productId}:`, lotes.length);
+        console.log('Orden FIFO de lotes:', lotes.map(l => ({
+            loteId: l.loteId,
+            fechaIngreso: l.fechaIngreso,
+            cantidad: l.cantidad
+        })));
+        
         return lotes;
     } catch (error) {
-        console.error('Error obteniendo lotes disponibles:', error);
+        console.error('Error obteniendo lotes disponibles:', error.message, error.code);
         return [];
     }
 }
@@ -718,10 +778,31 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
     try {
         const lotesDisponibles = await obtenerLotesDisponibles(productId);
         
-        // Verificar si hay suficiente stock
+        // Si no hay lotes, verificar el stock directo del producto y crear un lote temporal
+        if (lotesDisponibles.length === 0) {
+            console.log(`No se encontraron lotes para producto ${productId}, verificando stock directo...`);
+            const productDoc = await window.db.collection('products').doc(productId).get();
+            
+            if (!productDoc.exists) {
+                throw new Error(`Producto ${productId} no encontrado`);
+            }
+            
+            const productData = productDoc.data();
+            const stockDirecto = productData.stock || 0;
+            
+            if (stockDirecto < cantidadVendida) {
+                throw new Error(`Stock insuficiente. Disponible: ${stockDirecto}, Solicitado: ${cantidadVendida}`);
+            }
+            
+            // Usar el stock directo sin sistema de lotes (modo legacy)
+            console.log(`Procesando venta en modo legacy (sin lotes) para producto ${productId}`);
+            return await procesarVentaSinLotes(productId, cantidadVendida, ventaId, customerName, productData);
+        }
+        
+        // Verificar si hay suficiente stock en lotes
         const stockTotal = lotesDisponibles.reduce((sum, lote) => sum + lote.cantidad, 0);
         if (stockTotal < cantidadVendida) {
-            throw new Error(`Stock insuficiente. Disponible: ${stockTotal}, Solicitado: ${cantidadVendida}`);
+            throw new Error(`Stock insuficiente en lotes. Disponible: ${stockTotal}, Solicitado: ${cantidadVendida}`);
         }
         
         const lotesAfectados = [];
@@ -765,6 +846,8 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
                 tipo: 'salida',
                 subtipo: 'venta',
                 ventaId: ventaId,
+                relatedTo: 'venta',
+                relatedId: ventaId,
                 costoUnitario: lote.costoUnitario || 0,
                 costoTotal: costoLote,
                 usuario: window.currentUser?.email || '',
@@ -806,6 +889,78 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
         
     } catch (error) {
         console.error('Error procesando venta con lotes:', error);
+        throw error;
+    }
+}
+
+/**
+ * Procesa una venta sin sistema de lotes (modo legacy)
+ * @param {string} productId - ID del producto
+ * @param {number} cantidadVendida - Cantidad a vender
+ * @param {string} ventaId - ID de la venta
+ * @param {string} customerName - Nombre del cliente
+ * @param {Object} productData - Datos del producto
+ * @returns {Promise<Object>} - Resultado del procesamiento
+ */
+async function procesarVentaSinLotes(productId, cantidadVendida, ventaId, customerName, productData) {
+    try {
+        console.log(`Procesando venta sin lotes para producto ${productData.name}`);
+        
+        // Calcular costo usando acquisitionCost del producto
+        const costoUnitario = productData.acquisitionCost || 0;
+        const costoTotal = cantidadVendida * costoUnitario;
+        
+        // Actualizar stock del producto directamente
+        const nuevoStock = productData.stock - cantidadVendida;
+        const productRef = window.db.collection('products').doc(productId);
+        await productRef.update({
+            stock: nuevoStock
+        });
+        
+        // Registrar movimiento de inventario (sin lote)
+        const movimiento = {
+            fecha: new Date().toISOString().split('T')[0],
+            timestamp: window.serverTimestamp(),
+            productoId: productId,
+            productoNombre: productData.name || '',
+            loteId: 'sin-lote',
+            cantidad: cantidadVendida,
+            tipo: 'salida',
+            subtipo: 'venta',
+            ventaId: ventaId,
+            relatedTo: 'venta',
+            relatedId: ventaId,
+            costoUnitario: costoUnitario,
+            costoTotal: costoTotal,
+            usuario: window.currentUser?.email || '',
+            observaciones: `Venta a ${customerName} - ${ventaId} (modo legacy sin lotes)`
+        };
+        
+        await window.db.collection('movimientos_inventario').add(movimiento);
+        
+        console.log(`Venta procesada sin lotes para producto ${productData.name}:`, {
+            cantidadVendida,
+            costoTotal,
+            stockRestante: nuevoStock
+        });
+        
+        return {
+            success: true,
+            cantidadVendida,
+            lotesAfectados: [{
+                loteId: 'sin-lote',
+                cantidadTomada: cantidadVendida,
+                costoUnitario: costoUnitario,
+                costoTotal: costoTotal
+            }],
+            costoTotal,
+            costoUnitarioPromedio: costoUnitario,
+            stockRestante: nuevoStock,
+            movimientos: 1
+        };
+        
+    } catch (error) {
+        console.error('Error procesando venta sin lotes:', error);
         throw error;
     }
 }

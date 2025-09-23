@@ -282,6 +282,9 @@ window.ComprasUI = {
                             <button onclick="ComprasModals.showDetail('${compra.id}')" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            <button onclick="ComprasModals.editarCompra('${compra.id}')" class="text-green-600 hover:text-green-900" title="Editar compra">
+                                <i class="fas fa-edit"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>

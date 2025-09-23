@@ -32,7 +32,7 @@ service cloud.firestore {
       // Super admins pueden escribir productos completamente
       allow write: if isSuperAdmin();
       // Super vendedores y vendedores pueden actualizar solo el stock (para ventas)
-      allow update: if hasAccessToSales() && 
+      allow update: if (isSuperAdmin() || hasAccessToSales()) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']) &&
         request.resource.data.stock >= 0;
     }
@@ -42,8 +42,12 @@ service cloud.firestore {
       // Todos los tipos de admin y vendedores pueden leer y crear ventas
       allow read: if hasAccessToSales();
       allow create: if hasAccessToSales();
-      // Admins pueden modificar/eliminar ventas
-      allow update, delete: if isAdmin();
+      // Vendedores pueden actualizar solo campos específicos (información de lotes y costos)
+      allow update: if hasAccessToSales() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalCost', 'profit', 'lotesInfo']);
+      // Solo admins pueden hacer otras modificaciones y eliminar ventas
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // NUEVA REGLA PARA LA COLECCIÓN DE CATEGORÍAS
@@ -96,7 +100,25 @@ service cloud.firestore {
 
     // Colección de Stock por Lote
     match /stock_por_lote/{stockId} {
-      // Solo admins pueden gestionar stock por lote
+      // Todos los que pueden hacer ventas pueden leer stock por lote (necesario para calcular stock real)
+      allow read: if hasAccessToSales();
+      // Vendedores pueden actualizar solo la cantidad (para procesar ventas con sistema FIFO)
+      allow update: if hasAccessToSales() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cantidad']) &&
+        request.resource.data.cantidad >= 0;
+      // Solo admins pueden crear y eliminar lotes
+      allow create, delete: if isAdmin();
+    }
+
+    // Colección de Arqueos de Caja
+    match /arqueos_caja/{arqueoId} {
+      // Solo admins pueden gestionar arqueos de caja
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Colección de Ganancia Neta Acumulada
+    match /ganancia_neta_acumulada/{document} {
+      // Solo admins pueden gestionar la ganancia neta acumulada
       allow read, write, delete: if isAdmin();
     }
   }

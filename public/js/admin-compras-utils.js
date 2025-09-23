@@ -496,6 +496,87 @@ window.ComprasUtils = {
         console.log('📊 Utilidades disponibles:');
         console.log('ComprasUtils.probarIntegracionCompleta("ID_DE_LA_COMPRA")');
         console.log('ComprasUtils.limpiarComprasDuplicadas() // Para limpiar duplicados');
+        console.log('ComprasUtils.probarEdicionCompra("ID_DE_LA_COMPRA") // Verificar edición de compras');
+    },
+
+    // Función para probar la funcionalidad de edición de compras
+    async probarEdicionCompra(compraId) {
+        if (!compraId) {
+            console.error('❌ ID de compra requerido');
+            return;
+        }
+        
+        console.log('🔍 Verificando funcionalidad de edición para compra:', compraId);
+        console.log('===============================================');
+        
+        try {
+            // Verificar que la compra existe
+            const compra = window.comprasCache?.find(c => c.id === compraId);
+            if (!compra) {
+                console.error('❌ Compra no encontrada en cache');
+                return;
+            }
+            
+            console.log('✅ Compra encontrada:', {
+                id: compra.id,
+                fecha: compra.fecha,
+                totalInvertido: compra.totalInvertido,
+                productos: compra.productos?.length || 0
+            });
+            
+            // Verificar lotes asociados
+            const lotesSnapshot = await window.db.collection('stock_por_lote')
+                .where('compraId', '==', compraId)
+                .get();
+            
+            console.log(`✅ Lotes asociados: ${lotesSnapshot.size}`);
+            lotesSnapshot.forEach(doc => {
+                const lote = doc.data();
+                console.log(`  - Lote: ${lote.loteId}, Producto: ${lote.productoId}, Cantidad: ${lote.cantidad}, Actualizado: ${lote.actualizado || false}`);
+            });
+            
+            // Verificar movimientos de inventario
+            const movimientosSnapshot = await window.db.collection('movimientos_inventario')
+                .where('compraId', '==', compraId)
+                .get();
+            
+            console.log(`✅ Movimientos de inventario: ${movimientosSnapshot.size}`);
+            movimientosSnapshot.forEach(doc => {
+                const mov = doc.data();
+                console.log(`  - Producto: ${mov.productoNombre}, Cantidad: ${mov.cantidad}, Tipo: ${mov.tipo}, Editado: ${mov.editado || false}`);
+            });
+            
+            // Verificar movimientos de caja
+            const cajaSnapshot = await window.db.collection('movimientos_caja')
+                .where('compraId', '==', compraId)
+                .get();
+            
+            console.log(`✅ Movimientos de caja: ${cajaSnapshot.size}`);
+            cajaSnapshot.forEach(doc => {
+                const caja = doc.data();
+                console.log(`  - Tipo: ${caja.tipo}, Monto: S/${caja.monto}, Categoría: ${caja.categoria}, Relacionado: ${caja.relatedTo || 'original'}`);
+            });
+            
+            console.log('===============================================');
+            console.log('🎯 FUNCIONALIDAD DE EDICIÓN DISPONIBLE:');
+            console.log('✅ Botón de editar en tabla de compras');
+            console.log('✅ Modal de edición con productos editables');
+            console.log('✅ Agregar/quitar productos en tiempo real');
+            console.log('✅ Edición de cantidades y precios inline');
+            console.log('✅ Cálculo automático de diferencias');
+            console.log('✅ Actualización completa de stock, lotes, inventario y caja');
+            console.log('');
+            console.log('📝 PARA PROBAR LA EDICIÓN:');
+            console.log('1. Ve a la tabla de compras');
+            console.log('2. Haz clic en el botón de editar (icono lápiz verde)');
+            console.log('3. Modifica productos, cantidades o precios');
+            console.log('4. Agrega nuevos productos si deseas');
+            console.log('5. Guarda los cambios');
+            console.log('6. El sistema actualizará automáticamente stock, lotes, inventario y caja');
+            
+        } catch (error) {
+            console.error('Error verificando edición de compra:', error);
+        }
     }
 };
 

@@ -21,6 +21,9 @@ window.loadAlmacen = function() {
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold text-gray-800">Gestión de Almacén 📦</h2>
                 <div class="flex space-x-3">
+                    <button id="exportar-pdf-btn" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+                        <i class="fas fa-file-pdf mr-2"></i>Exportar PDF
+                    </button>
                     <button id="config-stock-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
                         <i class="fas fa-cog mr-2"></i>Configurar Stock
                     </button>
@@ -30,7 +33,71 @@ window.loadAlmacen = function() {
                 </div>
             </div>
 
-            <!-- Resumen del Almacén -->
+            <!-- Resumen de Inventario General -->
+            <div class="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-chart-bar mr-2 text-blue-600"></i>
+                        Resumen General de Inventario
+                    </h3>
+                    <button id="toggle-resumen-detail" class="text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="fas fa-expand-arrows-alt mr-1"></i>Ver detalles
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                    <div class="bg-white rounded-lg shadow p-4 border">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                <i class="fas fa-boxes text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Total de Productos Únicos</p>
+                                <p class="text-3xl font-bold text-blue-600" id="total-productos-unicos">0</p>
+                                <p class="text-xs text-gray-500">Diferentes productos registrados</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4 border">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                <i class="fas fa-cubes text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Stock Total Disponible</p>
+                                <p class="text-3xl font-bold text-green-600" id="total-stock-disponible">0</p>
+                                <p class="text-xs text-gray-500">Unidades en inventario</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4 border">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                <i class="fas fa-calculator text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Valor Total del Inventario</p>
+                                <p class="text-3xl font-bold text-purple-600" id="valor-total-inventario">S/ 0.00</p>
+                                <p class="text-xs text-gray-500">Valor en precio de venta</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lista Rápida de Productos con Stock -->
+                <div id="resumen-productos-stock" class="hidden">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">
+                        <i class="fas fa-list mr-2"></i>Productos y Sus Stocks
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="lista-resumen-productos">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen del Almacén (Métricas) -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -240,12 +307,16 @@ function setupAlmacenEvents() {
     document.getElementById('filtro-categoria-almacen').addEventListener('change', filtrarProductosAlmacen);
     document.getElementById('filtro-estado-stock').addEventListener('change', filtrarProductosAlmacen);
 
+    // Evento para toggle del resumen detallado
+    document.getElementById('toggle-resumen-detail').addEventListener('click', toggleResumenDetail);
+
     // Eventos para modales
     document.getElementById('config-stock-btn').addEventListener('click', () => {
         // Si no hay productos seleccionados, mostrar mensaje
         showMessage('Selecciona un producto de la tabla para configurar su stock', 'warning');
     });
 
+    document.getElementById('exportar-pdf-btn').addEventListener('click', exportarAlmacenPDF);
     document.getElementById('movimientos-btn').addEventListener('click', showMovimientosModal);
     document.getElementById('btn-alertas').addEventListener('click', showAlertasModal);
 
@@ -315,9 +386,38 @@ function loadCategoriasAlmacen() {
     if (window.categoriesCache && window.categoriesCache.length > 0) {
         window.categoriesCache.forEach(category => {
             const option = document.createElement('option');
-            option.value = category.id;
+            option.value = category.name; // Usar el nombre en lugar del ID
             option.textContent = category.name;
             categoriaSelect.appendChild(option);
+        });
+    }
+    
+    // También agregar categorías de productos que no estén en categoriesCache
+    if (window.productsCache && window.productsCache.length > 0) {
+        const categoriasEncontradas = new Set();
+        
+        window.productsCache.forEach(product => {
+            let categoriaTexto = '';
+            if (product.category) {
+                categoriaTexto = product.category;
+            } else if (product.categoria) {
+                categoriaTexto = product.categoria;
+            } else if (product.categoryName) {
+                categoriaTexto = product.categoryName;
+            }
+            
+            if (categoriaTexto && !categoriasEncontradas.has(categoriaTexto)) {
+                categoriasEncontradas.add(categoriaTexto);
+                
+                // Verificar si ya existe en el select
+                const exists = Array.from(categoriaSelect.options).some(opt => opt.value === categoriaTexto);
+                if (!exists) {
+                    const option = document.createElement('option');
+                    option.value = categoriaTexto;
+                    option.textContent = categoriaTexto;
+                    categoriaSelect.appendChild(option);
+                }
+            }
         });
     }
 }
@@ -362,6 +462,26 @@ function renderProductosAlmacen(productos = null) {
         const categoria = window.categoriesCache ? 
             window.categoriesCache.find(cat => cat.id === product.categoryId) : null;
 
+        // DEBUG: Agregar logs para diagnosticar el problema de categorías
+        if (productosAMostrar.length > 0 && productosAMostrar.indexOf(product) === 0) {
+            console.log('🔍 DEBUG - Estructura del primer producto:', product);
+            console.log('🔍 DEBUG - CategoriesCache:', window.categoriesCache);
+            console.log('🔍 DEBUG - Buscando categoría con ID:', product.categoryId);
+            console.log('🔍 DEBUG - Categoría encontrada:', categoria);
+        }
+
+        // FALLBACK: Intentar con otros posibles campos de categoría
+        let categoriaTexto = 'Sin categoría';
+        if (categoria) {
+            categoriaTexto = categoria.name;
+        } else if (product.category) {
+            categoriaTexto = product.category;
+        } else if (product.categoria) {
+            categoriaTexto = product.categoria;
+        } else if (product.categoryName) {
+            categoriaTexto = product.categoryName;
+        }
+
         return `
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -379,7 +499,7 @@ function renderProductosAlmacen(productos = null) {
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${categoria ? categoria.name : 'Sin categoría'}
+                    ${categoriaTexto}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${stockActual === 0 ? 'text-red-600' : stockActual <= stockMinimo ? 'text-yellow-600' : 'text-gray-900'}">
                     ${stockActual}
@@ -411,16 +531,25 @@ function renderProductosAlmacen(productos = null) {
     }).join('');
 }
 
-function updateAlmacenSummary() {
-    const productos = window.productsCache || [];
+function updateAlmacenSummary(productosACalcular = null) {
+    const productos = productosACalcular || window.productsCache || [];
     const totalProductos = productos.length;
     let productosConStock = 0;
     let productosStockBajo = 0;
     let productosSinStock = 0;
+    let totalStockDisponible = 0;
+    let valorTotalInventario = 0;
 
     productos.forEach(product => {
         const stock = product.stock || 0;
         const stockMinimo = product.stockMinimo || 5;
+        const precio = product.price || 0;
+
+        // Sumar al stock total disponible
+        totalStockDisponible += stock;
+        
+        // Calcular valor total del inventario
+        valorTotalInventario += stock * precio;
 
         if (stock === 0) {
             productosSinStock++;
@@ -432,10 +561,104 @@ function updateAlmacenSummary() {
         }
     });
 
+    // Actualizar elementos del DOM - Resumen General
+    document.getElementById('total-productos-unicos').textContent = totalProductos;
+    document.getElementById('total-stock-disponible').textContent = totalStockDisponible.toLocaleString();
+    document.getElementById('valor-total-inventario').textContent = `S/ ${valorTotalInventario.toFixed(2)}`;
+
+    // Actualizar elementos del DOM - Métricas (que se actualizan con el filtro)
     document.getElementById('total-productos-almacen').textContent = totalProductos;
     document.getElementById('productos-con-stock').textContent = productosConStock;
     document.getElementById('productos-stock-bajo').textContent = productosStockBajo;
     document.getElementById('productos-sin-stock').textContent = productosSinStock;
+
+    // Actualizar la lista resumida de productos
+    updateListaResumenProductos();
+}
+
+function updateListaResumenProductos() {
+    const productos = window.productsCache || [];
+    const listaContainer = document.getElementById('lista-resumen-productos');
+    
+    if (!listaContainer) return;
+
+    // Filtrar solo productos con stock y ordenar por stock descendente
+    const productosConStock = productos
+        .filter(product => (product.stock || 0) > 0)
+        .sort((a, b) => (b.stock || 0) - (a.stock || 0));
+
+    if (productosConStock.length === 0) {
+        listaContainer.innerHTML = `
+            <div class="col-span-full text-center py-4 text-gray-500">
+                <i class="fas fa-inbox text-2xl mb-2"></i>
+                <p>No hay productos con stock disponible</p>
+            </div>
+        `;
+        return;
+    }
+
+    listaContainer.innerHTML = productosConStock.map(product => {
+        const stock = product.stock || 0;
+        const stockMinimo = product.stockMinimo || 5;
+        const precio = product.price || 0;
+        const valorTotal = stock * precio;
+        
+        // Determinar color del indicador de stock
+        let stockIndicatorClass = '';
+        if (stock <= stockMinimo) {
+            stockIndicatorClass = 'bg-yellow-100 border-yellow-300 text-yellow-800';
+        } else if (stock > stockMinimo * 3) {
+            stockIndicatorClass = 'bg-green-100 border-green-300 text-green-800';
+        } else {
+            stockIndicatorClass = 'bg-blue-100 border-blue-300 text-blue-800';
+        }
+
+        return `
+            <div class="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-2">
+                    <h5 class="font-medium text-gray-900 text-sm truncate" title="${product.name}">
+                        ${product.name.length > 25 ? product.name.substring(0, 25) + '...' : product.name}
+                    </h5>
+                    ${stock <= stockMinimo ? 
+                        '<i class="fas fa-exclamation-triangle text-yellow-500 text-xs" title="Stock bajo"></i>' : 
+                        '<i class="fas fa-check-circle text-green-500 text-xs" title="Stock normal"></i>'
+                    }
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-600">Stock:</span>
+                        <span class="px-2 py-1 rounded text-xs font-medium border ${stockIndicatorClass}">
+                            ${stock} unidades
+                        </span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-600">Precio:</span>
+                        <span class="text-xs font-medium text-gray-900">S/ ${precio.toFixed(2)}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <span class="text-xs text-gray-600">Valor total:</span>
+                        <span class="text-xs font-bold text-purple-600">S/ ${valorTotal.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleResumenDetail() {
+    const resumenDetail = document.getElementById('resumen-productos-stock');
+    const toggleBtn = document.getElementById('toggle-resumen-detail');
+    
+    if (resumenDetail.classList.contains('hidden')) {
+        resumenDetail.classList.remove('hidden');
+        toggleBtn.innerHTML = '<i class="fas fa-compress-arrows-alt mr-1"></i>Ocultar detalles';
+    } else {
+        resumenDetail.classList.add('hidden');
+        toggleBtn.innerHTML = '<i class="fas fa-expand-arrows-alt mr-1"></i>Ver detalles';
+    }
 }
 
 function filtrarProductosAlmacen() {
@@ -444,6 +667,9 @@ function filtrarProductosAlmacen() {
     const estadoFiltro = document.getElementById('filtro-estado-stock').value;
 
     let productosFiltrados = window.productsCache || [];
+
+    // Verificar si hay algún filtro activo
+    const hayFiltroActivo = nombreFiltro || (categoriaFiltro !== 'todas') || (estadoFiltro !== 'todos');
 
     // Filtrar por nombre
     if (nombreFiltro) {
@@ -454,9 +680,25 @@ function filtrarProductosAlmacen() {
 
     // Filtrar por categoría
     if (categoriaFiltro !== 'todas') {
-        productosFiltrados = productosFiltrados.filter(product => 
-            product.categoryId === categoriaFiltro
-        );
+        productosFiltrados = productosFiltrados.filter(product => {
+            // Obtener el texto de categoría usando la misma lógica del renderizado
+            const categoria = window.categoriesCache ? 
+                window.categoriesCache.find(cat => cat.id === product.categoryId) : null;
+            
+            let categoriaTexto = '';
+            if (categoria) {
+                categoriaTexto = categoria.name;
+            } else if (product.category) {
+                categoriaTexto = product.category;
+            } else if (product.categoria) {
+                categoriaTexto = product.categoria;
+            } else if (product.categoryName) {
+                categoriaTexto = product.categoryName;
+            }
+            
+            // Comparar el texto de categoría con el filtro seleccionado
+            return categoriaTexto.toLowerCase() === categoriaFiltro.toLowerCase();
+        });
     }
 
     // Filtrar por estado de stock
@@ -481,6 +723,13 @@ function filtrarProductosAlmacen() {
         });
     }
 
+    // Actualizar estadísticas con productos filtrados o todos los productos si no hay filtro
+    if (hayFiltroActivo) {
+        updateAlmacenSummary(productosFiltrados);
+    } else {
+        updateAlmacenSummary(); // Sin parámetros, usa todos los productos
+    }
+    
     renderProductosAlmacen(productosFiltrados);
 }
 
@@ -652,6 +901,184 @@ window.viewProductHistory = function(productId) {
     // Esta función podría mostrar un modal específico con el historial de un producto
     showMessage('Función de historial específico por producto en desarrollo', 'info');
 };
+
+// Función para exportar almacén a PDF
+async function exportarAlmacenPDF() {
+    try {
+        // Mostrar mensaje de generación
+        showMessage('Generando PDF del almacén...', 'info');
+
+        // Verificar que jsPDF esté disponible
+        let PDFConstructor;
+        if (window.jsPDF && window.jsPDF.jsPDF) {
+            PDFConstructor = window.jsPDF.jsPDF;
+        } else if (window.jsPDF) {
+            PDFConstructor = window.jsPDF;
+        } else if (typeof jsPDF !== 'undefined') {
+            PDFConstructor = jsPDF;
+        } else {
+            showMessage('Error: Biblioteca PDF no disponible. Recarga la página.', 'error');
+            return;
+        }
+
+        // Crear instancia de jsPDF
+        const doc = new PDFConstructor();
+
+        // Configuración del documento
+        const fecha = new Date().toLocaleString('es-ES');
+        const productos = window.productsCache || [];
+
+        // Header del documento
+        doc.setFontSize(20);
+        doc.text('Reporte de Inventario - Tienda Milka', 20, 20);
+        
+        doc.setFontSize(12);
+        doc.text(`Generado el: ${fecha}`, 20, 30);
+        doc.text(`Total de productos: ${productos.length}`, 20, 40);
+
+        // Calcular totales para el resumen
+        let totalStock = 0;
+        let valorTotal = 0;
+        let productosConStock = 0;
+        let productosSinStock = 0;
+        let productosStockBajo = 0;
+
+        productos.forEach(product => {
+            const stock = product.stock || 0;
+            const precio = product.price || 0;
+            const stockMinimo = product.stockMinimo || 5;
+            
+            totalStock += stock;
+            valorTotal += stock * precio;
+            
+            if (stock === 0) {
+                productosSinStock++;
+            } else if (stock <= stockMinimo) {
+                productosStockBajo++;
+                productosConStock++;
+            } else {
+                productosConStock++;
+            }
+        });
+
+        // Resumen ejecutivo
+        doc.setFontSize(14);
+        doc.text('Resumen Ejecutivo:', 20, 55);
+        doc.setFontSize(10);
+        doc.text(`• Stock total disponible: ${totalStock.toLocaleString()} unidades`, 25, 65);
+        doc.text(`• Valor total del inventario: S/ ${valorTotal.toFixed(2)}`, 25, 72);
+        doc.text(`• Productos con stock: ${productosConStock}`, 25, 79);
+        doc.text(`• Productos sin stock: ${productosSinStock}`, 25, 86);
+        doc.text(`• Productos con stock bajo: ${productosStockBajo}`, 25, 93);
+
+        // Línea separadora
+        doc.line(20, 100, 190, 100);
+
+        // Header de la tabla
+        let yPos = 115;
+        doc.setFontSize(14);
+        doc.text('Detalle de Productos:', 20, yPos);
+        
+        yPos += 10;
+        doc.setFontSize(8);
+        
+        // Headers de tabla
+        doc.text('Producto', 20, yPos);
+        doc.text('Categoría', 70, yPos);
+        doc.text('Stock', 110, yPos);
+        doc.text('Precio', 130, yPos);
+        doc.text('Valor Total', 150, yPos);
+        doc.text('Estado', 175, yPos);
+        
+        yPos += 5;
+        doc.line(20, yPos, 190, yPos); // Línea bajo headers
+        yPos += 5;
+
+        // Ordenar productos por stock descendente para mostrar primero los que tienen más stock
+        const productosOrdenados = [...productos].sort((a, b) => (b.stock || 0) - (a.stock || 0));
+
+        // Datos de productos
+        for (let i = 0; i < productosOrdenados.length; i++) {
+            const product = productosOrdenados[i];
+            const stock = product.stock || 0;
+            const precio = product.price || 0;
+            const stockMinimo = product.stockMinimo || 5;
+            const valorProducto = stock * precio;
+            
+            // Determinar estado
+            let estado = '';
+            if (stock === 0) {
+                estado = 'Sin Stock';
+            } else if (stock <= stockMinimo) {
+                estado = 'Stock Bajo';
+            } else {
+                estado = 'Normal';
+            }
+
+            // Obtener categoría
+            const categoria = window.categoriesCache ? 
+                window.categoriesCache.find(cat => cat.id === product.categoryId) : null;
+            const categoriaNombre = categoria ? categoria.name : 'Sin categoría';
+
+            // Ajustar texto largo del producto
+            let nombreProducto = product.name;
+            if (nombreProducto.length > 25) {
+                nombreProducto = nombreProducto.substring(0, 22) + '...';
+            }
+
+            // Ajustar texto largo de categoría
+            let nombreCategoria = categoriaNombre;
+            if (nombreCategoria.length > 15) {
+                nombreCategoria = nombreCategoria.substring(0, 12) + '...';
+            }
+
+            // Escribir fila
+            doc.text(nombreProducto, 20, yPos);
+            doc.text(nombreCategoria, 70, yPos);
+            doc.text(stock.toString(), 110, yPos);
+            doc.text(`S/ ${precio.toFixed(2)}`, 130, yPos);
+            doc.text(`S/ ${valorProducto.toFixed(2)}`, 150, yPos);
+            doc.text(estado, 175, yPos);
+
+            yPos += 8;
+
+            // Verificar si necesitamos una nueva página
+            if (yPos > 280) {
+                doc.addPage();
+                yPos = 20;
+                
+                // Re-escribir headers en nueva página
+                doc.setFontSize(8);
+                doc.text('Producto', 20, yPos);
+                doc.text('Categoría', 70, yPos);
+                doc.text('Stock', 110, yPos);
+                doc.text('Precio', 130, yPos);
+                doc.text('Valor Total', 150, yPos);
+                doc.text('Estado', 175, yPos);
+                
+                yPos += 5;
+                doc.line(20, yPos, 190, yPos);
+                yPos += 5;
+            }
+        }
+
+        // Pie de página en la última página
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setPage(pageCount);
+        doc.setFontSize(8);
+        doc.text(`Página ${pageCount} - Tienda Milka © ${new Date().getFullYear()}`, 20, 290);
+
+        // Guardar el PDF
+        const fileName = `inventario_tienda_milka_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+
+        showMessage('PDF exportado correctamente', 'success');
+
+    } catch (error) {
+        console.error('Error exportando PDF:', error);
+        showMessage('Error al exportar PDF del almacén', 'error');
+    }
+}
 
 // Función auxiliar para mostrar mensajes
 function showMessage(message, type = 'info') {

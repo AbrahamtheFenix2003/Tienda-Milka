@@ -348,17 +348,20 @@ function showAddProductModal() {
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Stock (Unidades) *</label>
-                            <input type="number" id="product-stock" required min="0"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Código (SKU)</label>
-                            <input type="text" id="product-sku"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Código (SKU)</label>
+                        <input type="text" id="product-sku"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
+                    </div>
+                    
+                    <!-- Nota sobre stock -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                            <div>
+                                <p class="text-sm text-blue-700 font-medium">Sistema de Lotes</p>
+                                <p class="text-xs text-blue-600">El stock se gestiona automáticamente a través del sistema de lotes. Una vez creado el producto, podrá agregar stock mediante compras que generarán lotes individuales.</p>
+                            </div>
                         </div>
                     </div>
                     
@@ -595,21 +598,21 @@ function editarProducto(id) {
                     </button>
                 </div>
                 
-                <form id="product-form" class="space-y-6">
+                <form id="edit-product-form" class="space-y-6">
                     <input type="hidden" id="product-id" value="${id}">
                     
                     <!-- Información básica -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Producto *</label>
-                            <input type="text" id="product-name" required value="${producto.name || producto.nombre || ''}"
+                            <input type="text" id="edit-product-name" required value="${producto.name || producto.nombre || ''}"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                             <div class="flex gap-2">
-                                <select id="product-category" 
+                                <select id="edit-product-category" 
                                     class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
                                     <option value="">-- Selecciona --</option>
                                 </select>
@@ -624,34 +627,37 @@ function editarProducto(id) {
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Precio de Venta (S/) *</label>
-                            <input type="number" id="product-price" required step="0.01" min="0" value="${producto.price || producto.precio || ''}"
+                            <input type="number" id="edit-product-price" required step="0.01" min="0" value="${producto.price || producto.precio || ''}"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Precio Original (S/)</label>
-                            <input type="number" id="product-original-price" step="0.01" min="0" value="${producto.originalPrice || ''}"
+                            <input type="number" id="edit-product-original-price" step="0.01" min="0" value="${producto.originalPrice || ''}"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Costo de Adquisición (S/)</label>
-                            <input type="number" id="product-cost" step="0.01" min="0" value="${producto.acquisitionCost || producto.cost || ''}"
+                            <input type="number" id="edit-product-cost" step="0.01" min="0" value="${producto.acquisitionCost || producto.cost || ''}"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Stock (Unidades) *</label>
-                            <input type="number" id="product-stock" required min="0" value="${producto.stock || 0}"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Código (SKU)</label>
-                            <input type="text" id="product-sku" value="${producto.sku || ''}"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Código (SKU)</label>
+                        <input type="text" id="edit-product-sku" value="${producto.sku || ''}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
+                    </div>
+                    
+                    <!-- Nota sobre stock -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                            <div>
+                                <p class="text-sm text-blue-700 font-medium">Sistema de Lotes</p>
+                                <p class="text-xs text-blue-600">El stock se gestiona automáticamente a través del sistema de lotes. El stock actual se calcula desde los lotes existentes del producto.</p>
+                            </div>
                         </div>
                     </div>
                     
@@ -762,7 +768,7 @@ function editarProducto(id) {
     initializeTinyMCE();
     
     // Configurar evento del formulario
-    document.getElementById('product-form').addEventListener('submit', handleProductSubmit);
+    document.getElementById('edit-product-form').addEventListener('submit', handleProductSubmit);
 }
 
 function eliminarProducto(id, nombre) {
@@ -1092,20 +1098,41 @@ function previewImage(input, imageType) {
 }
 
 function initializeTinyMCE() {
-    if (window.tinymce) {
-        window.tinymce.init({
-            selector: '#description-editor',
-            height: 200,
-            plugins: 'advlist autolink lists link image charmap print preview anchor',
-            toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
-            language: 'es'
-        });
+    // Verificar que TinyMCE esté disponible y que el elemento exista
+    if (window.tinymce && document.getElementById('description-editor')) {
+        // Remover instancia previa si existe
+        if (window.tinymce.get('description-editor')) {
+            window.tinymce.remove('#description-editor');
+        }
+        
+        // Inicializar con un pequeño delay para asegurar que el DOM esté listo
+        setTimeout(() => {
+            if (document.getElementById('description-editor')) {
+                window.tinymce.init({
+                    selector: '#description-editor',
+                    height: 200,
+                    plugins: 'advlist autolink lists link image charmap print preview anchor',
+                    toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+                    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+                    language: 'es',
+                    setup: function (editor) {
+                        editor.on('init', function () {
+                            console.log('TinyMCE inicializado correctamente');
+                        });
+                    }
+                });
+            }
+        }, 100);
+    } else {
+        // Si TinyMCE no está disponible, intentar de nuevo después de un tiempo
+        setTimeout(() => {
+            initializeTinyMCE();
+        }, 500);
     }
 }
 
 async function cargarCategoriasParaModal(categoriaSeleccionada = '') {
-    const selectCategoria = document.getElementById('product-category');
+    const selectCategoria = document.getElementById('edit-product-category') || document.getElementById('product-category');
     if (!selectCategoria) return;
     
     try {
@@ -1143,7 +1170,7 @@ async function handleProductSubmit(event) {
     
     const form = event.target;
     const submitBtn = document.getElementById('save-product-btn');
-    const isEdit = document.getElementById('product-id') && document.getElementById('product-id').value;
+    const isEdit = form.id === 'edit-product-form';
     
     // Deshabilitar botón y mostrar loading
     submitBtn.disabled = true;
@@ -1156,29 +1183,55 @@ async function handleProductSubmit(event) {
             description = window.tinymce.get('description-editor').getContent();
         }
         
-        // Recopilar datos del formulario
+        // Recopilar datos del formulario usando querySelector para evitar conflictos de ID
+        console.log('Form type - isEdit:', isEdit);
+        console.log('Form ID:', form.id);
+        
+        const nameElement = isEdit ? 
+            form.querySelector('#edit-product-name') : 
+            form.querySelector('#product-name');
+        console.log('Product name element:', nameElement);
+        console.log('Product name value:', nameElement?.value);
+        console.log('Looking for element ID:', isEdit ? 'edit-product-name' : 'product-name');
+        
+        // Obtener elementos basándose en el tipo de formulario usando querySelector
+        const priceElement = isEdit ? 
+            form.querySelector('#edit-product-price') : 
+            form.querySelector('#product-price');
+        const originalPriceElement = isEdit ? 
+            form.querySelector('#edit-product-original-price') : 
+            form.querySelector('#product-original-price');
+        const costElement = isEdit ? 
+            form.querySelector('#edit-product-cost') : 
+            form.querySelector('#product-cost');
+        const categoryElement = isEdit ? 
+            form.querySelector('#edit-product-category') : 
+            form.querySelector('#product-category');
+        const skuElement = isEdit ? 
+            form.querySelector('#edit-product-sku') : 
+            form.querySelector('#product-sku');
+
         const formData = {
-            name: document.getElementById('product-name').value.trim(),
-            price: parseFloat(document.getElementById('product-price').value),
-            originalPrice: document.getElementById('product-original-price').value ? 
-                parseFloat(document.getElementById('product-original-price').value) : null,
-            acquisitionCost: document.getElementById('product-cost').value ? 
-                parseFloat(document.getElementById('product-cost').value) : null,
-            stock: parseInt(document.getElementById('product-stock').value),
-            category: document.getElementById('product-category').value.trim(),
-            sku: document.getElementById('product-sku').value.trim(),
+            name: nameElement?.value?.trim() || '',
+            price: parseFloat(priceElement?.value || 0),
+            originalPrice: originalPriceElement?.value ? parseFloat(originalPriceElement.value) : null,
+            acquisitionCost: costElement?.value ? parseFloat(costElement.value) : null,
+            stock: 0, // Inicializado en 0, se obtendrá desde lotes
+            category: categoryElement?.value?.trim() || '',
+            sku: skuElement?.value?.trim() || '',
             description: description
         };
         
+        console.log('FormData name:', formData.name);
+        console.log('FormData name length:', formData.name.length);
+        
         // Validaciones
-        if (!formData.name) {
+        if (!formData.name || formData.name.trim() === '') {
+            console.log('Validation failed: name is empty');
             throw new Error('El nombre del producto es obligatorio');
         }
         if (isNaN(formData.price) || formData.price < 0) {
             throw new Error('El precio debe ser un número válido mayor o igual a 0');
-        }
-        if (isNaN(formData.stock) || formData.stock < 0) {
-            throw new Error('El stock debe ser un número válido mayor o igual a 0');
         }
         
         // Manejar múltiples imágenes
@@ -1214,8 +1267,8 @@ async function handleProductSubmit(event) {
             // Actualizar producto existente
             const productId = document.getElementById('product-id').value;
             // Solo actualizar campos que tienen valores (no sobrescribir imágenes existentes si no se cambiaron)
-            // NUNCA actualizar campos históricos: stockInicial y precioCompraInicial
-            const fieldsToExclude = ['stockInicial', 'precioCompraInicial', 'createdAt'];
+            // NUNCA actualizar campos históricos: stockInicial, precioCompraInicial y stock (se gestiona por lotes)
+            const fieldsToExclude = ['stockInicial', 'precioCompraInicial', 'createdAt', 'stock'];
             const updateData = {};
             
             Object.keys(formData).forEach(key => {

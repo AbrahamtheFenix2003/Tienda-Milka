@@ -100,9 +100,16 @@ window.ComprasModals = {
                     <form id="form-agregar-producto">
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Producto</label>
-                            <select id="producto-seleccion" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
-                                <option value="">Seleccionar producto</option>
-                            </select>
+                            <div class="relative">
+                                <input type="text" id="producto-seleccion-input" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                                       placeholder="Escriba para buscar un producto..."
+                                       autocomplete="off">
+                                <input type="hidden" id="producto-seleccion" required>
+                                <div id="producto-dropdown" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50 hidden">
+                                    <!-- Los productos se cargarán aquí -->
+                                </div>
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
@@ -203,6 +210,103 @@ window.ComprasModals = {
                     </form>
                 </div>
             </div>
+            
+            <!-- Modal Editar Compra -->
+            <div id="modal-editar-compra" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <h3 class="text-lg font-semibold mb-4">
+                        <i class="fas fa-edit text-green-600 mr-2"></i>Editar Compra
+                    </h3>
+                    <form id="form-editar-compra">
+                        <input type="hidden" id="editar-compra-id" value="">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Proveedor</label>
+                                <select id="editar-proveedor-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
+                                    <option value="">Seleccionar proveedor</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Compra</label>
+                                <input type="date" id="editar-fecha-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Número de Factura</label>
+                                <input type="text" id="editar-factura-compra" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500" placeholder="Opcional">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Método de Pago</label>
+                                <select id="editar-metodo-pago-compra" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="transferencia">Transferencia</option>
+                                    <option value="cheque">Cheque</option>
+                                    <option value="credito">Crédito</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+                            <textarea id="editar-observaciones-compra" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500" placeholder="Observaciones adicionales..."></textarea>
+                        </div>
+                        
+                        <!-- Productos de la compra -->
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <div>
+                                    <h4 class="text-md font-semibold">Productos de la Compra</h4>
+                                    <div class="flex items-center mt-1">
+                                        <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i>
+                                        <small class="text-amber-600">Los cambios afectarán stock y lotes existentes</small>
+                                    </div>
+                                </div>
+                                <button type="button" id="editar-agregar-producto-compra" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                                    <i class="fas fa-plus mr-1"></i>Agregar Producto
+                                </button>
+                            </div>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full border border-gray-200 rounded-lg">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Producto / Lote</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Cantidad</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Precio Compra</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Subtotal</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="editar-productos-compra-table">
+                                        <tr>
+                                            <td colspan="5" class="px-4 py-4 text-center text-gray-500">Cargando productos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="mt-3 text-right">
+                                <span class="text-lg font-semibold">Total: S/ <span id="editar-total-compra">0.00</span></span>
+                            </div>
+                            
+                            <div class="mt-2 text-sm text-gray-600">
+                                <div class="flex justify-between">
+                                    <span>Total Original: S/ <span id="total-original">0.00</span></span>
+                                    <span class="font-medium">Diferencia: S/ <span id="diferencia-total" class="text-blue-600">0.00</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" id="cancelar-editar-compra" class="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                                <i class="fas fa-save mr-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         `;
     },
 
@@ -213,7 +317,7 @@ window.ComprasModals = {
         this.addClickListener('agregar-producto-compra', () => this.openAgregarProducto());
         
         // Modal agregar producto
-        this.addClickListener('cancelar-agregar-producto', () => this.closeModal('modal-agregar-producto'));
+        this.addClickListener('cancelar-agregar-producto', () => this.cancelarAgregarProducto());
         this.addSubmitListener('form-agregar-producto', (e) => this.handleAgregarProducto(e));
         
         // Modal proveedores
@@ -223,6 +327,11 @@ window.ComprasModals = {
         // Modal nuevo proveedor
         this.addClickListener('cancelar-nuevo-proveedor', () => this.closeModal('modal-nuevo-proveedor'));
         this.addSubmitListener('form-nuevo-proveedor', (e) => this.handleCrearProveedor(e));
+        
+        // Modal editar compra
+        this.addClickListener('cancelar-editar-compra', () => this.closeModal('modal-editar-compra'));
+        this.addSubmitListener('form-editar-compra', (e) => this.handleEditarCompra(e));
+        this.addClickListener('editar-agregar-producto-compra', () => this.openAgregarProductoEdicion());
     },
 
     addClickListener(id, handler) {
@@ -257,7 +366,168 @@ window.ComprasModals = {
 
     openAgregarProducto() {
         this.resetForm('form-agregar-producto');
+        this.setupProductSearch();
         this.openModal('modal-agregar-producto');
+    },
+    
+    cancelarAgregarProducto() {
+        // Restaurar z-index normal del modal de agregar producto
+        const modalAgregarProducto = document.getElementById('modal-agregar-producto');
+        if (modalAgregarProducto) {
+            modalAgregarProducto.style.zIndex = '50'; // Volver al z-index normal
+        }
+        
+        // Limpiar la variable de edición
+        window.ComprasModule.editandoCompra = false;
+        
+        this.closeModal('modal-agregar-producto');
+    },
+
+    setupProductSearch() {
+        const input = document.getElementById('producto-seleccion-input');
+        const hiddenInput = document.getElementById('producto-seleccion');
+        const dropdown = document.getElementById('producto-dropdown');
+        
+        if (!input || !hiddenInput || !dropdown) return;
+        
+        // Event listener para búsqueda en tiempo real
+        input.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+            // Solo mostrar dropdown si hay texto escrito
+            if (searchTerm.length > 0) {
+                this.loadProductsIntoDropdown(searchTerm);
+            } else {
+                dropdown.classList.add('hidden');
+            }
+            
+            // Limpiar selección si se cambia el texto
+            if (hiddenInput.value && input.value !== input.dataset.selectedName) {
+                hiddenInput.value = '';
+                delete input.dataset.selectedName;
+            }
+        });
+        
+        // Mostrar dropdown al hacer focus solo si hay texto
+        input.addEventListener('focus', () => {
+            const searchTerm = input.value.toLowerCase().trim();
+            if (searchTerm.length > 0) {
+                this.loadProductsIntoDropdown(searchTerm);
+            }
+        });
+        
+        // Ocultar dropdown al perder focus (con delay para permitir clicks)
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                dropdown.classList.add('hidden');
+            }, 200);
+        });
+        
+        // Manejar navegación con teclado
+        input.addEventListener('keydown', (e) => {
+            const items = dropdown.querySelectorAll('[data-product-id]');
+            const current = dropdown.querySelector('[data-product-id].bg-rose-50');
+            let index = Array.from(items).indexOf(current);
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    index = Math.min(index + 1, items.length - 1);
+                    this.highlightDropdownItem(items, index);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    index = Math.max(index - 1, 0);
+                    this.highlightDropdownItem(items, index);
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (current) {
+                        current.click();
+                    }
+                    break;
+                case 'Escape':
+                    dropdown.classList.add('hidden');
+                    break;
+            }
+        });
+    },
+    
+    loadProductsIntoDropdown(searchTerm = '') {
+        const dropdown = document.getElementById('producto-dropdown');
+        if (!dropdown || !window.productsCache) return;
+        
+        // Filtrar productos por término de búsqueda
+        const filteredProducts = window.productsCache.filter(product => {
+            const name = (product.name || '').toLowerCase();
+            const sku = (product.sku || '').toLowerCase();
+            const category = (product.category || '').toLowerCase();
+            
+            return name.includes(searchTerm) || 
+                   sku.includes(searchTerm) || 
+                   category.includes(searchTerm);
+        });
+        
+        // Mostrar mensaje si no hay resultados
+        if (filteredProducts.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-3 text-gray-500 text-center">No se encontraron productos</div>';
+            dropdown.classList.remove('hidden');
+            return;
+        }
+        
+        // Generar HTML para productos
+        const productsHtml = filteredProducts.map(product => `
+            <div class="px-4 py-3 hover:bg-rose-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
+                 data-product-id="${product.id}" data-product-name="${product.name}">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">${product.name}</div>
+                        <div class="text-sm text-gray-600">
+                            ${product.category ? `Categoría: ${product.category}` : ''}
+                            ${product.sku ? ` • SKU: ${product.sku}` : ''}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            Stock: ${product.stock || 0} • Precio: S/ ${(product.price || 0).toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        dropdown.innerHTML = productsHtml;
+        dropdown.classList.remove('hidden');
+        
+        // Agregar event listeners a los items
+        dropdown.querySelectorAll('[data-product-id]').forEach(item => {
+            item.addEventListener('click', () => {
+                this.selectProduct(item.dataset.productId, item.dataset.productName);
+            });
+        });
+    },
+    
+    highlightDropdownItem(items, index) {
+        items.forEach((item, i) => {
+            item.classList.toggle('bg-rose-50', i === index);
+        });
+    },
+    
+    selectProduct(productId, productName) {
+        const input = document.getElementById('producto-seleccion-input');
+        const hiddenInput = document.getElementById('producto-seleccion');
+        const dropdown = document.getElementById('producto-dropdown');
+        
+        if (input && hiddenInput && dropdown) {
+            input.value = productName;
+            input.dataset.selectedName = productName;
+            hiddenInput.value = productId;
+            dropdown.classList.add('hidden');
+            
+            // Auto-focus en el siguiente campo
+            const cantidadInput = document.getElementById('cantidad-producto');
+            if (cantidadInput) {
+                cantidadInput.focus();
+            }
+        }
     },
 
     openProveedores() {
@@ -291,6 +561,19 @@ window.ComprasModals = {
         const form = document.getElementById(formId);
         if (form) {
             form.reset();
+            
+            // Limpiar campos específicos del formulario de agregar producto
+            if (formId === 'form-agregar-producto') {
+                const input = document.getElementById('producto-seleccion-input');
+                const dropdown = document.getElementById('producto-dropdown');
+                if (input) {
+                    input.value = '';
+                    delete input.dataset.selectedName;
+                }
+                if (dropdown) {
+                    dropdown.classList.add('hidden');
+                }
+            }
         }
     },
 
@@ -359,15 +642,20 @@ window.ComprasModals = {
             return;
         }
         
+        // Determinar a qué array agregar el producto (nueva compra o edición)
+        const productosArray = window.ComprasModule.editandoCompra ? 
+            window.ComprasModule.productosEditandoActual : 
+            window.ComprasModule.productosCompraActual;
+        
         // Verificar si el producto ya está agregado
-        const existeIndex = window.ComprasModule.productosCompraActual.findIndex(p => p.id === productoId);
+        const existeIndex = productosArray.findIndex(p => p.id === productoId);
         if (existeIndex !== -1) {
             // Actualizar cantidad y precio - pero mantener la información de lote separada
-            window.ComprasModule.productosCompraActual[existeIndex].cantidad += cantidad;
-            window.ComprasModule.productosCompraActual[existeIndex].precioCompra = precioCompra;
+            productosArray[existeIndex].cantidad += cantidad;
+            productosArray[existeIndex].precioCompra = precioCompra;
             // Si hay información de lote, agregar como nuevo item para mantener trazabilidad
             if (loteNumero || fechaVencimiento) {
-                window.ComprasModule.productosCompraActual.push({
+                productosArray.push({
                     id: productoId,
                     nombre: producto.name,
                     cantidad: cantidad,
@@ -397,19 +685,44 @@ window.ComprasModals = {
                 };
             }
             
-            window.ComprasModule.productosCompraActual.push(productoCompra);
+            productosArray.push(productoCompra);
         }
         
-        this.updateProductosCompraTable();
+        // Actualizar la tabla correspondiente
+        if (window.ComprasModule.editandoCompra) {
+            this.updateProductosEditarCompraTable();
+        } else {
+            this.updateProductosCompraTable();
+        }
         
         // Limpiar el formulario
+        const inputSearch = document.getElementById('producto-seleccion-input');
+        if (inputSearch) {
+            inputSearch.value = '';
+            delete inputSearch.dataset.selectedName;
+        }
         document.getElementById('producto-seleccion').value = '';
         document.getElementById('cantidad-producto').value = '';
         document.getElementById('precio-compra-producto').value = '';
         document.getElementById('lote-numero').value = '';
         document.getElementById('fecha-vencimiento').value = '';
         
+        // Ocultar dropdown
+        const dropdown = document.getElementById('producto-dropdown');
+        if (dropdown) {
+            dropdown.classList.add('hidden');
+        }
+        
         this.closeModal('modal-agregar-producto');
+        
+        // Restaurar z-index normal del modal de agregar producto
+        const modalAgregarProducto = document.getElementById('modal-agregar-producto');
+        if (modalAgregarProducto) {
+            modalAgregarProducto.style.zIndex = '50'; // Volver al z-index normal
+        }
+        
+        // Limpiar la variable de edición
+        window.ComprasModule.editandoCompra = false;
     },
 
     async handleCrearProveedor(e) {
@@ -600,6 +913,224 @@ window.ComprasModals = {
         `;
         
         ComprasUtils.showModal('Detalle de Compra', detalleHtml);
+    },
+
+    // ======================== FUNCIONES DE EDICIÓN ========================
+    
+    editarCompra(compraId) {
+        const compra = window.comprasCache?.find(c => c.id === compraId);
+        if (!compra) {
+            ComprasUtils.showNotification('Compra no encontrada', 'error');
+            return;
+        }
+        
+        // Guardar el estado original de los productos para referencia
+        window.ComprasModule.productosOriginalEditando = [...(compra.productos || [])];
+        window.ComprasModule.productosEditandoActual = [...(compra.productos || [])];
+        window.ComprasModule.compraEditandoId = compraId;
+        
+        // Cargar datos en el modal
+        this.cargarDatosCompraEdicion(compra);
+        
+        // Actualizar selectores de proveedores
+        ComprasData.updateProveedoresSelectors();
+        this.updateProveedoresSelectoresEdicion();
+        
+        // Abrir modal
+        this.openModal('modal-editar-compra');
+        
+        // Configurar event listeners específicos
+        setTimeout(() => this.setupModalEventListeners(), 100);
+    },
+    
+    cargarDatosCompraEdicion(compra) {
+        // Cargar datos básicos
+        document.getElementById('editar-compra-id').value = compra.id;
+        document.getElementById('editar-proveedor-compra').value = compra.proveedorId || '';
+        document.getElementById('editar-fecha-compra').value = compra.fecha || '';
+        document.getElementById('editar-factura-compra').value = compra.factura || '';
+        document.getElementById('editar-metodo-pago-compra').value = compra.metodoPago || 'efectivo';
+        document.getElementById('editar-observaciones-compra').value = compra.observaciones || '';
+        
+        // Mostrar totales
+        document.getElementById('total-original').textContent = (compra.totalInvertido || 0).toFixed(2);
+        
+        // Cargar productos
+        this.updateProductosEditarCompraTable();
+    },
+    
+    updateProveedoresSelectoresEdicion() {
+        const selector = document.getElementById('editar-proveedor-compra');
+        if (selector && window.proveedoresCache) {
+            // Mantener la opción seleccionada actual
+            const selectedValue = selector.value;
+            selector.innerHTML = '<option value="">Seleccionar proveedor</option>';
+            
+            window.proveedoresCache.forEach(proveedor => {
+                const option = new Option(proveedor.nombre, proveedor.id);
+                selector.appendChild(option);
+            });
+            
+            // Restaurar selección
+            selector.value = selectedValue;
+        }
+    },
+    
+    openAgregarProductoEdicion() {
+        // Abrir el modal de agregar producto pero configurado para edición
+        window.ComprasModule.editandoCompra = true;
+        this.openAgregarProducto();
+        
+        // Aumentar z-index del modal de agregar producto para que aparezca encima del modal de edición
+        setTimeout(() => {
+            const modalAgregarProducto = document.getElementById('modal-agregar-producto');
+            if (modalAgregarProducto) {
+                modalAgregarProducto.style.zIndex = '60'; // Mayor que z-50 del modal de edición
+            }
+        }, 50);
+    },
+    
+    updateProductosEditarCompraTable() {
+        const tbody = document.getElementById('editar-productos-compra-table');
+        const totalElement = document.getElementById('editar-total-compra');
+        const diferenciaElement = document.getElementById('diferencia-total');
+        const totalOriginalElement = document.getElementById('total-original');
+        
+        if (!tbody || !totalElement || !window.ComprasModule.productosEditandoActual) return;
+        
+        if (window.ComprasModule.productosEditandoActual.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">No hay productos en esta compra</td></tr>';
+            totalElement.textContent = '0.00';
+            if (diferenciaElement) diferenciaElement.textContent = '0.00';
+            return;
+        }
+        
+        let totalActual = 0;
+        tbody.innerHTML = window.ComprasModule.productosEditandoActual.map((producto, index) => {
+            const subtotal = producto.cantidad * producto.precioCompra;
+            totalActual += subtotal;
+            
+            // Información del lote
+            const loteInfo = producto.loteInfo;
+            const loteDisplay = loteInfo ? 
+                `<div class="text-xs text-blue-600">
+                    ${loteInfo.numero ? `Lote: ${loteInfo.numero}` : 'Lote: Auto'}
+                    ${loteInfo.fechaVencimiento ? `<br>Vence: ${new Date(loteInfo.fechaVencimiento).toLocaleDateString('es-ES')}` : ''}
+                </div>` : 
+                '<div class="text-xs text-gray-400">Sin lote específico</div>';
+            
+            return `
+                <tr>
+                    <td class="px-4 py-2">
+                        <div>${producto.nombre}</div>
+                        ${loteDisplay}
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${producto.cantidad}" min="1" 
+                               onchange="ComprasModals.actualizarCantidadProductoEdicion(${index}, this.value)"
+                               class="w-20 px-2 py-1 border border-gray-300 rounded text-center">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${producto.precioCompra}" min="0" step="0.01"
+                               onchange="ComprasModals.actualizarPrecioProductoEdicion(${index}, this.value)"
+                               class="w-24 px-2 py-1 border border-gray-300 rounded text-center">
+                    </td>
+                    <td class="px-4 py-2 font-medium">S/ ${subtotal.toFixed(2)}</td>
+                    <td class="px-4 py-2">
+                        <button type="button" onclick="ComprasModals.eliminarProductoEdicion(${index})" 
+                                class="text-red-600 hover:text-red-900 px-2 py-1 rounded" title="Eliminar producto">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        // Actualizar totales
+        totalElement.textContent = totalActual.toFixed(2);
+        
+        // Calcular diferencia si existe el elemento
+        if (diferenciaElement && totalOriginalElement) {
+            const totalOriginal = parseFloat(totalOriginalElement.textContent || 0);
+            const diferencia = totalActual - totalOriginal;
+            diferenciaElement.textContent = diferencia.toFixed(2);
+            diferenciaElement.className = diferencia >= 0 ? 'text-green-600' : 'text-red-600';
+        }
+    },
+    
+    actualizarCantidadProductoEdicion(index, nuevaCantidad) {
+        if (window.ComprasModule.productosEditandoActual && window.ComprasModule.productosEditandoActual[index]) {
+            window.ComprasModule.productosEditandoActual[index].cantidad = parseInt(nuevaCantidad) || 1;
+            this.updateProductosEditarCompraTable();
+        }
+    },
+    
+    actualizarPrecioProductoEdicion(index, nuevoPrecio) {
+        if (window.ComprasModule.productosEditandoActual && window.ComprasModule.productosEditandoActual[index]) {
+            window.ComprasModule.productosEditandoActual[index].precioCompra = parseFloat(nuevoPrecio) || 0;
+            this.updateProductosEditarCompraTable();
+        }
+    },
+    
+    eliminarProductoEdicion(index) {
+        if (window.ComprasModule.productosEditandoActual && confirm('¿Estás seguro de eliminar este producto de la compra?')) {
+            window.ComprasModule.productosEditandoActual.splice(index, 1);
+            this.updateProductosEditarCompraTable();
+        }
+    },
+    
+    async handleEditarCompra(e) {
+        e.preventDefault();
+        
+        // Prevenir envíos duplicados
+        if (this.isSubmitting) {
+            return;
+        }
+        this.isSubmitting = true;
+        
+        if (!window.ComprasModule.productosEditandoActual || window.ComprasModule.productosEditandoActual.length === 0) {
+            ComprasUtils.showNotification('Debe tener al menos un producto en la compra', 'error');
+            this.isSubmitting = false;
+            return;
+        }
+        
+        // Deshabilitar el botón de envío
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+        }
+        
+        const formData = {
+            compraId: document.getElementById('editar-compra-id').value,
+            proveedorId: document.getElementById('editar-proveedor-compra').value,
+            fecha: document.getElementById('editar-fecha-compra').value,
+            factura: document.getElementById('editar-factura-compra').value,
+            metodoPago: document.getElementById('editar-metodo-pago-compra').value,
+            observaciones: document.getElementById('editar-observaciones-compra').value,
+            productosOriginales: window.ComprasModule.productosOriginalEditando,
+            productosNuevos: window.ComprasModule.productosEditandoActual
+        };
+        
+        const success = await ComprasData.actualizarCompra(formData);
+        
+        // Restaurar el botón
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cambios';
+        }
+        
+        this.isSubmitting = false;
+        
+        if (success) {
+            // Limpiar variables temporales
+            window.ComprasModule.productosOriginalEditando = [];
+            window.ComprasModule.productosEditandoActual = [];
+            window.ComprasModule.compraEditandoId = null;
+            window.ComprasModule.editandoCompra = false;
+            
+            this.closeModal('modal-editar-compra');
+        }
     }
 };
 

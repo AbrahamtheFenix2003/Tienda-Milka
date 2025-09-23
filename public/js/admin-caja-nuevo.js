@@ -65,40 +65,12 @@ window.loadCaja = function() {
 
             <!-- Filtros -->
             <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex flex-wrap gap-4 items-end">
-                    <!-- Rango de Fechas -->
-                    <div class="border border-blue-200 rounded-lg p-3 bg-blue-50">
-                        <label class="block text-sm font-medium text-blue-700 mb-2">
-                            <i class="fas fa-calendar-alt mr-1"></i>Rango de Fechas
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <div>
-                                <label class="block text-xs text-gray-600 mb-1">Desde</label>
-                                <input type="date" id="filtro-fecha-desde" 
-                                       class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            </div>
-                            <div class="text-gray-400 mt-4">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-600 mb-1">Hasta</label>
-                                <input type="date" id="filtro-fecha-hasta" 
-                                       class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            </div>
-                            <button id="limpiar-fechas-caja" type="button" 
-                                    class="bg-blue-500 text-white px-2 py-2 rounded hover:bg-blue-600 transition-colors mt-4"
-                                    title="Limpiar rango de fechas">
-                                <i class="fas fa-times text-xs"></i>
-                            </button>
-                        </div>
-                        <div id="rango-fechas-caja-info" class="mt-1 text-xs text-blue-600 min-h-4">
-                            <!-- Info del rango seleccionado -->
-                        </div>
+                <div class="flex flex-wrap gap-4 items-center">
+                    <div class="flex-shrink-0">
+                        <input type="date" id="filtro-fecha-caja" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     
-                    <!-- Otros Filtros -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                    <div class="flex-shrink-0">
                         <select id="filtro-tipo-movimiento" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="todos">Todos los movimientos</option>
                             <option value="entrada">Solo entradas</option>
@@ -106,8 +78,7 @@ window.loadCaja = function() {
                         </select>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <div class="flex-shrink-0">
                         <select id="filtro-categoria-caja" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="todas">Todas las categorías</option>
                             <option value="ventas">Ventas</option>
@@ -119,13 +90,15 @@ window.loadCaja = function() {
                         </select>
                     </div>
 
-                    <!-- Botones de Acción -->
-                    <div class="flex gap-2">
-                        <button id="aplicar-filtros-caja" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
-                            <i class="fas fa-filter mr-2"></i>Aplicar
+                    <div class="flex-shrink-0">
+                        <button id="aplicar-filtros-caja" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                            <i class="fas fa-filter mr-2"></i>Filtrar
                         </button>
+                    </div>
+
+                    <div class="flex-shrink-0">
                         <button id="limpiar-filtros-caja" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
-                            <i class="fas fa-eraser mr-2"></i>Limpiar Todo
+                            <i class="fas fa-eraser mr-2"></i>Limpiar
                         </button>
                     </div>
                 </div>
@@ -147,7 +120,6 @@ window.loadCaja = function() {
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="movimientos-caja-tbody" class="bg-white divide-y divide-gray-200">
@@ -282,17 +254,12 @@ function setupCajaEvents() {
     // Eventos para filtros
     document.getElementById('aplicar-filtros-caja').addEventListener('click', aplicarFiltrosCaja);
     document.getElementById('limpiar-filtros-caja').addEventListener('click', limpiarFiltrosCaja);
-    document.getElementById('limpiar-fechas-caja').addEventListener('click', limpiarRangoFechasCaja);
-    
-    // Eventos para el rango de fechas
-    document.getElementById('filtro-fecha-desde').addEventListener('change', updateRangoFechasCajaInfo);
-    document.getElementById('filtro-fecha-hasta').addEventListener('change', updateRangoFechasCajaInfo);
 
     // Eventos para modales
     setupModalEvents();
 
-    // Inicializar información del rango de fechas
-    updateRangoFechasCajaInfo();
+    // Configurar fecha de hoy por defecto
+    document.getElementById('filtro-fecha-caja').value = new Date().toISOString().split('T')[0];
 }
 
 function setupModalEvents() {
@@ -368,17 +335,10 @@ async function loadMovimientosCaja() {
 
 function calcularSaldoActual() {
     console.log('📊 Calculando saldo actual de caja...');
-    console.log(`📦 Total movimientos en cache: ${movimientosCajaCache.length}`);
     
     let totalEntradas = 0;
     let totalSalidas = 0;
     let saldo = 0;
-    
-    // DEBUG: Mostrar todos los movimientos primero
-    console.log('🔍 DEPURACIÓN - Todos los movimientos:');
-    movimientosCajaCache.forEach((movimiento, index) => {
-        console.log(`   [${index}] Tipo: "${movimiento.tipo}" | Monto: ${movimiento.monto} | Desc: "${movimiento.descripcion}" | Cat: "${movimiento.categoria}"`);
-    });
     
     // Calcular desde todos los movimientos (excluyendo apertura de caja)
     movimientosCajaCache.forEach((movimiento, index) => {
@@ -392,12 +352,10 @@ function calcularSaldoActual() {
             totalEntradas += movimiento.monto || 0;
             saldo += movimiento.monto || 0;
             console.log(`✅ ENTRADA S/ ${(movimiento.monto || 0).toFixed(2)} - ${movimiento.descripcion || 'Sin desc'}`);
-        } else if (movimiento.tipo === 'salida' || movimiento.tipo === 'egreso') {
+        } else if (movimiento.tipo === 'salida') {
             totalSalidas += movimiento.monto || 0;
             saldo -= movimiento.monto || 0;
-            console.log(`❌ SALIDA/EGRESO S/ ${(movimiento.monto || 0).toFixed(2)} - ${movimiento.descripcion || 'Sin desc'}`);
-        } else {
-            console.log(`⚠️ TIPO DESCONOCIDO: "${movimiento.tipo}" - Monto: ${movimiento.monto} - ${movimiento.descripcion}`);
+            console.log(`❌ SALIDA S/ ${(movimiento.monto || 0).toFixed(2)} - ${movimiento.descripcion || 'Sin desc'}`);
         }
     });
     
@@ -424,7 +382,7 @@ function renderMovimientosCaja(movimientos = null) {
     if (movimientosAMostrar.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
                     No hay movimientos de caja registrados
                 </td>
             </tr>
@@ -451,7 +409,7 @@ function renderMovimientosCaja(movimientos = null) {
         // Calcular saldo acumulado (excluyendo apertura de caja)
         if (movimiento.tipo === 'entrada') {
             saldoAcumulado += movimiento.monto || 0;
-        } else if (movimiento.tipo === 'salida' || movimiento.tipo === 'egreso') {
+        } else if (movimiento.tipo === 'salida') {
             saldoAcumulado -= movimiento.monto || 0;
         }
 
@@ -475,20 +433,6 @@ function renderMovimientosCaja(movimientos = null) {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${movimiento.usuario || 'Sistema'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                        <button onclick="editarMovimientoCaja('${movimiento.id}')" 
-                                class="text-blue-600 hover:text-blue-900 p-1 rounded" 
-                                title="Editar movimiento">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="eliminarMovimientoCaja('${movimiento.id}', '${movimiento.tipo}', ${movimiento.monto})" 
-                                class="text-red-600 hover:text-red-900 p-1 rounded" 
-                                title="Eliminar movimiento">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
                 </td>
             </tr>
         `;
@@ -590,79 +534,26 @@ async function guardarNuevaSalida(e) {
 }
 
 function aplicarFiltrosCaja() {
-    const fechaDesde = document.getElementById('filtro-fecha-desde').value;
-    const fechaHasta = document.getElementById('filtro-fecha-hasta').value;
+    const fecha = document.getElementById('filtro-fecha-caja').value;
     const tipo = document.getElementById('filtro-tipo-movimiento').value;
     const categoria = document.getElementById('filtro-categoria-caja').value;
     
     let movimientosFiltrados = [...movimientosCajaCache];
     
-    console.log(`🔍 FILTRO DEBUG - Rango: "${fechaDesde}" a "${fechaHasta}", Tipo: "${tipo}", Categoría: "${categoria}"`);
-    console.log(`🔍 FILTRO DEBUG - Total movimientos antes de filtrar: ${movimientosFiltrados.length}`);
-    
-    // Filtrar por rango de fechas
-    if (fechaDesde || fechaHasta) {
+    // Filtrar por fecha
+    if (fecha) {
         movimientosFiltrados = movimientosFiltrados.filter(movimiento => {
-            let fechaMovimiento = null;
-            
-            if (movimiento.fecha) {
-                // Si ya es un string de fecha, usarlo directamente
-                if (typeof movimiento.fecha === 'string') {
-                    fechaMovimiento = movimiento.fecha;
-                } else if (movimiento.fecha.toDate) {
-                    fechaMovimiento = movimiento.fecha.toDate().toISOString().split('T')[0];
-                } else if (movimiento.fecha instanceof Date) {
-                    fechaMovimiento = movimiento.fecha.toISOString().split('T')[0];
-                }
-            } else if (movimiento.timestamp && movimiento.timestamp.toDate) {
-                fechaMovimiento = movimiento.timestamp.toDate().toISOString().split('T')[0];
-            } else if (movimiento.timestamp instanceof Date) {
-                fechaMovimiento = movimiento.timestamp.toISOString().split('T')[0];
-            } else if (typeof movimiento.timestamp === 'string') {
-                // Si timestamp es string, intentar parsearlo
-                const parsedDate = new Date(movimiento.timestamp);
-                if (!isNaN(parsedDate.getTime())) {
-                    fechaMovimiento = parsedDate.toISOString().split('T')[0];
-                }
-            }
-            
-            if (!fechaMovimiento) return false;
-            
-            // Aplicar filtro por rango
-            let dentroDelRango = true;
-            
-            if (fechaDesde && fechaMovimiento < fechaDesde) {
-                dentroDelRango = false;
-            }
-            
-            if (fechaHasta && fechaMovimiento > fechaHasta) {
-                dentroDelRango = false;
-            }
-            
-            console.log(`🔍 FILTRO DEBUG - Fecha: "${fechaMovimiento}", En rango: ${dentroDelRango}`);
-            return dentroDelRango;
+            const fechaMovimiento = movimiento.fecha || (movimiento.timestamp ? 
+                movimiento.timestamp.toDate().toISOString().split('T')[0] : null);
+            return fechaMovimiento === fecha;
         });
-        console.log(`🔍 FILTRO DEBUG - Movimientos después de filtrar por rango: ${movimientosFiltrados.length}`);
     }
     
     // Filtrar por tipo
     if (tipo !== 'todos') {
-        movimientosFiltrados = movimientosFiltrados.filter(movimiento => {
-            let coincide = false;
-            if (tipo === 'entrada') {
-                coincide = movimiento.tipo === 'entrada';
-            } else if (tipo === 'salida') {
-                // Incluir tanto 'salida' como 'egreso' para compatibilidad
-                coincide = movimiento.tipo === 'salida' || movimiento.tipo === 'egreso';
-            } else {
-                coincide = movimiento.tipo === tipo;
-            }
-            
-            console.log(`🔍 FILTRO DEBUG - Movimiento: ${movimiento.descripcion || 'Sin descripción'}, Tipo movimiento: "${movimiento.tipo}", Tipo filtro: "${tipo}", Coincide: ${coincide}`);
-            
-            return coincide;
-        });
-        console.log(`🔍 FILTRO DEBUG - Movimientos después de filtrar por tipo: ${movimientosFiltrados.length}`);
+        movimientosFiltrados = movimientosFiltrados.filter(movimiento => 
+            movimiento.tipo === tipo
+        );
     }
     
     // Filtrar por categoría
@@ -670,73 +561,16 @@ function aplicarFiltrosCaja() {
         movimientosFiltrados = movimientosFiltrados.filter(movimiento => 
             movimiento.categoria === categoria
         );
-        console.log(`🔍 FILTRO DEBUG - Movimientos después de filtrar por categoría: ${movimientosFiltrados.length}`);
     }
-    
-    console.log(`🔍 FILTRO DEBUG - RESULTADO FINAL: ${movimientosFiltrados.length} movimientos`);
     
     renderMovimientosCaja(movimientosFiltrados);
 }
 
 function limpiarFiltrosCaja() {
-    document.getElementById('filtro-fecha-desde').value = '';
-    document.getElementById('filtro-fecha-hasta').value = '';
+    document.getElementById('filtro-fecha-caja').value = '';
     document.getElementById('filtro-tipo-movimiento').value = 'todos';
     document.getElementById('filtro-categoria-caja').value = 'todas';
-    updateRangoFechasCajaInfo();
     renderMovimientosCaja();
-}
-
-function limpiarRangoFechasCaja() {
-    document.getElementById('filtro-fecha-desde').value = '';
-    document.getElementById('filtro-fecha-hasta').value = '';
-    updateRangoFechasCajaInfo();
-    aplicarFiltrosCaja();
-}
-
-function updateRangoFechasCajaInfo() {
-    const fechaDesde = document.getElementById('filtro-fecha-desde').value;
-    const fechaHasta = document.getElementById('filtro-fecha-hasta').value;
-    const infoElement = document.getElementById('rango-fechas-caja-info');
-    
-    if (!infoElement) return;
-    
-    if (fechaDesde && fechaHasta) {
-        const desde = new Date(fechaDesde).toLocaleDateString('es-PE');
-        const hasta = new Date(fechaHasta).toLocaleDateString('es-PE');
-        
-        // Calcular días en el rango
-        const diffTime = new Date(fechaHasta) - new Date(fechaDesde);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        
-        if (diffTime >= 0) {
-            infoElement.innerHTML = `<i class="fas fa-calendar-check mr-1"></i>Rango: ${desde} - ${hasta} (${diffDays} día${diffDays > 1 ? 's' : ''})`;
-            infoElement.className = 'mt-1 text-xs text-green-600 min-h-4';
-            
-            // Auto-aplicar filtro cuando el rango es válido
-            setTimeout(() => aplicarFiltrosCaja(), 100);
-        } else {
-            infoElement.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i>Fecha 'hasta' debe ser posterior a fecha 'desde'`;
-            infoElement.className = 'mt-1 text-xs text-red-600 min-h-4';
-        }
-    } else if (fechaDesde) {
-        const desde = new Date(fechaDesde).toLocaleDateString('es-PE');
-        infoElement.innerHTML = `<i class="fas fa-calendar-plus mr-1"></i>Desde: ${desde} (sin límite superior)`;
-        infoElement.className = 'mt-1 text-xs text-blue-600 min-h-4';
-        
-        // Auto-aplicar filtro con solo fecha desde
-        setTimeout(() => aplicarFiltrosCaja(), 100);
-    } else if (fechaHasta) {
-        const hasta = new Date(fechaHasta).toLocaleDateString('es-PE');
-        infoElement.innerHTML = `<i class="fas fa-calendar-minus mr-1"></i>Hasta: ${hasta} (sin límite inferior)`;
-        infoElement.className = 'mt-1 text-xs text-blue-600 min-h-4';
-        
-        // Auto-aplicar filtro con solo fecha hasta
-        setTimeout(() => aplicarFiltrosCaja(), 100);
-    } else {
-        infoElement.innerHTML = '';
-        infoElement.className = 'mt-1 text-xs text-blue-600 min-h-4';
-    }
 }
 
 // Función para registrar automáticamente movimientos de caja desde otros módulos
@@ -800,196 +634,6 @@ function showMessage(message, type = 'info') {
     setTimeout(() => {
         alertDiv.remove();
     }, 5000);
-}
-
-// Función para eliminar movimiento de caja
-window.eliminarMovimientoCaja = async function(movimientoId, tipo, monto) {
-    if (!confirm(`¿Estás seguro de eliminar este movimiento de ${tipo} por S/ ${monto.toFixed(2)}?\n\nEsta acción no se puede deshacer y afectará el saldo de caja.`)) {
-        return;
-    }
-
-    try {
-        // Obtener el movimiento para verificar permisos
-        const movimientoDoc = await window.db.collection('movimientos_caja').doc(movimientoId).get();
-        
-        if (!movimientoDoc.exists) {
-            alert('El movimiento no existe o ya fue eliminado');
-            return;
-        }
-
-        const movimientoData = movimientoDoc.data();
-        
-        // Solo permitir eliminar movimientos manuales (no automáticos de ventas/compras)
-        if (movimientoData.relatedTo && (movimientoData.relatedTo === 'venta' || movimientoData.relatedTo === 'compra')) {
-            alert('No se pueden eliminar movimientos automáticos generados por ventas o compras.\n\nDebes cancelar la operación original desde el módulo correspondiente.');
-            return;
-        }
-
-        // Eliminar el movimiento
-        await window.db.collection('movimientos_caja').doc(movimientoId).delete();
-        
-        showMessage(`Movimiento de ${tipo} eliminado correctamente`, 'success');
-        
-        // Recargar datos
-        await loadMovimientosCaja();
-        
-    } catch (error) {
-        console.error('Error eliminando movimiento de caja:', error);
-        showMessage('Error al eliminar el movimiento', 'error');
-    }
-};
-
-// Función para editar movimiento de caja
-window.editarMovimientoCaja = async function(movimientoId) {
-    try {
-        // Obtener datos del movimiento
-        const movimientoDoc = await window.db.collection('movimientos_caja').doc(movimientoId).get();
-        
-        if (!movimientoDoc.exists) {
-            alert('El movimiento no existe');
-            return;
-        }
-
-        const movimientoData = movimientoDoc.data();
-        
-        // Solo permitir editar movimientos manuales
-        if (movimientoData.relatedTo && (movimientoData.relatedTo === 'venta' || movimientoData.relatedTo === 'compra')) {
-            alert('No se pueden editar movimientos automáticos generados por ventas o compras.\n\nDebes modificar la operación original desde el módulo correspondiente.');
-            return;
-        }
-
-        // Crear modal de edición dinámicamente
-        mostrarModalEditarMovimiento(movimientoId, movimientoData);
-        
-    } catch (error) {
-        console.error('Error cargando movimiento para editar:', error);
-        showMessage('Error al cargar el movimiento', 'error');
-    }
-};
-
-// Función para mostrar modal de edición
-function mostrarModalEditarMovimiento(movimientoId, movimientoData) {
-    const modalHtml = `
-        <div id="modal-editar-movimiento" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Editar Movimiento</h3>
-                    <button onclick="cerrarModalEditarMovimiento()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <form id="form-editar-movimiento">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                            <select id="edit-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="entrada" ${movimientoData.tipo === 'entrada' ? 'selected' : ''}>Entrada</option>
-                                <option value="salida" ${movimientoData.tipo === 'salida' || movimientoData.tipo === 'egreso' ? 'selected' : ''}>Salida</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                            <select id="edit-categoria" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="venta" ${movimientoData.categoria === 'venta' ? 'selected' : ''}>Venta</option>
-                                <option value="compra" ${movimientoData.categoria === 'compra' ? 'selected' : ''}>Compra</option>
-                                <option value="gastos_operativos" ${movimientoData.categoria === 'gastos_operativos' ? 'selected' : ''}>Gastos Operativos</option>
-                                <option value="inversion" ${movimientoData.categoria === 'inversion' ? 'selected' : ''}>Inversión</option>
-                                <option value="retiro" ${movimientoData.categoria === 'retiro' ? 'selected' : ''}>Retiro</option>
-                                <option value="deposito" ${movimientoData.categoria === 'deposito' ? 'selected' : ''}>Depósito</option>
-                                <option value="otros" ${movimientoData.categoria === 'otros' ? 'selected' : ''}>Otros</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                            <textarea id="edit-descripcion" rows="3" required 
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Describe el movimiento...">${movimientoData.descripcion || ''}</textarea>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Monto (S/)</label>
-                            <input type="number" id="edit-monto" step="0.01" min="0.01" required 
-                                   value="${movimientoData.monto || ''}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" onclick="cerrarModalEditarMovimiento()" 
-                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
-                            Cancelar
-                        </button>
-                        <button type="submit" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Guardar Cambios
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Configurar evento del formulario
-    document.getElementById('form-editar-movimiento').addEventListener('submit', (e) => {
-        guardarCambiosMovimiento(e, movimientoId);
-    });
-}
-
-// Función para cerrar modal de edición
-window.cerrarModalEditarMovimiento = function() {
-    const modal = document.getElementById('modal-editar-movimiento');
-    if (modal) {
-        modal.remove();
-    }
-};
-
-// Función para guardar cambios del movimiento
-async function guardarCambiosMovimiento(e, movimientoId) {
-    e.preventDefault();
-    
-    try {
-        const tipo = document.getElementById('edit-tipo').value;
-        const categoria = document.getElementById('edit-categoria').value;
-        const descripcion = document.getElementById('edit-descripcion').value.trim();
-        const monto = parseFloat(document.getElementById('edit-monto').value);
-        
-        if (!descripcion) {
-            alert('La descripción es obligatoria');
-            return;
-        }
-        
-        if (isNaN(monto) || monto <= 0) {
-            alert('El monto debe ser mayor a 0');
-            return;
-        }
-        
-        // Actualizar el movimiento
-        const updateData = {
-            tipo: tipo,
-            categoria: categoria,
-            descripcion: descripcion,
-            monto: monto,
-            updatedAt: window.serverTimestamp(),
-            updatedBy: window.currentUser ? window.currentUser.email : 'Sistema'
-        };
-        
-        await window.db.collection('movimientos_caja').doc(movimientoId).update(updateData);
-        
-        showMessage('Movimiento actualizado correctamente', 'success');
-        cerrarModalEditarMovimiento();
-        
-        // Recargar datos
-        await loadMovimientosCaja();
-        
-    } catch (error) {
-        console.error('Error actualizando movimiento:', error);
-        showMessage('Error al actualizar el movimiento', 'error');
-    }
 }
 
 console.log('admin-caja-nuevo.js cargado correctamente');

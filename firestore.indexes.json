@@ -4,17 +4,50 @@
       "collectionGroup": "stock_por_lote",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "productoId", "order": "ASCENDING" },
-        { "fieldPath": "fechaIngreso", "order": "ASCENDING" }
-      ]
+        {
+          "fieldPath": "productoId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "cantidad",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
     },
     {
-      "collectionGroup": "movimientos_inventario",
-      "queryScope": "COLLECTION", 
+      "collectionGroup": "stock_por_lote",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "productoId", "order": "ASCENDING" },
-        { "fieldPath": "fecha", "order": "DESCENDING" }
-      ]
+        {
+          "fieldPath": "productoId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "cantidad",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fechaIngreso",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "stock_por_lote",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "productoId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fechaIngreso",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
     }
   ],
   "fieldOverrides": []

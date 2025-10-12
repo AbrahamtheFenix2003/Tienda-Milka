@@ -369,18 +369,6 @@
                         <span class="sidebar-text">Análisis de Rentabilidad</span>
                     </a>
                 </li>
-                <li class="mb-2" id="nav-stockinicial-li">
-                    <a href="actualizacion-stock-inicial.html" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-tooltip="Stock Inicial">
-                        <i class="sidebar-icon fas fa-warehouse mr-3"></i>
-                        <span class="sidebar-text">Actualización de Stock Inicial</span>
-                    </a>
-                </li>
-                <li class="mb-2" id="nav-egresos-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="egresos" data-tooltip="Egresos">
-                        <i class="sidebar-icon fas fa-credit-card mr-3"></i>
-                        <span class="sidebar-text">Egresos</span>
-                    </a>
-                </li>
                 <li class="mb-2" id="nav-almacen-li">
                     <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="almacen" data-tooltip="Almacén">
                         <i class="sidebar-icon fas fa-warehouse mr-3"></i>
@@ -460,7 +448,6 @@
         let productsCache = [];
         let categoriesCache = [];
         let allSales = [];
-        let allExpenses = [];
         let salesChart, categoryChart;
         // Variables para ventas movidas a archivo específico
 
@@ -514,6 +501,13 @@
                 window.allExpenses = [];
                 
                 setupAdminPanel();
+                
+                // Registrar el Service Worker "kamikaze"
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(reg => console.log('SW kamikaze registrado:', reg))
+                        .catch(err => console.error('Error registrando SW kamikaze:', err));
+                }
             } catch (error) {
                 console.error("Error al inicializar Firebase:", error);
                 showError('Error de conexión. Por favor recarga la página.');
@@ -574,9 +568,6 @@
                 // Ocultar análisis de rentabilidad para vendedores simples
                 document.getElementById('nav-rentabilidad-li').style.display = 'none';
                 // Ocultar egresos para vendedores simples
-                document.getElementById('nav-egresos-li').style.display = 'none';
-                // Ocultar actualización de stock inicial para vendedores simples
-                document.getElementById('nav-stockinicial-li').style.display = 'none';
                 // Ocultar nuevos módulos para vendedores simples
                 document.getElementById('nav-almacen-li').style.display = 'none';
                 document.getElementById('nav-compras-li').style.display = 'none';
@@ -586,8 +577,6 @@
                 document.getElementById('nav-productos-li').style.display = 'block';
                 document.getElementById('nav-reportes-li').style.display = 'block';
                 document.getElementById('nav-rentabilidad-li').style.display = 'block';
-                document.getElementById('nav-egresos-li').style.display = 'block';
-                document.getElementById('nav-stockinicial-li').style.display = 'block';
                 document.getElementById('nav-almacen-li').style.display = 'block';
                 document.getElementById('nav-compras-li').style.display = 'block';
                 document.getElementById('nav-caja-li').style.display = 'block';
@@ -596,8 +585,6 @@
                 document.getElementById('nav-productos-li').style.display = 'block';
                 document.getElementById('nav-reportes-li').style.display = 'block';
                 document.getElementById('nav-rentabilidad-li').style.display = 'block';
-                document.getElementById('nav-egresos-li').style.display = 'block';
-                document.getElementById('nav-stockinicial-li').style.display = 'block';
                 document.getElementById('nav-almacen-li').style.display = 'block';
                 document.getElementById('nav-compras-li').style.display = 'block';
                 document.getElementById('nav-caja-li').style.display = 'block';
@@ -627,7 +614,7 @@
             // Logout
             document.getElementById('logout-btn').addEventListener('click', () => {
                 auth.signOut().then(() => {
-                    window.location.href = '/';
+                    window.location.href = '/login.html';
                 }).catch(error => {
                     console.error('Error al cerrar sesión:', error);
                 });
@@ -731,10 +718,6 @@
                 // Cargar ventas
                 await loadSales();
                 
-                // Cargar egresos solo para admins
-                if (isAdmin(currentUser.email)) {
-                    await loadExpenses();
-                }
                 
                 console.log('Datos iniciales cargados correctamente');
             } catch (error) {
@@ -830,42 +813,12 @@
             }
         }
 
-        async function loadExpenses() {
-            try {
-                const querySnapshot = await db.collection("expenses").get();
-                allExpenses = [];
-                querySnapshot.forEach((doc) => {
-                    allExpenses.push({ id: doc.id, ...doc.data() });
-                });
-                
-                // Ordenar por fecha
-                allExpenses.sort((a, b) => {
-                    const getTimestamp = (expense) => {
-                        if (expense.timestamp && expense.timestamp.toDate) {
-                            return expense.timestamp.toDate().getTime();
-                        } else if (expense.timestamp) {
-                            return new Date(expense.timestamp).getTime();
-                        } else if (expense.date) {
-                            return new Date(expense.date).getTime();
-                        }
-                        return 0;
-                    };
-                    return getTimestamp(b) - getTimestamp(a);
-                });
-                
-                window.allExpenses = allExpenses;
-                console.log(`Cargados ${allExpenses.length} egresos`);
-            } catch (error) {
-                console.error("Error cargando egresos:", error);
-            }
-        }
 
         // Hacer funciones de carga disponibles globalmente
         window.loadProducts = loadProducts;
         window.loadCategories = loadCategories;
         window.loadProveedores = loadProveedores;
         window.loadSales = loadSales;
-        window.loadExpenses = loadExpenses;
 
         // Funciones helper de Firebase para los archivos JS
         window.addDoc = (collection, data) => collection.add(data);
@@ -899,7 +852,6 @@
                 'ventas': 'Registro de Ventas',
                 'reportes': 'Reportes',
                 'rentabilidad': 'Análisis de Rentabilidad',
-                'egresos': 'Gestión de Egresos',
                 'almacen': 'Gestión de Almacén',
                 'compras': 'Gestión de Compras',
                 'caja': 'Gestión de Caja',
@@ -986,22 +938,6 @@
                                 loadRentabilidad();
                             } else {
                                 showError('Error: No se pudo cargar el análisis de rentabilidad');
-                            }
-                        }, 1000);
-                    }
-                    break;
-                case 'egresos':
-                    if (typeof loadEgresos === 'function') {
-                        console.log('Cargando egresos...');
-                        loadEgresos();
-                    } else {
-                        console.log('loadEgresos no está disponible');
-                        showLoading('Cargando Egresos...');
-                        setTimeout(() => {
-                            if (typeof loadEgresos === 'function') {
-                                loadEgresos();
-                            } else {
-                                showError('Error: No se pudo cargar la gestión de egresos');
                             }
                         }, 1000);
                     }
@@ -1105,7 +1041,6 @@
             console.log('loadVentas:', typeof loadVentas);
             console.log('loadReportes:', typeof loadReportes);
             console.log('loadRentabilidad:', typeof loadRentabilidad);
-            console.log('loadEgresos:', typeof loadEgresos);
             console.log('loadAlmacen:', typeof loadAlmacen);
             console.log('loadCompras:', typeof loadCompras);
             console.log('loadCaja:', typeof loadCaja);
@@ -1118,7 +1053,6 @@
     <script src="/js/admin-ventas.js"></script>
     <script src="/js/admin-reportes.js"></script>
     <script src="/js/admin-rentabilidad.js"></script>
-    <script src="/js/admin-egresos.js"></script>
     <script src="/js/admin-almacen.js"></script>
     
     <!-- Módulos de compras refactorizados -->

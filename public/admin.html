@@ -154,7 +154,7 @@
     </div>
 
     <script type="module">
-        import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
+        import { initFirebase, setupNavigation } from "./js/common.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         // ✨ CAMBIO 1: Importamos 'onSnapshot' y 'query' para escuchar en tiempo real ✨
         import { getFirestore, collection, addDoc, getDoc, deleteDoc, doc, updateDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -189,7 +189,6 @@
                 db = getFirestore(app);
                 storage = getStorage(app);
                 setupAdminPage();
-                registerServiceWorker();
             } catch (error) {
                 console.error("Error al inicializar Firebase:", error);
             }

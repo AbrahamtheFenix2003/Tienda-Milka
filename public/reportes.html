@@ -12,6 +12,12 @@
         .modal { display: none; }
         .modal.active { display: flex; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        if (typeof window.jsPDF === 'undefined' && typeof jsPDF !== 'undefined') {
+            window.jsPDF = jsPDF;
+        }
+    </script>
 </head>
 <body class="bg-gray-100">
 
@@ -269,9 +275,18 @@
             </div>
 
 
-            <h3 class="text-xl font-bold mb-4">Historial de Ventas</h3>
-            <div id="sales-list" class="space-y-3">
-                <p>Cargando ventas...</p>
+            <div class="mb-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-rose-50 border border-rose-100 rounded-xl px-4 py-4">
+                    <div class="flex items-center gap-3 text-rose-600">
+                        <h3 class="text-xl font-bold tracking-tight text-rose-700">Historial de Ventas</h3>
+                        <button id="generate-pdf-btn" class="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <span class="hidden sm:inline">Generar PDF</span>
+                            <span class="sm:hidden">PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="sales-list" class="space-y-3">                <p>Cargando ventas...</p>
             </div>
         </div>
     </main>
@@ -279,13 +294,30 @@
     <!-- MODAL PARA VER DETALLES DE LA VENTA -->
     <div id="sale-details-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-4 gap-3">
+
                 <h3 class="text-xl font-bold">Detalles de la Venta</h3>
-                <button id="close-details-modal" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+
+                <div class="flex items-center gap-2">
+
+                    <button id="download-sale-details-btn" class="inline-flex items-center gap-1 px-3 py-1.5 border border-rose-200 text-rose-600 hover:bg-rose-50 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+
+                        Descargar
+
+                    </button>
+
+                    <button id="close-details-modal" class="text-gray-400 hover:text-gray-600">
+
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+
+                        </svg>
+
+                    </button>
+
+                </div>
+
             </div>
             <div id="sale-details-content"></div>
         </div>
@@ -323,7 +355,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 
     <script type="module">
-        import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
+        import { initFirebase, setupNavigation } from "./js/common.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -334,8 +366,24 @@
         let productsCache = [];
         let allSales = [];
         let salesChart, categoryChart;
+        let displayedSales = [];
         let saleItems = []; // Productos en la venta actual
-        
+
+        function getSaleDate(sale) {
+            if (sale.timestamp && sale.timestamp.toDate) {
+                return sale.timestamp.toDate();
+            } else if (sale.timestamp) {
+                return new Date(sale.timestamp);
+            } else if (sale.soldAt && sale.soldAt.toDate) {
+                return sale.soldAt.toDate();
+            } else if (sale.soldAt) {
+                return new Date(sale.soldAt);
+            } else if (sale.date) {
+                return new Date(sale.date);
+            }
+            return null;
+        }
+
         // Variables para egresos
         let allExpenses = [];
         let totalExpenses = 0;
@@ -462,7 +510,6 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
                 setupPage();
-                registerServiceWorker();
             } catch (error) {
                 console.error("Error al inicializar Firebase:", error);
             }
@@ -586,6 +633,12 @@
                     document.getElementById('product-suggestions').classList.add('hidden');
                 }
             });
+
+            const pdfButton = document.getElementById('generate-pdf-btn');
+            if (pdfButton) {
+                pdfButton.addEventListener('click', generateSalesHistoryPdf);
+                pdfButton.disabled = true;
+            }
         }
 
         async function loadInitialData() {
@@ -1266,229 +1319,248 @@
         function displaySales() {
             const salesList = document.getElementById('sales-list');
             if (!salesList) return;
-            
-            console.log(`Mostrando ${allSales.length} ventas en el historial`);
-            
-            if (allSales.length === 0) {
-                salesList.innerHTML = '<p class="text-gray-500 text-center">No hay ventas registradas.</p>';
+
+            displayedSales = [...allSales];
+
+            const pdfButton = document.getElementById('generate-pdf-btn');
+            if (pdfButton) {
+                pdfButton.disabled = displayedSales.length === 0;
+            }
+
+            if (displayedSales.length === 0) {
+                salesList.innerHTML = '<div class="py-8 text-center text-slate-400 border border-dashed border-rose-200 rounded-lg bg-rose-50">No hay ventas registradas.</div>';
                 return;
             }
-            
-            salesList.innerHTML = allSales.map(sale => {
-                // Manejar diferentes formatos de timestamp
-                let saleDate;
-                
-                // Debug: Ver qué tipo de timestamp tenemos
-                console.log('Sale ID:', sale.id, 'Timestamp type:', typeof sale.timestamp, 'Timestamp value:', sale.timestamp);
-                console.log('Sale date field:', sale.date, 'SoldAt field:', sale.soldAt);
-                
-                if (sale.timestamp && sale.timestamp.toDate) {
-                    // Timestamp de Firestore
-                    saleDate = sale.timestamp.toDate();
-                    console.log('Usando timestamp de Firestore:', saleDate);
-                } else if (sale.timestamp) {
-                    // Timestamp de JavaScript
-                    saleDate = new Date(sale.timestamp);
-                    console.log('Usando timestamp de JavaScript:', saleDate);
-                } else if (sale.soldAt && sale.soldAt.toDate) {
-                    // Usar soldAt si existe (ventas antiguas)
-                    saleDate = sale.soldAt.toDate();
-                    console.log('Usando soldAt de Firestore:', saleDate);
-                } else if (sale.soldAt) {
-                    // Usar soldAt como JavaScript Date
-                    saleDate = new Date(sale.soldAt);
-                    console.log('Usando soldAt de JavaScript:', saleDate);
-                } else if (sale.date) {
-                    // Usar el campo date si existe
-                    saleDate = new Date(sale.date);
-                    console.log('Usando campo date:', saleDate);
-                } else {
-                    // Fallback más inteligente - usar una fecha antigua para identificar ventas sin fecha
-                    saleDate = new Date('2024-01-01'); // Fecha fija para identificar ventas sin timestamp
-                    console.log('Usando fallback con fecha fija:', saleDate);
-                }
-                
-                // Manejar tanto ventas nuevas (con items) como ventas antiguas (producto único)
+
+            salesList.innerHTML = displayedSales.map(sale => {
+                const saleDate = getSaleDate(sale) || new Date();
+
                 let productsDisplay = '';
                 if (sale.items && Array.isArray(sale.items)) {
-                    // Venta nueva con múltiples productos
                     productsDisplay = sale.items.map(item => `${item.name} (${item.quantity}x)`).join(', ');
                 } else if (sale.productName) {
-                    // Venta antigua con un solo producto
                     productsDisplay = `${sale.productName} (${sale.quantitySold || 1}x)`;
                 } else {
                     productsDisplay = 'Productos no especificados';
                 }
 
+                const phoneTag = sale.customerPhone ? `<span class="inline-flex items-center px-2 py-1 bg-slate-100 rounded-full text-xs font-medium text-slate-600">${sale.customerPhone}</span>` : '';
+                const locationTag = sale.deliveryLocation ? `<span class="inline-flex items-center px-2 py-1 bg-rose-100 rounded-full text-xs font-medium text-rose-600">Ubicacion: ${sale.deliveryLocation}</span>` : '';
+                const metaBadges = [phoneTag, locationTag].filter(Boolean).join('');
+
+                const deliveryInfo = sale.deliveryCost && sale.deliveryCost > 0
+                    ? `<p class="text-xs text-slate-500">Incluye entrega: S/ ${sale.deliveryCost.toFixed(2)}</p>`
+                    : '';
+
+                const profitPill = sale.profit !== undefined
+                    ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${sale.profit >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}">Ganancia: S/ ${sale.profit.toFixed(2)}</span>`
+                    : '';
+
+                const paymentBadge = sale.paymentMethod
+                    ? `<span class="inline-flex items-center rounded-full bg-purple-50 text-purple-600 px-3 py-1 text-xs font-semibold">${sale.paymentMethod}</span>`
+                    : '';
+
+                const deliveryBadge = sale.deliveryMethod
+                    ? `<span class="inline-flex items-center rounded-full bg-orange-50 text-orange-600 px-3 py-1 text-xs font-semibold">${sale.deliveryMethod}</span>`
+                    : '';
+
+                const badgeRow = [paymentBadge, deliveryBadge].filter(Boolean).join('');
+
                 return `
-                <div class="bg-gray-50 p-4 rounded-lg border">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <p class="font-semibold">${sale.customerName || 'Cliente no especificado'}</p>
-                            <p class="text-sm text-gray-600">${sale.customerPhone || 'Sin teléfono'}</p>
-                            ${sale.deliveryLocation ? `<p class="text-sm text-gray-600">📍 ${sale.deliveryLocation}</p>` : ''}
+                <article class="group bg-white border border-rose-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 p-4">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div class="space-y-2">
+                            <p class="text-base font-semibold text-slate-800">${sale.customerName || 'Cliente no especificado'}</p>
+                            <div class="flex flex-wrap gap-2">${metaBadges}</div>
+                            <p class="text-sm text-slate-600"><span class="font-medium text-slate-700">Productos:</span> ${productsDisplay}</p>
                         </div>
-                        <div class="text-right">
-                            <p class="font-bold text-green-600">S/ ${(sale.totalSale || 0).toFixed(2)}</p>
-                            ${sale.deliveryCost && sale.deliveryCost > 0 ? `<p class="text-xs text-gray-500">+ S/ ${sale.deliveryCost.toFixed(2)} entrega</p>` : ''}
-                            <p class="text-sm text-gray-500">${saleDate.toLocaleDateString()}</p>
-                            ${!sale.timestamp && !sale.soldAt && !sale.date ? '<p class="text-xs text-red-500">⚠️ Sin fecha original</p>' : ''}
-                            ${sale.profit !== undefined ? `<p class="text-xs ${sale.profit >= 0 ? 'text-green-600' : 'text-red-600'}">Ganancia: S/ ${sale.profit.toFixed(2)}</p>` : ''}
+                        <div class="text-right space-y-1">
+                            <p class="text-2xl font-semibold text-rose-600">S/ ${(sale.totalSale || 0).toFixed(2)}</p>
+                            ${deliveryInfo}
+                            <p class="text-xs text-slate-500">${saleDate.toLocaleDateString('es-PE')} ${saleDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</p>
+                            ${profitPill}
                         </div>
                     </div>
-                    ${sale.paymentMethod || sale.deliveryMethod ? `
-                    <div class="text-sm text-gray-600 mb-2">
-                        ${sale.paymentMethod ? `<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs mr-2">${sale.paymentMethod}</span>` : ''}
-                        ${sale.deliveryMethod ? `<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">${sale.deliveryMethod}</span>` : ''}
-                    </div>
-                    ` : ''}
-                    <div class="text-sm mb-3">
-                        <strong>Productos:</strong> ${productsDisplay}
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <div class="text-xs text-gray-500">
-                            Vendido por: ${sale.soldBy || 'No especificado'}
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-rose-50 pt-3">
+                        <div class="flex flex-wrap gap-2">
+                            ${badgeRow}
                         </div>
-                        <div class="space-x-2">
-                            <button onclick="showSaleDetails('${sale.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="showSaleDetails('${sale.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 border border-blue-100 text-blue-600 hover:bg-blue-50 text-xs font-semibold rounded-md transition-colors">
                                 Ver Detalles
                             </button>
-                            <button onclick="confirmAnnulSale('${sale.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">
+                            <button onclick="confirmAnnulSale('${sale.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 border border-red-100 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-md transition-colors">
                                 Anular
                             </button>
                         </div>
                     </div>
-                </div>
+                    <div class="mt-3 text-xs text-slate-500">Vendido por: ${sale.soldBy || 'No especificado'}</div>
+                </article>
                 `;
             }).join('');
         }
 
-        function renderSalesChart(period = 'month') {
-            const ctx = document.getElementById('sales-chart').getContext('2d');
-            const today = dayjs();
-            const days = period === 'week' ? 7 : 30;
-            const startDate = today.subtract(days - 1, 'day');
-
-            const salesByDay = {};
-            for (let i = 0; i < days; i++) {
-                const date = startDate.add(i, 'day').format('YYYY-MM-DD');
-                salesByDay[date] = 0;
+        function generateSalesHistoryPdf() {
+            const JsPdfConstructor = window.jspdf?.jsPDF || window.jsPDF;
+            if (!JsPdfConstructor) {
+                alert('No se pudo cargar la libreria para generar PDF.');
+                return;
             }
 
-            allSales.forEach(sale => {
-                let saleDate;
-                if (sale.timestamp && sale.timestamp.toDate) {
-                    saleDate = dayjs(sale.timestamp.toDate());
-                } else if (sale.timestamp) {
-                    saleDate = dayjs(sale.timestamp);
-                } else if (sale.soldAt && sale.soldAt.toDate) {
-                    saleDate = dayjs(sale.soldAt.toDate());
-                } else if (sale.soldAt) {
-                    saleDate = dayjs(sale.soldAt);
-                } else if (sale.date) {
-                    saleDate = dayjs(sale.date);
-                } else {
-                    // Skip ventas sin fecha válida para el gráfico
-                    return;
-                }
-                
-                if (saleDate.isAfter(startDate.startOf('day')) || saleDate.isSame(startDate.startOf('day'))) {
-                    const dateKey = saleDate.format('YYYY-MM-DD');
-                    if (salesByDay[dateKey] !== undefined) {
-                        salesByDay[dateKey] += (sale.totalSale || 0);
-                    }
-                }
-            });
-
-            const labels = Object.keys(salesByDay).map(date => dayjs(date).format('DD/MM'));
-            const data = Object.values(salesByDay);
-
-            if (salesChart) {
-                salesChart.destroy();
+            if (!displayedSales || displayedSales.length === 0) {
+                alert('No hay ventas para exportar en este momento.');
+                return;
             }
 
-            salesChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Ingresos por Ventas',
-                        data: data,
-                        borderColor: '#f43f5e',
-                        backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: true } }
+            const doc = new JsPdfConstructor({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const accent = { r: 244, g: 63, b: 94 };
+            const slate = { r: 71, g: 85, b: 105 };
+            const subtle = { r: 241, g: 245, b: 249 };
+
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 14;
+            let y = 26;
+
+            const ensureSpace = (height) => {
+                if (y + height > pageHeight - 18) {
+                    doc.addPage();
+                    y = 20;
+                    doc.setTextColor(slate.r, slate.g, slate.b);
                 }
-            });
-        }
+            };
 
-        // ✨ NUEVA FUNCIÓN PARA EL GRÁFICO DE TORTA ✨
-        function renderCategoryChart() {
-            const ctx = document.getElementById('category-chart').getContext('2d');
+            doc.setFillColor(accent.r, accent.g, accent.b);
+            doc.rect(margin, 12, pageWidth - margin * 2, 12, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(15);
+            doc.text('Historial de Ventas', pageWidth / 2, 20, { align: 'center' });
 
-            // 1. Agrupar ventas por categoría
-            const salesByCategory = {};
-            allSales.forEach(sale => {
-                if (sale.items && Array.isArray(sale.items)) {
-                    // Ventas nuevas con múltiples productos
-                    sale.items.forEach(item => {
-                        const category = item.category || 'Sin Categoría';
-                        if (!salesByCategory[category]) {
-                            salesByCategory[category] = 0;
-                        }
-                        salesByCategory[category] += item.quantity * item.price;
-                    });
-                } else {
-                    // Ventas antiguas con un solo producto
-                    const category = sale.category || 'Sin Categoría';
-                    if (!salesByCategory[category]) {
-                        salesByCategory[category] = 0;
-                    }
-                    salesByCategory[category] += sale.totalSale || 0;
-                }
-            });
+            doc.setTextColor(slate.r, slate.g, slate.b);
+            doc.setFontSize(10);
+            const generatedAt = new Date();
+            doc.text(`Generado: ${generatedAt.toLocaleString('es-PE')}`, margin, y);
 
-            // 2. Preparar datos para el gráfico
-            const labels = Object.keys(salesByCategory);
-            const data = Object.values(salesByCategory);
-            
-            // Colores atractivos para el gráfico
-            const backgroundColors = [
-                '#f43f5e', '#3b82f6', '#10b981', '#f97316', '#8b5cf6', 
-                '#ec4899', '#6366f1', '#f59e0b', '#06b6d4', '#d946ef'
+            const periodSelect = document.getElementById('period-filter');
+            const dateFilterInput = document.getElementById('date-filter');
+            const periodValue = periodSelect ? periodSelect.value : 'all';
+            const dateFilterValue = dateFilterInput ? dateFilterInput.value : '';
+
+            const periodLabels = {
+                all: 'Todas las fechas',
+                today: 'Hoy',
+                week: 'Esta semana',
+                month: 'Este mes'
+            };
+
+            const periodLabel = periodLabels[periodValue] || 'Personalizado';
+            const dateLabel = dateFilterValue ? new Date(dateFilterValue).toLocaleDateString('es-PE') : 'Sin fecha específica';
+
+            doc.text(`Periodo: ${periodLabel}`, margin, y + 6);
+            doc.text(`Fecha específica: ${dateLabel}`, margin, y + 12);
+
+            const totalAmount = displayedSales.reduce((sum, sale) => sum + (sale.totalSale || 0), 0);
+            const summaryItems = [
+                { label: 'Ventas incluidas', value: String(displayedSales.length) },
+                { label: 'Monto total', value: `S/ ${totalAmount.toFixed(2)}` }
             ];
 
-            // 3. Destruir gráfico anterior si existe
-            if (categoryChart) {
-                categoryChart.destroy();
-            }
-
-            // 4. Crear nuevo gráfico de torta
-            categoryChart = new Chart(ctx, {
-                type: 'pie', // o 'doughnut' para un gráfico de dona
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Ventas por Categoría',
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    }
-                }
+            const gap = 6;
+            const boxWidth = (pageWidth - margin * 2 - gap) / summaryItems.length;
+            y += 18;
+            summaryItems.forEach((item, index) => {
+                const boxX = margin + index * (boxWidth + gap);
+                doc.setFillColor(255, 241, 242);
+                doc.rect(boxX, y, boxWidth, 14, 'F');
+                doc.setDrawColor(accent.r, accent.g, accent.b);
+                doc.setLineWidth(0.2);
+                doc.rect(boxX, y, boxWidth, 14);
+                doc.setTextColor(accent.r, accent.g, accent.b);
+                doc.setFontSize(9);
+                doc.text(item.label, boxX + 2, y + 5);
+                doc.setTextColor(slate.r, slate.g, slate.b);
+                doc.setFontSize(11);
+                doc.text(item.value, boxX + 2, y + 11);
             });
+
+            y += 22;
+            doc.setDrawColor(subtle.r, subtle.g, subtle.b);
+            doc.setLineWidth(0.2);
+
+            displayedSales.forEach((sale, index) => {
+                const saleDate = getSaleDate(sale) || new Date();
+
+                let products = '';
+                if (sale.items && Array.isArray(sale.items)) {
+                    products = sale.items.map(item => `${item.name} (${item.quantity}x)`).join(', ');
+                } else if (sale.productName) {
+                    products = `${sale.productName} (${sale.quantitySold || 1}x)`;
+                } else {
+                    products = 'Productos no especificados';
+                }
+
+                const productLines = doc.splitTextToSize(`Productos: ${products}`, pageWidth - margin * 2);
+                const tags = [];
+                if (sale.paymentMethod) {
+                    tags.push(`Pago: ${sale.paymentMethod}`);
+                }
+                if (sale.deliveryMethod) {
+                    tags.push(`Entrega: ${sale.deliveryMethod}`);
+                }
+                const profitLine = sale.profit !== undefined ? `Ganancia: S/ ${sale.profit.toFixed(2)}` : '';
+                const blockHeight = 18 + productLines.length * 4 + (tags.length ? 4 : 0) + (sale.deliveryLocation ? 4 : 0) + (profitLine ? 4 : 0);
+
+                ensureSpace(blockHeight + 6);
+
+                doc.line(margin, y - 4, pageWidth - margin, y - 4);
+
+                doc.setTextColor(accent.r, accent.g, accent.b);
+                doc.setFontSize(11);
+                doc.text(`${index + 1}. ${sale.customerName || 'Cliente no especificado'}`, margin, y);
+                doc.text(`S/ ${(sale.totalSale || 0).toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
+
+                doc.setTextColor(slate.r, slate.g, slate.b);
+                doc.setFontSize(9);
+                y += 5;
+                doc.text(`Teléfono: ${sale.customerPhone || 'Sin teléfono'}`, margin, y);
+                doc.text(`Fecha: ${saleDate.toLocaleDateString('es-PE')} ${saleDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`, pageWidth - margin, y, { align: 'right' });
+
+                if (sale.deliveryLocation) {
+                    y += 5;
+                    doc.text(`Ubicacion: ${sale.deliveryLocation}`, margin, y);
+                }
+
+                if (tags.length) {
+                    y += 5;
+                    doc.text(tags.join(' | '), margin, y);
+                }
+
+                y += 5;
+                productLines.forEach(line => {
+                    doc.text(line, margin, y);
+                    y += 4;
+                });
+
+                if (profitLine) {
+                    doc.text(profitLine, margin, y);
+                    y += 4;
+                }
+
+                doc.text(`Vendedor: ${sale.soldBy || 'No especificado'}`, margin, y);
+                y += 8;
+            });
+
+            const filename = (() => {
+                const pad = (value) => String(value).padStart(2, '0');
+                const year = generatedAt.getFullYear();
+                const month = pad(generatedAt.getMonth() + 1);
+                const day = pad(generatedAt.getDate());
+                const hours = pad(generatedAt.getHours());
+                const minutes = pad(generatedAt.getMinutes());
+                return `reporte-ventas-${year}${month}${day}-${hours}${minutes}.pdf`;
+            })();
+
+            doc.save(filename);
         }
 
         function showSaleDetails(saleId) {

@@ -3,57 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Tienda E-commerce</title>
+    <title>BRAHOLET IMPORTACIONES - Tienda Online</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="logo.jpg" type="image/jpeg">
     
     <style>
-        body { font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.5s; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        :root {
+            --primary: #e11d48;
+            --primary-dark: #be123c;
+            --primary-light: #f43f5e;
+            --secondary: #0f172a;
+            --accent: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --surface: #ffffff;
+            --background: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: rgba(15, 23, 42, 0.08);
+        }
+        
+        * {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            opacity: 0;
+            transition: opacity 0.6s ease-in-out;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        /* Scrollbar mejorado */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 6px;
+            transition: background 0.3s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--primary-dark) 0%, #9f1239 100%);
+        }
+        
+        /* Animaciones mejoradas */
         .product-card {
-            animation: fadeIn 0.5s ease-in-out;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            animation: fadeInUp 0.6s ease-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        
         .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow:
+                0 20px 25px -5px rgba(15, 23, 42, 0.1),
+                0 10px 10px -5px rgba(15, 23, 42, 0.04),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
-        /* Estilos para el carrito flotante y el panel */
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        /* Header mejorado */
+        .header-gradient {
+            background: linear-gradient(135deg, var(--surface) 0%, #fefefe 100%);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+        }
+        
+        /* Botones mejorados */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.25);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(225, 29, 72, 0.35);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #334155 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #334155 0%, var(--secondary) 100%);
+            transform: translateY(-1px);
+        }
+        
+        /* Carrito flotante mejorado */
+        .floating-cart {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow:
+                0 20px 25px -5px rgba(225, 29, 72, 0.3),
+                0 10px 10px -5px rgba(225, 29, 72, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .floating-cart:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow:
+                0 25px 35px -5px rgba(225, 29, 72, 0.4),
+                0 15px 15px -5px rgba(225, 29, 72, 0.15);
+        }
+        
+        /* Panel mejorado */
         #quote-cart-panel {
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
         }
+        
+        /* Toast mejorado */
         .toast {
-            transition: opacity 0.3s, transform 0.3s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(15px);
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Filtros sidebar mejorado */
+        .filter-item {
+            transition: all 0.2s ease-in-out;
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+        
+        .filter-item:hover {
+            background: rgba(225, 29, 72, 0.1);
+            transform: translateX(4px);
+        }
+        
+        .filter-item.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+        }
+        
+        /* Efectos de glassmorphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        /* Mejoras responsive */
+        @media (max-width: 768px) {
+            .product-card:hover {
+                transform: translateY(-4px) scale(1.01);
+            }
+        }
+
+        #search-suggestions {
+            transform-origin: top center;
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+
+        #search-suggestions.hidden {
+            opacity: 0;
+            transform: scale(0.95) translateY(-10px);
+            pointer-events: none;
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50">
+    <header class="header-gradient sticky top-0 z-50 backdrop-blur-xl">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-4">
-                    <div class="flex space-x-1">
-                        <button id="back-button" title="Atrás" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-6">
+                    <div class="flex space-x-2">
+                        <button id="back-button" title="Atrás" class="p-3 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 transition-all duration-300 backdrop-blur-sm group">
+                            <svg class="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                         </button>
-                        <button id="forward-button" title="Adelante" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        <button id="forward-button" title="Adelante" class="p-3 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 transition-all duration-300 backdrop-blur-sm group">
+                            <svg class="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                         </button>
                     </div>
-                    <div class="flex-shrink-0">
-                        <a href="index.html" class="text-2xl font-bold text-rose-500">BRAHOLET</a>
-                        <p class="text-xs text-gray-400 -mt-1">IMPORTACIONES</p>
+                    <div class="flex-shrink-0 animate-slide-in">
+                        <a href="index.html" class="group">
+                            <h1 class="text-3xl font-bold bg-gradient-to-r from-rose-500 to-rose-600 bg-clip-text text-transparent font-['Poppins'] tracking-tight">
+                                BRAHOLET
+                            </h1>
+                            <p class="text-xs font-medium text-slate-500 -mt-1 tracking-widest uppercase">IMPORTACIONES</p>
+                        </a>
+                    </div>
+                </div>
+                <div class="flex-1 flex justify-center px-8">
+                    <div class="relative w-full max-w-lg">
+                        <input type="text" id="search-input" placeholder="Buscar productos, categorías..." class="w-full py-3 pl-12 pr-4 text-sm text-slate-800 bg-slate-100/80 rounded-xl border-2 border-transparent focus:border-rose-500 focus:ring-2 focus:ring-rose-500/50 outline-none transition-all duration-300 backdrop-blur-sm">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4">
+                            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <div id="search-suggestions" class="absolute top-full mt-2 w-full bg-white/80 backdrop-blur-lg rounded-xl shadow-2xl z-50 overflow-hidden hidden">
+                            <!-- Las sugerencias de búsqueda se insertarán aquí -->
+                        </div>
                     </div>
                 </div>
                 <div id="user-controls" class="flex items-center space-x-4"></div>
@@ -65,7 +246,7 @@
         <div class="lg:grid lg:grid-cols-12 lg:gap-8">
             <!-- Menú de Filtros Off-canvas (Sidebar) -->
             <div id="mobile-filter-overlay" class="fixed inset-0 bg-black bg-opacity-25 z-40 hidden lg:hidden"></div>
-            <aside id="filter-sidebar" class="fixed top-0 left-0 w-64 h-full bg-white shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:col-span-3 lg:h-auto lg:bg-transparent lg:shadow-none lg:z-auto">
+            <aside id="filter-sidebar" class="fixed top-0 left-0 w-64 h-full bg-white shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out lg:sticky lg:top-16 lg:translate-x-0 lg:col-span-3 lg:h-[calc(100vh-4rem)] lg:bg-transparent lg:shadow-none lg:z-auto">
                 <div class="p-4 lg:p-0 h-full overflow-y-auto">
                     <div class="flex justify-between items-center mb-4 lg:hidden">
                         <h3 class="text-lg font-semibold text-gray-800">Filtros</h3>
@@ -115,15 +296,24 @@
                 </div>
             </aside>
 
-            <main class="lg:col-span-9 mt-6 lg:mt-0">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 id="main-title" class="text-3xl font-bold text-gray-900">Todo</h1>
-                    <button id="open-filter-btn" class="lg:hidden p-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+            <main class="lg:col-span-9 mt-8 lg:mt-0">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
+                    <div>
+                        <h1 id="main-title" class="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">Todo</h1>
+                        <p class="text-slate-600">Descubre nuestros productos de calidad</p>
+                    </div>
+                    <button id="open-filter-btn" class="lg:hidden btn-primary px-4 py-3 rounded-xl flex items-center space-x-2 text-white">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                        <span>Filtros</span>
                     </button>
                 </div>
-                <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    <p id="loading-message">Verificando acceso y cargando productos...</p>
+                <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="col-span-full flex items-center justify-center py-12">
+                        <div class="text-center space-y-4">
+                            <div class="animate-spin w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full mx-auto"></div>
+                            <p id="loading-message" class="text-slate-600 font-medium">Verificando acceso y cargando productos...</p>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -135,74 +325,77 @@
         <span id="quote-cart-count" class="absolute -top-1 -right-1 bg-gray-800 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
     </button>
 
-    <!-- ✨ PANEL LATERAL DE LA CESTA DE CONSULTA ✨ -->
-    <div id="quote-cart-panel-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50"></div>
-    <div id="quote-cart-panel" class="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 transform translate-x-full flex flex-col">
-        <div class="flex justify-between items-center p-4 border-b">
-            <h2 class="text-xl font-bold text-gray-800">Mi Lista de Consulta</h2>
-            <button id="close-cart-panel-btn" class="p-2 rounded-full hover:bg-gray-200">
-                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <!-- ✨ PANEL LATERAL MODERNIZADO ✨ -->
+    <div id="quote-cart-panel-overlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50"></div>
+    <div id="quote-cart-panel" class="fixed top-0 right-0 h-full w-full max-w-md glass shadow-2xl z-50 transform translate-x-full flex flex-col border-l border-white/20">
+        <div class="flex justify-between items-center p-6 border-b border-white/10">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">Mi Lista de Consulta</h2>
+                <p class="text-sm text-slate-600 mt-1">Productos seleccionados</p>
+            </div>
+            <button id="close-cart-panel-btn" class="p-3 rounded-xl hover:bg-white/20 transition-all duration-300 group">
+                <svg class="w-6 h-6 text-slate-600 group-hover:text-slate-800 group-hover:rotate-90 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div id="quote-list-items" class="flex-grow p-4 overflow-y-auto">
+        <div id="quote-list-items" class="flex-grow p-6 overflow-y-auto">
             <!-- Los productos de la lista se añadirán aquí -->
-            <p class="text-gray-500">Tu lista está vacía.</p>
+            <div class="text-center py-12 space-y-4">
+                <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </div>
+                <p class="text-slate-500 font-medium">Tu lista está vacía</p>
+                <p class="text-sm text-slate-400">Agrega productos para crear tu consulta</p>
+            </div>
         </div>
-        <div class="p-4 border-t bg-gray-50">
+        <div class="p-6 border-t border-white/10 bg-white/30 backdrop-blur-sm">
             <!-- Título para los asesores -->
-            <h3 class="text-sm font-semibold text-gray-800 mb-3 text-center">Pedir con un Asesor</h3>
+            <h3 class="text-lg font-bold text-slate-800 mb-4 text-center">Consultar con Asesor</h3>
             
             <!-- Contenedor para los dos botones -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="space-y-3">
                 <!-- Botón Milka -->
-                <a id="whatsapp-quote-button-milka" href="#" target="_blank" class="bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-sm font-semibold shadow-lg">
-                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.893 11.892-1.99 0-3.903-.52-5.586-1.457l-6.354 1.687zM8.413 2.928C6.611 3.448 5.104 4.47 3.91 5.946c-1.192 1.475-1.807 3.27-1.807 5.122.002 4.384 3.582 7.962 7.963 7.962 1.833 0 3.544-.627 4.903-1.695l.203-.144 4.225 1.115-1.13-4.132-.16-.586c.823-1.38 1.28-3.006 1.28-4.687 0-4.384-3.582-7.963-7.963-7.963-1.428 0-2.778.385-3.954 1.054l-.233.134z"/></svg>
-                    <span>Milka</span>
+                <a id="whatsapp-quote-button-milka" href="#" target="_blank" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 px-4 rounded-xl transition-all duration-300 flex items-center justify-center text-sm font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 group">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.893 11.892-1.99 0-3.903-.52-5.586-1.457l-6.354 1.687z"/></svg>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-bold">Consultar con Milka</p>
+                            <p class="text-xs opacity-90">Respuesta inmediata</p>
+                        </div>
+                    </div>
                 </a>
                 
                 <!-- Botón Ana -->
-                <a id="whatsapp-quote-button-ana" href="#" target="_blank" class="bg-blue-500 text-white py-2 px-3 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-sm font-semibold shadow-lg">
-                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.893 11.892-1.99 0-3.903-.52-5.586-1.457l-6.354 1.687zM8.413 2.928C6.611 3.448 5.104 4.47 3.91 5.946c-1.192 1.475-1.807 3.27-1.807 5.122.002 4.384 3.582 7.962 7.963 7.962 1.833 0 3.544-.627 4.903-1.695l.203-.144 4.225 1.115-1.13-4.132-.16-.586c.823-1.38 1.28-3.006 1.28-4.687 0-4.384-3.582-7.963-7.963-7.963-1.428 0-2.778.385-3.954 1.054l-.233.134z"/></svg>
-                    <span>Ana</span>
+                <a id="whatsapp-quote-button-ana" href="#" target="_blank" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-4 px-4 rounded-xl transition-all duration-300 flex items-center justify-center text-sm font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 group">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.893 11.892-1.99 0-3.903-.52-5.586-1.457l-6.354 1.687z"/></svg>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-bold">Consultar con Ana</p>
+                            <p class="text-xs opacity-90">Atención personalizada</p>
+                        </div>
+                    </div>
                 </a>
             </div>
             
-            <button id="clear-quote-list-button" class="w-full mt-3 text-sm text-red-500 hover:underline">Vaciar lista</button>
+            <button id="clear-quote-list-button" class="w-full mt-4 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-300 font-medium">Vaciar lista completa</button>
         </div>
     </div>
     
-    <!-- Mensaje Toast para confirmación -->
-    <div id="toast-message" class="toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-3"></div>
+    <!-- Mensaje Toast Modernizado -->
+    <div id="toast-message" class="toast fixed bottom-8 left-1/2 -translate-x-1/2 text-white py-4 px-6 rounded-2xl shadow-2xl opacity-0 transform translate-y-3 font-medium min-w-[200px] text-center"></div>
 
 
     <script type="module">
         // ✨ CAMBIO: Importamos 'onSnapshot' y 'query' para escuchar en tiempo real ✨
-        import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
+        import { initFirebase, setupNavigation, isAdmin, isVendedor, registerServiceWorker } from "./js/common.js";
         import { getFirestore, collection, getDocs, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
-        const SUPER_VENDEDOR_EMAILS = ['garyvv.1993@gmail.com', 'abrahamjimenez092003@gmail.com'];
-        const VENDEDOR_EMAILS = ['amvf280194@gmail.com', 'noeatlas28@gmail.com'];
         let db, auth, allProducts = [], currentlyDisplayedProducts = [], currentSort = 'relevance';
         let quoteList = [];
-
-        // Funciones para verificar roles
-        function isSuperAdmin(email) {
-            return SUPER_ADMIN_EMAILS.includes(email);
-        }
-
-        function isSuperVendedor(email) {
-            return SUPER_VENDEDOR_EMAILS.includes(email);
-        }
-
-        function isVendedor(email) {
-            return VENDEDOR_EMAILS.includes(email);
-        }
-
-        function isAdmin(email) {
-            return isSuperAdmin(email) || isSuperVendedor(email);
-        }
 
         const quoteCartButton = document.getElementById('quote-cart-button');
         const quoteCartCount = document.getElementById('quote-cart-count');
@@ -480,6 +673,7 @@
                 setupFilterMenu();
                 setupQuoteCartListeners();
                 setupSortControls();
+                setupSearch();
                 registerServiceWorker();
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
@@ -487,7 +681,7 @@
                         setupUserControls(user);
                         initialDataLoad();
                     } else {
-                        window.location.href = '/login-cliente.html';
+                        window.location.href = '/login.html';
                     }
                 });
             } catch (error) {
@@ -585,32 +779,86 @@
             const originalPrice = product.originalPrice || 0;
             const hasDiscount = originalPrice > 0 && originalPrice > price;
             const discountPercentage = hasDiscount ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+            const stockLevel = product.stock || 0;
+            const isLowStock = stockLevel > 0 && stockLevel <= 5;
             
             return `
-                <div class="bg-white rounded-lg shadow-md overflow-hidden group product-card flex flex-col">
+                <div class="glass rounded-2xl overflow-hidden group product-card flex flex-col border border-white/20 hover:border-rose-200 transition-all duration-300">
                     <a href="/producto/${product.id}" class="block">
-                        <div class="relative">
-                            <img src="${product.imageUrl || 'https://placehold.co/400x400/f0f0f0/333?text=Producto'}" 
-                                 onerror="this.onerror=null;this.src='https://placehold.co/400x400/f0f0f0/333?text=Error';"
-                                 alt="${product.name || 'Nombre no disponible'}" class="w-full h-56 object-cover">
-                            ${hasDiscount ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-md">${discountPercentage}% OFF</span>` : ''}
+                        <div class="relative overflow-hidden">
+                            <img src="${product.imageUrl || 'https://placehold.co/400x400/f8fafc/64748b?text=Producto'}"
+                                 onerror="this.onerror=null;this.src='https://placehold.co/400x400/f8fafc/64748b?text=Error';"
+                                 alt="${product.name || 'Nombre no disponible'}"
+                                 class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            ${hasDiscount ? `
+                                <div class="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg">
+                                    <span class="flex items-center space-x-1">
+                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span>${discountPercentage}% OFF</span>
+                                    </span>
+                                </div>
+                            ` : ''}
+                            ${isLowStock ? `
+                                <div class="absolute top-4 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg">
+                                    ¡Últimas unidades!
+                                </div>
+                            ` : ''}
                         </div>
                     </a>
-                    <div class="p-4 flex flex-col flex-grow">
-                        <span class="text-xs text-gray-500">${product.category || 'Sin categoría'}</span>
-                        <h4 class="text-md font-semibold text-gray-800 mt-1 truncate">${product.name || 'Nombre no disponible'}</h4>
-                        <p class="text-sm text-gray-600">${product.code || ''}</p>
-                        <div class="mt-3">
-                            <span class="text-lg font-bold text-rose-600">S/ ${price.toFixed(2)}</span>
-                            ${hasDiscount ? `<span class="text-sm text-gray-500 line-through ml-2">S/ ${originalPrice.toFixed(2)}</span>` : ''}
+                    <div class="p-6 flex flex-col flex-grow">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                ${product.category || 'Sin categoría'}
+                            </span>
+                            <span class="text-xs text-slate-500 font-mono">${product.code || 'SKU'}</span>
                         </div>
-                        <div class="mt-auto pt-4 flex items-center space-x-2">
-                            <a href="/producto/${product.id}" class="w-full bg-gray-800 text-white py-2 rounded-lg group-hover:bg-rose-600 transition-colors text-center text-sm">
-                                Ver detalle
-                            </a>
-                            <button data-id="${product.id}" class="add-to-quote-btn flex-shrink-0 p-2 bg-gray-200 rounded-lg hover:bg-rose-100">
-                                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            </button>
+                        
+                        <h4 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-rose-600 transition-colors">
+                            ${product.name || 'Nombre no disponible'}
+                        </h4>
+                        
+                        <div class="flex items-baseline space-x-2 mb-4">
+                            <span class="text-2xl font-bold bg-gradient-to-r from-rose-600 to-rose-500 bg-clip-text text-transparent">
+                                S/ ${price.toFixed(2)}
+                            </span>
+                            ${hasDiscount ? `
+                                <span class="text-sm text-slate-400 line-through">S/ ${originalPrice.toFixed(2)}</span>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="mt-auto space-y-3">
+                            <div class="flex items-center justify-between text-xs text-slate-500">
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                    </svg>
+                                    <span>Popular</span>
+                                </span>
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                    </svg>
+                                    <span>Popular</span>
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3">
+                                <a href="/producto/${product.id}"
+                                   class="flex-1 btn-secondary text-white py-3 rounded-xl text-center text-sm font-semibold hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    <span>Ver detalle</span>
+                                </a>
+                                <button data-id="${product.id}"
+                                        class="add-to-quote-btn p-3 btn-primary rounded-xl hover:scale-110 transition-all duration-300 group/btn">
+                                    <svg class="w-5 h-5 text-white group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -620,18 +868,22 @@
         function filterProducts(category, changeTitle = true) {
             if (changeTitle) {
                 document.getElementById('main-title').innerText = category === 'all' ? 'Todo' : (category === 'out-of-stock' ? 'Sin Stock' : category);
+                document.getElementById('search-input').value = ''; // Limpiar búsqueda al cambiar de categoría
             }
+
+            let filtered = allProducts;
 
             if (category === 'out-of-stock') {
                 // Mostrar SOLO productos sin stock (stock <= 0)
-                currentlyDisplayedProducts = allProducts.filter(p => p.stock <= 0);
+                filtered = allProducts.filter(p => p.stock <= 0);
             } else if (category === 'all') {
                 // En "Todo" solo mostrar productos CON stock (stock > 0)
-                currentlyDisplayedProducts = allProducts.filter(p => p.stock > 0);
+                filtered = allProducts.filter(p => p.stock > 0);
             } else {
                 // Para otras categorías específicas, solo productos CON stock de esa categoría
-                currentlyDisplayedProducts = allProducts.filter(p => p.category === category && p.stock > 0);
+                filtered = allProducts.filter(p => p.category === category && p.stock > 0);
             }
+            currentlyDisplayedProducts = filtered;
             sortAndRender();
         }
 
@@ -661,6 +913,170 @@
                     break;
             }
             renderProducts(currentlyDisplayedProducts);
+        }
+
+        // --- Lógica de Búsqueda Inteligente ---
+        const synonyms = {
+            'chocolate': ['cacao', 'bombón', 'trufa'],
+            'galleta': ['cookie', 'cracker'],
+            'bebida': ['refresco', 'gaseosa', 'jugo'],
+            'caramelo': ['dulce', 'golosina']
+        };
+
+        function setupSearch() {
+            const searchInput = document.getElementById('search-input');
+            const suggestionsContainer = document.getElementById('search-suggestions');
+
+            searchInput.addEventListener('input', debounce(handleSearch, 300));
+
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value) {
+                    suggestionsContainer.classList.remove('hidden');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.classList.add('hidden');
+                }
+            });
+        }
+
+        function normalizeText(text) {
+            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        function handleSearch(e) {
+            const query = e.target.value.trim();
+            if (!query) {
+                currentlyDisplayedProducts = allProducts.filter(p => p.stock > 0);
+                renderProducts(currentlyDisplayedProducts);
+                document.getElementById('search-suggestions').classList.add('hidden');
+                return;
+            }
+
+            const queryTerms = query.split(' ').map(term => normalizeText(term)).filter(term => term.length > 0);
+            if (queryTerms.length === 0) return;
+
+            // Buscar productos que coincidan
+            const results = allProducts.filter(product => {
+                const productText = normalizeText(`${product.name} ${product.category} ${product.description || ''} ${product.tags || ''}`);
+                
+                // Coincidencias exactas
+                const hasExactMatch = queryTerms.some(term => productText.includes(term));
+                if (hasExactMatch) return true;
+                
+                // Coincidencias difusas (fuzzy) usando similitud de cadenas
+                const hasApproximateMatch = queryTerms.some(term => {
+                    const productWords = productText.split(' ');
+                    return productWords.some(word => similarity(word, term) > 0.7);
+                });
+                
+                return hasApproximateMatch;
+            })
+            .sort((a, b) => {
+                // Ordenar por relevancia: coincidencias exactas primero
+                const aText = normalizeText(`${a.name} ${a.category}`);
+                const bText = normalizeText(`${b.name} ${b.category}`);
+                
+                const aExact = queryTerms.some(term => aText.includes(term));
+                const bExact = queryTerms.some(term => bText.includes(term));
+                
+                if (aExact && !bExact) return -1;
+                if (!aExact && bExact) return 1;
+                
+                // Si ambos son exactos o ambos fuzzy, ordenar por fecha
+                return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
+            });
+            
+            currentlyDisplayedProducts = [...results];
+            if (currentSort !== 'relevance') {
+                sortAndRender();
+            } else {
+                renderProducts(currentlyDisplayedProducts);
+            }
+            renderSuggestions(results.slice(0, 5), query);
+        }
+
+        function renderSuggestions(suggestions, query) {
+            const suggestionsContainer = document.getElementById('search-suggestions');
+            if (suggestions.length > 0 && query) {
+                suggestionsContainer.classList.remove('hidden');
+                suggestionsContainer.innerHTML = `
+                    <h3 class="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Sugerencias</h3>
+                    <ul>
+                        ${suggestions.map(product => `
+                            <li class="px-4 py-3 hover:bg-slate-100/80 transition-colors cursor-pointer">
+                                <a href="/producto/${product.id}" class="flex items-center space-x-3">
+                                    <img src="${product.imageUrl || 'https://placehold.co/40x40'}" alt="${product.name}" class="w-10 h-10 rounded-lg object-cover">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-800">${product.name}</p>
+                                        <p class="text-xs text-slate-500">${product.category}</p>
+                                    </div>
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                suggestionsContainer.classList.add('hidden');
+            }
+        }
+
+        function levenshteinDistance(a, b) {
+            if (!a || !b) return Math.max(a?.length || 0, b?.length || 0);
+            
+            const matrix = [];
+
+            // Inicializar la matriz correctamente
+            for (let i = 0; i <= b.length; i++) {
+                matrix[i] = [];
+                matrix[i][0] = i;
+            }
+
+            for (let j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+
+            // Llenar la matriz
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1, // substitución
+                            matrix[i][j - 1] + 1,     // inserción
+                            matrix[i - 1][j] + 1      // eliminación
+                        );
+                    }
+                }
+            }
+
+            return matrix[b.length][a.length];
+        }
+
+        function similarity(s1, s2) {
+            let longer = s1;
+            let shorter = s2;
+            if (s1.length < s2.length) {
+                longer = s2;
+                shorter = s1;
+            }
+            let longerLength = longer.length;
+            if (longerLength === 0) {
+                return 1.0;
+            }
+            return (longerLength - levenshteinDistance(longer, shorter)) / parseFloat(longerLength);
+        }
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
         }
 
         main();

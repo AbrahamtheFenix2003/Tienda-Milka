@@ -1,4 +1,4 @@
-import { initFirebase, setupNavigation, registerServiceWorker } from "./common.js";
+import { initFirebase, setupNavigation } from "./common.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
@@ -79,7 +79,6 @@ async function main() {
         auth = getAuth(app);
 
         setupNavigation();
-        registerServiceWorker();
 
         // Intentar render inmediato desde sessionStorage (si venimos de la lista)
         if (productId) {
@@ -93,7 +92,7 @@ async function main() {
                 setupUserControls(user);
             } else {
                 // Si no autenticado, redirigir pero permitir ver skeleton en lo que se redirige
-                window.location.href = '/login-cliente.html';
+                window.location.href = '/login.html';
             }
         });
     } catch (error) {
@@ -262,70 +261,91 @@ function displayProduct(product) {
         if (gallery) gallery.remove();
     }
 
-    view.getElementById('product-category').textContent = product.category || 'Sin categoría';
-    view.getElementById('product-name').textContent = product.name || 'Nombre no disponible';
-    view.getElementById('product-price').textContent = `S/ ${(product.price || 0).toFixed(2)}`;
-    
-    const originalPriceEl = view.getElementById('product-original-price');
-    if (product.originalPrice && product.originalPrice > product.price) {
-        originalPriceEl.textContent = `S/ ${product.originalPrice.toFixed(2)}`;
-    } else {
-        if(originalPriceEl) originalPriceEl.remove();
-    }
+    // --- Breadcrumbs ---
+    const breadcrumbCategory = view.getElementById('breadcrumb-category');
+    if (breadcrumbCategory) breadcrumbCategory.textContent = product.category || 'Categoría';
+    const breadcrumbProduct = view.getElementById('breadcrumb-product');
+    if (breadcrumbProduct) breadcrumbProduct.textContent = product.name || 'Producto';
 
-    // Sanitizar y corregir la descripción HTML antes de insertarla
-    let description = product.description || 'No hay descripción disponible.';
+    // --- Product Info ---
+    const categoryEl = view.getElementById('product-category');
+    if (categoryEl) categoryEl.textContent = product.category || 'Sin categoría';
     
-    // Detectar si hay elementos <li> sueltos sin contenedor <ul> o <ol>
+    const nameEl = view.getElementById('product-name');
+    if (nameEl) nameEl.textContent = product.name || 'Nombre no disponible';
+
+    const priceEl = view.getElementById('product-price');
+    const priceValue = Number(product.price);
+    const safePrice = Number.isFinite(priceValue) ? priceValue : 0;
+    if (priceEl) priceEl.textContent = `S/ ${safePrice.toFixed(2)}`;
+
+    const originalPriceEl = view.getElementById('product-original-price');
+    const discountBadgeEl = view.getElementById('discount-badge');
+    const originalPriceValue = Number(product.originalPrice);
+    const hasDiscount = Number.isFinite(originalPriceValue) && originalPriceValue > safePrice;
+    if (hasDiscount) {
+        if (originalPriceEl) originalPriceEl.textContent = `S/ ${originalPriceValue.toFixed(2)}`;
+        if (discountBadgeEl) discountBadgeEl.classList.remove('hidden');
+    } else {
+        if (originalPriceEl) originalPriceEl.remove();
+        if (discountBadgeEl) discountBadgeEl.remove();
+    }
+    // --- Description ---
+    let description = product.description || 'No hay descripción disponible.';
     if (description.includes('<li>') && !description.includes('<ul>') && !description.includes('<ol>')) {
-        // Envolver todos los <li> en un <ul>
         description = '<ul>' + description + '</ul>';
     }
-    
-    // Limpiar cualquier HTML mal formado
-    description = description
-        .replace(/(<li[^>]*>)/gi, '<li>') // Normalizar etiquetas <li>
-        .replace(/(<\/li>)/gi, '</li>') // Normalizar etiquetas </li>
-        .replace(/([^>])\s*<li>/gi, '$1</li><li>') // Asegurar cierre de <li> anterior
-        .replace(/^<li>/, '<ul><li>') // Agregar <ul> al inicio si empieza con <li>
-        .replace(/<\/li>$/, '</li></ul>'); // Agregar </ul> al final si termina con </li>
-    
-    view.getElementById('product-description').innerHTML = description;
-    // Establecer atributos del main image para LCP
+    const descriptionEl = view.getElementById('product-description');
+    if (descriptionEl) descriptionEl.innerHTML = description;
+
+    // --- Main Image LCP ---
     const mainImg = view.getElementById('main-product-image');
     if (mainImg) {
         const url = product.imageUrl || 'https://placehold.co/600x600/f0f0f0/333?text=Sin+Imagen';
         mainImg.src = url;
-        mainImg.srcset = `${url} 800w`;
-        mainImg.sizes = '(min-width: 1024px) 50vw, 100vw';
         mainImg.loading = 'eager';
         mainImg.decoding = 'async';
-        mainImg.width = 800;
-        mainImg.height = 800;
     }
 
+    // --- Stock Logic ---
+    const stockContainer = view.getElementById('product-stock-container');
     const stockElement = view.getElementById('product-stock');
     const whatsappLink = view.getElementById('whatsapp-link');
     const whatsappLinkAna = view.getElementById('whatsapp-link-ana');
-    
-    // ✨ DEBUG: Verificar si los elementos existen ✨
-    console.log('whatsappLink:', whatsappLink);
-    console.log('whatsappLinkAna:', whatsappLinkAna);
-    console.log('Template completo:', template.innerHTML);
-    
     const stock = product.stock || 0;
-    if (stock > 0) {
-        stockElement.textContent = stock > 10 ? '✅ En Stock' : `⚠️ ¡Últimas ${stock} unidades!`;
-        stockElement.className = stock > 10 ? 'mt-2 text-sm font-semibold text-green-600' : 'mt-2 text-sm font-semibold text-yellow-600';
-    } else {
-        stockElement.textContent = '❌ Agotado';
-        stockElement.className = 'mt-2 text-sm font-semibold text-red-600';
-        whatsappLink.classList.add('disabled:bg-gray-400', 'disabled:cursor-not-allowed', 'pointer-events-none');
-        whatsappLink.setAttribute('disabled', true);
-        if (whatsappLinkAna) {
-            whatsappLinkAna.classList.add('disabled:bg-gray-400', 'disabled:cursor-not-allowed', 'pointer-events-none');
-            whatsappLinkAna.setAttribute('disabled', true);
+
+    if (stockElement && stockContainer) {
+        stockContainer.classList.remove('animate-pulse');
+        let stockText, stockClasses, iconClasses;
+
+        if (stock > 10) {
+            stockText = 'En Stock';
+            stockClasses = 'stock-badge stock-available';
+            iconClasses = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+        } else if (stock > 0) {
+            stockText = `¡Solo quedan ${stock}!`;
+            stockClasses = 'stock-badge stock-low';
+            iconClasses = 'w-2 h-2 bg-yellow-500 rounded-full animate-pulse';
+        } else {
+            stockText = 'Agotado';
+            stockClasses = 'stock-badge stock-out';
+            iconClasses = 'w-2 h-2 bg-red-500 rounded-full';
         }
+        
+        stockElement.className = stockClasses;
+        stockElement.innerHTML = `
+            <div class="${iconClasses}"></div>
+            <span>${stockText}</span>
+        `;
+    }
+
+    if (stock <= 0) {
+        [whatsappLink, whatsappLinkAna].forEach(link => {
+            if (link) {
+                link.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                link.removeAttribute('href');
+            }
+        });
     }
     
     // ✨ LÓGICA FINAL DE LOS BOTONES DE WHATSAPP CON CACHE BUSTER ✨
@@ -351,69 +371,23 @@ function displayProduct(product) {
     }
     
     // Configurar botón de Milka
-    whatsappLink.href = `https://wa.me/${phoneNumberMilka}?text=${encodedMessage}`;
-    whatsappLink.innerHTML = `
-        <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 14.2l-1.5-0.8c-0.4-0.2-0.7-0.1-0.9 0.2l-0.5 0.6c-0.2 0.2-0.5 0.3-0.8 0.2C11.9 14 11 13.2 10.1 12.2c-0.9-0.9-1.7-1.8-1.9-2.8 0-0.3 0.1-0.6 0.3-0.8l0.6-0.5c0.2-0.2 0.3-0.5 0.2-0.9l-0.8-1.5c-0.2-0.4-0.6-0.6-1-0.6H5.7C5.3 4 5 4.3 5 4.7c0 0.9 0.3 1.8 0.9 2.6 0.6 0.8 1.4 1.6 2.3 2.4 1.2 1.1 2.6 2 4.2 2.4 0.2 0 0.3 0 0.5 0 0.8 0 1.6-0.3 2.2-0.9 0.6-0.6 1-1.4 1-2.2 0-0.4-0.3-0.7-0.7-0.7h-1.4c-0.4 0-0.8 0.2-1 0.6zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
-        <div class="text-center">
-            <div>Asesora Milka
-</div>
-        </div>
-    `;
-    
-    // ✨ FORZAR CREACIÓN DE LA ESTRUCTURA COMPLETA ✨
-    // Si no existe el segundo botón, creamos toda la estructura desde cero
-    if (!whatsappLinkAna) {
-        console.log('Recreando estructura completa con ambos botones...');
-        
-        // Buscar el contenedor del botón
-        const buttonContainer = whatsappLink.parentElement;
-        
-        // Crear nueva estructura completa
-        buttonContainer.innerHTML = `
-            <!-- Título para los asesores -->
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Comunícate con nuestras asesoras:
-</h3>
-            
-            <!-- Contenedor para los dos botones -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <!-- Botón Milka -->
-                <a id="whatsapp-link-milka" href="https://wa.me/${phoneNumberMilka}?text=${encodedMessage}" target="_blank" class="bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-sm font-semibold shadow-lg hover:shadow-xl">
-                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 14.2l-1.5-0.8c-0.4-0.2-0.7-0.1-0.9 0.2l-0.5 0.6c-0.2 0.2-0.5 0.3-0.8 0.2C11.9 14 11 13.2 10.1 12.2c-0.9-0.9-1.7-1.8-1.9-2.8 0-0.3 0.1-0.6 0.3-0.8l0.6-0.5c0.2-0.2 0.3-0.5 0.2-0.9l-0.8-1.5c-0.2-0.4-0.6-0.6-1-0.6H5.7C5.3 4 5 4.3 5 4.7c0 0.9 0.3 1.8 0.9 2.6 0.6 0.8 1.4 1.6 2.3 2.4 1.2 1.1 2.6 2 4.2 2.4 0.2 0 0.3 0 0.5 0 0.8 0 1.6-0.3 2.2-0.9 0.6-0.6 1-1.4 1-2.2 0-0.4-0.3-0.7-0.7-0.7h-1.4c-0.4 0-0.8 0.2-1 0.6zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
-                    <div class="text-center">
-                        <div>Asesora Milka</div>
-                    </div>
-                </a>
-
-                <!-- Botón Ana -->
-                <a id="whatsapp-link-ana-new" href="https://wa.me/${phoneNumberAna}?text=${encodedMessage}" target="_blank" class="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-sm font-semibold shadow-lg hover:shadow-xl">
-                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 14.2l-1.5-0.8c-0.4-0.2-0.7-0.1-0.9 0.2l-0.5 0.6c-0.2 0.2-0.5 0.3-0.8 0.2C11.9 14 11 13.2 10.1 12.2c-0.9-0.9-1.7-1.8-1.9-2.8 0-0.3 0.1-0.6 0.3-0.8l0.6-0.5c0.2-0.2 0.3-0.5 0.2-0.9l-0.8-1.5c-0.2-0.4-0.6-0.6-1-0.6H5.7C5.3 4 5 4.3 5 4.7c0 0.9 0.3 1.8 0.9 2.6 0.6 0.8 1.4 1.6 2.3 2.4 1.2 1.1 2.6 2 4.2 2.4 0.2 0 0.3 0 0.5 0 0.8 0 1.6-0.3 2.2-0.9 0.6-0.6 1-1.4 1-2.2 0-0.4-0.3-0.7-0.7-0.7h-1.4c-0.4 0-0.8 0.2-1 0.6zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
-                    <div class="text-center">
-                        <div>Asesora Ana</div>
-                    </div>
-                </a>
-            </div>
+    if (whatsappLink) {
+        whatsappLink.href = `https://wa.me/${phoneNumberMilka}?text=${encodedMessage}`;
+        whatsappLink.innerHTML = `
+            <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+            </svg>
+            <span>Contactar a Milka</span>
         `;
-        
-        // Si no hay stock, deshabilitar ambos botones
-        if (stock <= 0) {
-            const milkaBtn = buttonContainer.querySelector('#whatsapp-link-milka');
-            const anaBtn = buttonContainer.querySelector('#whatsapp-link-ana-new');
-            
-            [milkaBtn, anaBtn].forEach(btn => {
-                if (btn) {
-                    btn.classList.add('bg-gray-400', 'cursor-not-allowed', 'pointer-events-none');
-                    btn.removeAttribute('href');
-                }
-            });
-        }
-    } else {
-        // Configurar botón de Ana (caso normal)
+    }
+    
+    if (whatsappLinkAna) {
         whatsappLinkAna.href = `https://wa.me/${phoneNumberAna}?text=${encodedMessage}`;
         whatsappLinkAna.innerHTML = `
-            <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 14.2l-1.5-0.8c-0.4-0.2-0.7-0.1-0.9 0.2l-0.5 0.6c-0.2 0.2-0.5 0.3-0.8 0.2C11.9 14 11 13.2 10.1 12.2c-0.9-0.9-1.7-1.8-1.9-2.8 0-0.3 0.1-0.6 0.3-0.8l0.6-0.5c0.2-0.2 0.3-0.5 0.2-0.9l-0.8-1.5c-0.2-0.4-0.6-0.6-1-0.6H5.7C5.3 4 5 4.3 5 4.7c0 0.9 0.3 1.8 0.9 2.6 0.6 0.8 1.4 1.6 2.3 2.4 1.2 1.1 2.6 2 4.2 2.4 0.2 0 0.3 0 0.5 0 0.8 0 1.6-0.3 2.2-0.9 0.6-0.6 1-1.4 1-2.2 0-0.4-0.3-0.7-0.7-0.7h-1.4c-0.4 0-0.8 0.2-1 0.6zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
-            <div class="text-center">
-                <div>Asesora Ana</div>
-            </div>
+            <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+            </svg>
+            <span>Contactar a Ana</span>
         `;
     }
 

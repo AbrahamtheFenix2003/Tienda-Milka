@@ -96,7 +96,7 @@
     </main>
 
     <script type="module">
-        import { initFirebase, setupNavigation, registerServiceWorker } from "./js/common.js";
+        import { initFirebase, setupNavigation } from "./js/common.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, runTransaction, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -134,7 +134,6 @@
                 db = getFirestore(app);
                 setupNavigation();
                 setupPage();
-                registerServiceWorker();
             } catch (error) {
                 console.error("Error al inicializar Firebase:", error);
             }

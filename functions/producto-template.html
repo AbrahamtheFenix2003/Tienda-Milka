@@ -1,98 +1,70 @@
-<!-- functions/producto-template.html -->
+<template id="product-view-template">
+    <div class="animate-fade-in">
+        <!-- Breadcrumb Navigation -->
+        <nav class="mb-6" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-neutral-600">
+                <li><a href="/index.html" class="hover:text-primary-600 transition-colors">Inicio</a></li>
+                <li><span class="text-neutral-400">/</span></li>
+                <li><span id="breadcrumb-category" class="text-neutral-500">Categoría</span></li>
+                <li><span class="text-neutral-400">/</span></li>
+                <li><span id="breadcrumb-product" class="font-medium text-neutral-900">Producto</span></li>
+            </ol>
+        </nav>
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- ✨ ESTAS ETIQUETAS SERÁN REEMPLAZADAS POR EL SERVIDOR ✨ -->
-    <meta property="og:title" content="__OG_TITLE__">
-    <meta property="og:description" content="__OG_DESCRIPTION__">
-    <meta property="og:image" content="__OG_IMAGE__">
-    <meta property="og:url" content="__OG_URL__">
-    <meta property="og:type" content="product">
-    
-    <title>__OG_TITLE__</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .thumbnail-image { border: 2px solid transparent; transition: border-color 0.2s ease-in-out; }
-        .thumbnail-image.active, .thumbnail-image:hover { border-color: #f43f5e; }
-    </style>
-</head>
-<body>
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-4">
-                    <div class="flex space-x-1">
-                        <button id="back-button" title="Atrás" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <button id="forward-button" title="Adelante" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <a href="/index.html" class="text-2xl font-bold text-rose-500">BRAHOLET</a>
-                        <p class="text-xs text-gray-400 -mt-1">IMPORTACIONES</p>
-                    </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12">
+            <!-- Image Gallery Section -->
+            <div class="space-y-4">
+                <div class="aspect-square bg-neutral-100 rounded-lg shadow-sm overflow-hidden">
+                    <img id="main-product-image" src="" alt="Imagen principal del producto" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
                 </div>
-                <div id="user-controls" class="flex items-center space-x-4"></div>
+                <div id="thumbnail-gallery" class="grid grid-cols-4 gap-3">
+                    <!-- Thumbnails will be populated by JavaScript -->
+                </div>
             </div>
-        </div>
-    </header>
 
-    <!-- Este contenedor será llenado por el script del cliente -->
-    <main id="product-content" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <p id="loading-message" class="text-center text-gray-500">Cargando detalles del producto...</p>
-    </main>
-    
-    <!-- ✨ PLANTILLA COMPLETA PARA EL CLIENTE ✨ -->
-    <template id="product-view-template">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            <div>
-                <div class="aspect-square bg-gray-100 rounded-lg mb-4 shadow-sm">
-                    <img id="main-product-image" src="" alt="Imagen principal del producto" class="w-full h-full object-cover rounded-lg">
+            <!-- Product Information Section -->
+            <div class="flex flex-col space-y-6">
+                <div class="space-y-2">
+                    <span id="product-category" class="text-sm font-medium text-primary-600 uppercase tracking-wider">Categoría</span>
+                    <h1 id="product-name" class="text-3xl md:text-4xl font-bold font-display text-neutral-900">Nombre del Producto</h1>
                 </div>
-                <div id="thumbnail-gallery" class="grid grid-cols-4 gap-2"></div>
-            </div>
-            <div class="flex flex-col">
-                <span id="product-category" class="text-sm text-gray-500">Categoría</span>
-                <h1 id="product-name" class="text-3xl font-bold text-gray-900 mt-1">Nombre del Producto</h1>
-                <p id="product-stock" class="mt-2 text-sm font-semibold"></p>
-                <div class="mt-4">
-                    <span id="product-price" class="text-3xl font-bold text-rose-600">S/ 0.00</span>
-                    <span id="product-original-price" class="text-lg text-gray-400 line-through ml-2"></span>
-                </div>
-                <p id="product-description" class="text-gray-600 mt-6 flex-grow">
-                    Descripción del producto...
-                </p>
-                <div class="mt-8">
-                    <!-- Título para los asesores -->
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Comunícate con nuestras asesoras:
-</h3>
-                    
-                    <!-- Contenedor para los dos botones -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <!-- Botón existente - Milka -->
-                        <a id="whatsapp-link" href="#" target="_blank" class="bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-sm font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
-                            <!-- El contenido se completa con JS -->
-                        </a>
 
-                        <!-- Nuevo botón - Ana -->
-                        <a id="whatsapp-link-ana" href="#" target="_blank" class="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-sm font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
-                            <!-- El contenido se completa con JS -->
-                        </a>
+                <div id="product-stock-container" class="flex items-center animate-pulse">
+                    <div id="product-stock" class="text-sm font-semibold">
+                        <!-- Stock status will be populated by JavaScript -->
                     </div>
+                </div>
+
+                <div class="bg-neutral-50 p-6 rounded-lg">
+                    <div class="flex items-baseline space-x-3">
+                        <span id="product-price" class="text-4xl font-bold font-display text-primary-600">S/ 0.00</span>
+                        <span id="product-original-price" class="text-xl text-neutral-400 line-through"></span>
+                    </div>
+                    <div id="discount-badge" class="mt-2 hidden">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-700">
+                            ¡Oferta!
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex-grow">
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">Descripción</h3>
+                    <div id="product-description" class="prose prose-neutral max-w-none text-neutral-600">
+                        <p>Descripción del producto...</p>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-neutral-200 space-y-4">
+                    <h3 class="text-lg font-semibold text-neutral-800 text-center">Comunícate con nuestras asesoras:</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <a id="whatsapp-link" href="#" target="_blank" rel="noopener noreferrer" class="bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-all duration-300 flex items-center justify-center text-base font-semibold shadow-md hover:shadow-lg hover:scale-105 group">
+                            <!-- Content will be populated by JavaScript -->
+                        </a>
+                        <a id="whatsapp-link-ana" href="#" target="_blank" rel="noopener noreferrer" class="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-all duration-300 flex items-center justify-center text-base font-semibold shadow-md hover:shadow-lg hover:scale-105 group">
+                            <!-- Content will be populated by JavaScript -->
+                        </a>                    </div>
                 </div>
             </div>
         </div>
-    </template>
-
-    <script type="module" src="/js/producto-cliente.js"></script>
-</body>
-</html>
+    </div>
+</template>

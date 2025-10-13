@@ -2,7 +2,9 @@
 // Servicio centralizado para la inicialización de Firebase en el panel administrativo
 // Usa Firebase Compatibility Mode para mantener compatibilidad con el código existente
 
+// Se exporta para que pueda ser importada en otros módulos
 export let db = null;
+export let storage = null; 
 
 /**
  * Inicializa Firebase y retorna las instancias de los servicios
@@ -21,6 +23,22 @@ export async function initializeFirebase() {
         const auth = firebase.auth();
         const db = firebase.firestore();
         const storage = firebase.storage();
+        
+        // --- INICIO DE CÓDIGO AÑADIDO ---
+        // Conectar a los emuladores si estamos en localhost (entorno de desarrollo)
+        if (window.location.hostname === 'localhost') {
+            console.log("Modo de desarrollo: Conectando a los emuladores de Firebase...");
+            try {
+                // Usamos la sintaxis .useEmulator() para la versión de compatibilidad (v8)
+                db.useEmulator("localhost", 8080);
+                auth.useEmulator("http://localhost:9099");
+                storage.useEmulator("localhost", 9199);
+                console.log("✅ Conectado a los emuladores locales.");
+            } catch (error) {
+                console.error("❌ Error al conectar con los emuladores. ¿Están corriendo?", error);
+            }
+        }
+        // --- FIN DE CÓDIGO AÑADIDO ---
 
         console.log('✅ Firebase inicializado correctamente');
 

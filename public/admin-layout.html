@@ -438,6 +438,7 @@
     
     <script type="module">
         import { loadReportesPage } from './js/admin/pages/reportes/index.js';
+        import { loadProductosPage } from './js/admin/pages/productos/index.js';
 
         // Configuración de roles
         const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
@@ -881,19 +882,12 @@
                     }
                     break;
                 case 'productos':
-                    if (typeof loadProductos === 'function') {
+                    try {
                         console.log('Cargando productos...');
-                        loadProductos();
-                    } else {
-                        console.log('loadProductos no está disponible');
-                        showLoading('Cargando Productos...');
-                        setTimeout(() => {
-                            if (typeof loadProductos === 'function') {
-                                loadProductos();
-                            } else {
-                                showError('Error: No se pudo cargar la gestión de productos');
-                            }
-                        }, 1000);
+                        await loadProductosPage();
+                    } catch (error) {
+                        console.error('Error cargando productos:', error);
+                        showError('Error: No se pudo cargar la gestión de productos');
                     }
                     break;
                 case 'ventas':
@@ -1032,7 +1026,7 @@
         window.addEventListener('load', function() {
             console.log('Verificando funciones cargadas:');
             console.log('loadDashboard:', typeof loadDashboard);
-            console.log('loadProductos:', typeof loadProductos);
+            console.log('loadProductosPage:', typeof loadProductosPage);
             console.log('loadVentas:', typeof loadVentas);
             console.log('loadReportesPage:', typeof loadReportesPage);
             console.log('loadRentabilidad:', typeof loadRentabilidad);
@@ -1044,7 +1038,6 @@
     
     <!-- Scripts para las secciones individuales -->
     <script src="/js/admin-dashboard.js"></script>
-    <script src="/js/admin-productos.js"></script>
     <script src="/js/admin-ventas.js"></script>
     <script src="/js/admin-rentabilidad.js"></script>
     <script src="/js/admin-almacen.js"></script>

@@ -1,28 +1,24 @@
-// admin-productos.js - Funciones para la sección Productos
-console.log('Cargando admin-productos.js...');
+import * as data from './data.js';
 
-window.loadProductos = function() {
-    console.log('Ejecutando loadProductos...');
-    
-    // Verificar permisos
-    if (!window.currentUser || !window.hasAccessToSales(window.currentUser.email)) {
-        document.getElementById('content-area').innerHTML = `
-            <div class="text-center py-8">
-                <i class="fas fa-lock text-4xl text-gray-400 mb-4"></i>
-                <p class="text-gray-600 text-lg">No tienes permisos para gestionar productos</p>
-            </div>
-        `;
-        return;
-    }
+let currentIsVendedor = false;
 
-    const isVendedor = window.isVendedor && window.isVendedor(window.currentUser.email);
+export function renderProductosUI({ isVendedor } = {}) {
+    window.productsCache = window.productsCache || [];
+    window.categoriesCache = window.categoriesCache || [];
+
+    const resolvedIsVendedor = typeof isVendedor === 'boolean'
+        ? isVendedor
+        : (window.isVendedor && window.currentUser ? window.isVendedor(window.currentUser.email) : false);
+    currentIsVendedor = Boolean(resolvedIsVendedor);
+
+    console.log('Preparando interfaz de productos...');
     
     const content = `
         <div class="space-y-6">
             <!-- Header -->
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold text-gray-800">Gestión de Productos</h2>
-                ${!isVendedor ? `
+                ${!currentIsVendedor ? `
                 <button id="add-product-btn" class="bg-rose-500 text-white px-4 py-2 rounded-md hover:bg-rose-600">
                     <i class="fas fa-plus mr-2"></i>Agregar Producto
                 </button>
@@ -92,28 +88,44 @@ window.loadProductos = function() {
     configurarListenersParaFiltros();
     
     // Configurar eventos
-    if (!isVendedor) {
+    if (!currentIsVendedor) {
         const addBtn = document.getElementById('add-product-btn');
         if (addBtn) {
             addBtn.addEventListener('click', showAddProductModal);
         }
     }
-};
+}
+
+export function setProducts(products = []) {
+    window.productsCache = Array.isArray(products) ? [...products] : [];
+    window.productsCache.sort((a, b) => {
+        const nameA = (a.name || a.nombre || '').toString().toLowerCase();
+        const nameB = (b.name || b.nombre || '').toString().toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    displayProducts();
+    cargarCategoriasParaFiltro();
+}
+
+export function setCategories(categories = []) {
+    window.categoriesCache = Array.isArray(categories) ? [...categories] : [];
+    window.categoriesCache.sort((a, b) => {
+        const nameA = (a?.name || '').toString().toLowerCase();
+        const nameB = (b?.name || '').toString().toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+}
+
+export function showProductosError(message) {
+    showErrorMessage(message);
+}
+
+
 
 // Función auxiliar para calcular stock real de un producto
 async function calcularStockRealProducto(productoId) {
     try {
-        const lotesSnapshot = await window.db.collection('stock_por_lote')
-            .where('productoId', '==', productoId)
-            .get();
-        
-        let stockReal = 0;
-        lotesSnapshot.forEach(doc => {
-            const lote = doc.data();
-            stockReal += lote.cantidad || 0;
-        });
-        
-        return stockReal;
+        return await data.getRealProductStock(productoId);
     } catch (error) {
         console.log('Error calculando stock real para producto', productoId, ':', error);
         return null; // Retorna null si hay error
@@ -176,7 +188,6 @@ function displayProducts(productos = null) {
         
         // Determinar clase de stock
 
-        const isVendedor = window.isVendedor && window.isVendedor(window.currentUser.email);
         
         // Crear galería de imágenes si hay múltiples
         const images = [
@@ -212,7 +223,7 @@ function displayProducts(productos = null) {
                                 <h4 class="font-semibold text-lg">${product.name || product.nombre || 'Sin nombre'}</h4>
                                 ${product.sku ? `<p class="text-sm text-gray-500">SKU: ${product.sku}</p>` : ''}
                             </div>
-                            ${!isVendedor ? `
+                            ${!currentIsVendedor ? `
                             <div class="flex space-x-2 ml-4">
                                 <button onclick="editarProducto('${product.id}')" class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
                                     <i class="fas fa-edit"></i>
@@ -269,7 +280,7 @@ function displayProducts(productos = null) {
                                     title="Ver historial de movimientos">
                                 <i class="fas fa-history mr-1"></i>Historial
                             </button>
-                            ${!isVendedor ? `
+                            ${!currentIsVendedor ? `
                             <button onclick="ajustarStockProducto('${product.id}')" 
                                     class="text-orange-600 hover:text-orange-800 px-2 py-1 rounded border border-orange-300 hover:bg-orange-50 text-xs"
                                     title="Ajustar stock manualmente">
@@ -771,7 +782,7 @@ function editarProducto(id) {
     document.getElementById('edit-product-form').addEventListener('submit', handleProductSubmit);
 }
 
-function eliminarProducto(id, nombre) {
+async function eliminarProducto(id, nombre) {
     if (confirm(`¿Estás seguro de que quieres eliminar el producto "${nombre}"?\n\nEsta acción no se puede deshacer.`)) {
         console.log('Eliminando producto:', id);
         
@@ -786,42 +797,32 @@ function eliminarProducto(id, nombre) {
         `;
         document.body.insertAdjacentHTML('beforeend', loadingModal);
         
-        // Eliminar de Firebase
-        window.db.collection('products').doc(id).delete()
-            .then(() => {
-                console.log('Producto eliminado correctamente');
-                
-                // Actualizar cache local
-                window.productsCache = window.productsCache.filter(p => p.id !== id);
-                
-                // Recargar la vista
-                displayProducts();
-                
-                // Remover modal de carga
-                const loadingModalEl = document.getElementById('loading-modal');
-                if (loadingModalEl) {
-                    loadingModalEl.remove();
-                }
-                
-                // Mostrar mensaje de éxito
-                showSuccessMessage('Producto eliminado correctamente');
-            })
-            .catch((error) => {
-                console.error('Error eliminando producto:', error);
-                
-                // Remover modal de carga
-                const loadingModalEl = document.getElementById('loading-modal');
-                if (loadingModalEl) {
-                    loadingModalEl.remove();
-                }
-                
-                // Mostrar error
-                showErrorMessage('Error al eliminar el producto: ' + error.message);
-            });
+        try {
+            await data.deleteProduct(id);
+
+            console.log('Producto eliminado correctamente');
+            
+            // Actualizar cache local
+            window.productsCache = window.productsCache.filter(p => p.id !== id);
+            
+            // Recargar la vista
+            displayProducts();
+            
+            // Mostrar mensaje de éxito
+            showSuccessMessage('Producto eliminado correctamente');
+        } catch (error) {
+            console.error('Error eliminando producto:', error);
+            showErrorMessage('Error al eliminar el producto: ' + error.message);
+        } finally {
+            const loadingModalEl = document.getElementById('loading-modal');
+            if (loadingModalEl) {
+                loadingModalEl.remove();
+            }
+        }
     }
 }
 
-console.log('admin-productos.js cargado completamente');
+console.log('Modulo UI de productos cargado completamente');
 
 // ============ FUNCIONES AUXILIARES DEL MODAL ============
 
@@ -892,14 +893,7 @@ async function loadCategoriesInModal() {
     if (!container) return;
     
     try {
-        // Cargar categorías desde Firebase
-        const snapshot = await window.db.collection('categories').get();
-        const categories = [];
-        snapshot.forEach(doc => {
-            categories.push({ id: doc.id, ...doc.data() });
-        });
-        
-        categories.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        const categories = await data.fetchCategories();
         
         if (categories.length === 0) {
             container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay categorías registradas</p>';
@@ -940,20 +934,7 @@ async function addCategory() {
     }
     
     try {
-        // Verificar si ya existe
-        const snapshot = await window.db.collection('categories')
-            .where('name', '==', categoryName).get();
-        
-        if (!snapshot.empty) {
-            alert('Esta categoría ya existe');
-            return;
-        }
-        
-        // Agregar nueva categoría
-        await window.db.collection('categories').add({
-            name: categoryName,
-            createdAt: window.serverTimestamp()
-        });
+        await data.createCategory(categoryName);
         
         input.value = '';
         loadCategoriesInModal();
@@ -961,7 +942,11 @@ async function addCategory() {
         
     } catch (error) {
         console.error('Error agregando categoría:', error);
-        showErrorMessage('Error al agregar la categoría: ' + error.message);
+        if (error.code === 'category-exists') {
+            showErrorMessage('Ya existe una categoría con ese nombre');
+        } else {
+            showErrorMessage('Error al agregar la categoría: ' + error.message);
+        }
     }
 }
 
@@ -971,7 +956,7 @@ async function deleteCategory(id, name) {
     }
     
     try {
-        await window.db.collection('categories').doc(id).delete();
+        await data.removeCategory(id);
         loadCategoriesInModal();
         showSuccessMessage('Categoría eliminada correctamente');
         
@@ -981,8 +966,8 @@ async function deleteCategory(id, name) {
     }
 }
 
-function editCategory(id, currentName) {
-    const newName = prompt('Ingresa el nuevo nombre para la categoría:', currentName);
+async function editCategory(id, currentName) {
+    const newName = prompt('Ingresa el nuevo nombre para la categoria:', currentName);
     
     if (!newName || newName.trim() === '') {
         return;
@@ -994,80 +979,57 @@ function editCategory(id, currentName) {
         return; // No hay cambios
     }
     
-    // Validar que no exista otra categoría con ese nombre
-    window.db.collection('categories').where('name', '==', trimmedName).get()
-        .then((querySnapshot) => {
-            if (!querySnapshot.empty) {
-                // Verificar si es una categoría diferente (no la misma que estamos editando)
-                const existingCategory = querySnapshot.docs[0];
-                if (existingCategory.id !== id) {
-                    showErrorMessage('Ya existe una categoría con ese nombre');
-                    return;
-                }
-            }
-            
-            // Actualizar la categoría
-            return window.db.collection('categories').doc(id).update({
-                name: trimmedName,
-                updatedAt: window.serverTimestamp()
-            });
-        })
-        .then(() => {
-            // Actualizar todos los productos que usen esta categoría
-            const batch = window.db.batch();
-            
-            return window.db.collection('products').where('category', '==', currentName).get()
-                .then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        const productRef = window.db.collection('products').doc(doc.id);
-                        batch.update(productRef, { category: trimmedName });
-                    });
-                    
-                    return batch.commit();
-                })
-                .then(() => {
-                    console.log(`Categoría actualizada en ${querySnapshot.size} productos`);
-                    
-                    // Actualizar cache local de productos
-                    if (window.productsCache) {
-                        window.productsCache.forEach(product => {
-                            if (product.category === currentName || product.categoria === currentName) {
-                                product.category = trimmedName;
-                                product.categoria = trimmedName;
-                            }
-                        });
-                    }
-                    
-                    // Actualizar cache local de categorías
-                    if (window.categoriesCache) {
-                        const categoryIndex = window.categoriesCache.findIndex(cat => cat.id === id);
-                        if (categoryIndex !== -1) {
-                            window.categoriesCache[categoryIndex].name = trimmedName;
-                        }
-                    }
-                    
-                    // Recargar la lista de categorías en el modal
-                    loadCategoriesInModal();
-                    
-                    // Recargar el selector de categorías en el formulario principal
-                    cargarCategoriasParaModal();
-                    
-                    // Mantener la categoría seleccionada en el formulario principal si era la editada
-                    const categorySelect = document.getElementById('product-category');
-                    if (categorySelect && categorySelect.value === currentName) {
-                        // Pequeño delay para asegurar que las opciones se hayan actualizado
-                        setTimeout(() => {
-                            categorySelect.value = trimmedName;
-                        }, 100);
-                    }
-                    
-                    showSuccessMessage(`Categoría actualizada correctamente`);
-                });
-        })
-        .catch((error) => {
-            console.error('Error editando categoría:', error);
-            showErrorMessage('Error al editar la categoría: ' + error.message);
+    try {
+        const { newName: updatedName } = await data.updateCategoryName({
+            categoryId: id,
+            currentName,
+            newName: trimmedName
         });
+        
+        console.log('Categoria actualizada correctamente');
+        
+        // Actualizar cache local de productos
+        if (window.productsCache) {
+            window.productsCache.forEach(product => {
+                if (product.category === currentName || product.categoria === currentName) {
+                    product.category = updatedName;
+                    product.categoria = updatedName;
+                }
+            });
+        }
+        
+        // Actualizar cache local de categorias
+        if (window.categoriesCache) {
+            const categoryIndex = window.categoriesCache.findIndex(cat => cat.id === id);
+            if (categoryIndex !== -1) {
+                window.categoriesCache[categoryIndex].name = updatedName;
+            }
+        }
+        
+        // Recargar la lista de categorias en el modal
+        loadCategoriesInModal();
+        
+        // Recargar el selector de categorias en el formulario principal
+        cargarCategoriasParaModal();
+        
+        // Mantener la categoria seleccionada en el formulario principal si era la editada
+        const categorySelect = document.getElementById('product-category');
+        if (categorySelect && categorySelect.value === currentName) {
+            // Pequeño delay para asegurar que las opciones se hayan actualizado
+            setTimeout(() => {
+                categorySelect.value = updatedName;
+            }, 100);
+        }
+        
+        showSuccessMessage(`Categoria actualizada correctamente`);
+    } catch (error) {
+        if (error?.code === 'category-exists') {
+            showErrorMessage('Ya existe una categoria con ese nombre');
+            return;
+        }
+        console.error('Error editando categoria:', error);
+        showErrorMessage('Error al editar la categoria: ' + error.message);
+    }
 }
 
 function previewImage(input, imageType) {
@@ -1136,14 +1098,7 @@ async function cargarCategoriasParaModal(categoriaSeleccionada = '') {
     if (!selectCategoria) return;
     
     try {
-        // Cargar categorías desde Firebase
-        const snapshot = await window.db.collection('categories').get();
-        const categories = [];
-        snapshot.forEach(doc => {
-            categories.push({ id: doc.id, ...doc.data() });
-        });
-        
-        categories.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        const categories = await data.fetchCategories();
         
         // Limpiar y llenar el select
         while (selectCategoria.options.length > 1) {
@@ -1256,12 +1211,12 @@ async function handleProductSubmit(event) {
                 }
                 
                 // Subir imagen
-                formData[imageItem.key] = await uploadProductImage(imageItem.file, formData.name);
+                formData[imageItem.key] = await data.uploadProductImage(imageItem.file, formData.name);
             }
         }
         
         // Agregar timestamp
-        formData.updatedAt = window.serverTimestamp();
+        formData.updatedAt = data.getServerTimestamp();
         
         if (isEdit) {
             // Actualizar producto existente
@@ -1281,7 +1236,7 @@ async function handleProductSubmit(event) {
             console.log('Actualizando producto, campos excluidos:', fieldsToExclude);
             console.log('Datos a actualizar:', updateData);
             
-            await window.db.collection('products').doc(productId).update(updateData);
+            await data.updateProduct(productId, updateData);
             // Actualizar cache local
             const index = window.productsCache.findIndex(p => p.id === productId);
             if (index !== -1) {
@@ -1293,7 +1248,7 @@ async function handleProductSubmit(event) {
             // Guardar stockInicial y precioCompraInicial solo al crear
             formData.stockInicial = formData.stock;
             formData.precioCompraInicial = formData.acquisitionCost || 0;
-            formData.createdAt = window.serverTimestamp();
+            formData.createdAt = data.getServerTimestamp();
             
             console.log('Guardando producto con stock inicial:', {
                 stockInicial: formData.stockInicial,
@@ -1302,9 +1257,9 @@ async function handleProductSubmit(event) {
                 acquisitionCost: formData.acquisitionCost
             });
             
-            const docRef = await window.db.collection('products').add(formData);
+            const newProductId = await data.createProduct(formData);
             // Agregar al cache local
-            window.productsCache.push({ id: docRef.id, ...formData });
+            window.productsCache.push({ id: newProductId, ...formData });
             window.productsCache.sort((a, b) => (a.name || a.nombre || '').localeCompare(b.name || b.nombre || ''));
             showSuccessMessage('Producto agregado correctamente');
         }
@@ -1324,13 +1279,7 @@ async function handleProductSubmit(event) {
 }
 
 async function uploadProductImage(file, productName) {
-    const timestamp = Date.now();
-    const sanitizedName = productName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-    const fileName = `products/${sanitizedName}_${timestamp}.${file.name.split('.').pop()}`;
-    
-    const storageRef = window.storage.ref().child(fileName);
-    const snapshot = await storageRef.put(file);
-    return await snapshot.ref.getDownloadURL();
+    return data.uploadProductImage(file, productName);
 }
 
 function showSuccessMessage(message) {
@@ -1403,38 +1352,9 @@ function closeImageModal() {
 // Función para ver stock por lotes
 window.verStockPorLotes = async function(productId, productName) {
     try {
-        // Cargar stock por lotes del producto
-        const stockSnapshot = await window.db.collection('stock_por_lote')
-            .where('productoId', '==', productId)
-            .get();
-        
-        const lotesStock = [];
-        stockSnapshot.forEach(doc => {
-            const loteData = doc.data();
-            // Filtrar por estado activo y que tengan cantidad
-            if ((loteData.estado === 'activo' || !loteData.estado) && (loteData.cantidad > 0)) {
-                lotesStock.push({ id: doc.id, ...loteData });
-            }
-        });
-        
-        // Ordenar manualmente por fecha de ingreso (más reciente primero)
-        lotesStock.sort((a, b) => {
-            const fechaA = a.fechaIngreso ? 
-                (a.fechaIngreso.toDate ? a.fechaIngreso.toDate() : new Date(a.fechaIngreso)) : 
-                new Date(0);
-            const fechaB = b.fechaIngreso ? 
-                (b.fechaIngreso.toDate ? b.fechaIngreso.toDate() : new Date(b.fechaIngreso)) : 
-                new Date(0);
-            return fechaB - fechaA;
-        });
-        
-        // Cargar información de proveedores para mostrar nombres
-        const proveedoresSnapshot = await window.db.collection('proveedores').get();
-        const proveedores = {};
-        proveedoresSnapshot.forEach(doc => {
-            proveedores[doc.id] = doc.data().nombre;
-        });
-        
+        const lotesStock = await data.fetchActiveLots(productId);
+        const proveedores = await data.fetchProvidersMap();
+
         mostrarModalStockPorLotes(productId, productName, lotesStock, proveedores);
         
     } catch (error) {
@@ -1581,23 +1501,23 @@ window.ajustarStockLote = function(stockId, loteId, cantidadActual) {
 
 async function ajustarStockLoteEnBD(stockId, loteId, nuevaCantidad, cantidadAnterior) {
     try {
-        // Actualizar stock del lote
-        await window.db.collection('stock_por_lote').doc(stockId).update({
-            cantidad: nuevaCantidad,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        await data.updateLotStock({
+            stockId,
+            nuevaCantidad,
+            cantidadAnterior
         });
         
         // Registrar movimiento de inventario
         const diferencia = nuevaCantidad - cantidadAnterior;
         if (diferencia !== 0) {
-            await window.db.collection('movimientos_inventario').add({
+            await data.recordInventoryMovement({
                 loteId: loteId,
                 tipo: diferencia > 0 ? 'ajuste_entrada' : 'ajuste_salida',
                 cantidad: Math.abs(diferencia),
                 stockAnterior: cantidadAnterior,
                 stockNuevo: nuevaCantidad,
                 observacion: `Ajuste manual de stock - Lote: ${loteId}`,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                timestamp: data.getServerTimestamp(),
                 usuario: window.currentUser ? window.currentUser.email : 'sistema'
             });
         }
@@ -1621,28 +1541,11 @@ async function ajustarStockLoteEnBD(stockId, loteId, nuevaCantidad, cantidadAnte
 
 async function recalcularStockTotalProducto(stockId) {
     try {
-        // Obtener el producto del stock
-        const stockDoc = await window.db.collection('stock_por_lote').doc(stockId).get();
-        if (!stockDoc.exists) return;
+        const loteInfo = await data.fetchLotById(stockId);
+        if (!loteInfo) return;
         
-        const productoId = stockDoc.data().productoId;
-        
-        // Sumar todo el stock activo de este producto
-        const stockSnapshot = await window.db.collection('stock_por_lote')
-            .where('productoId', '==', productoId)
-            .where('estado', '==', 'activo')
-            .get();
-        
-        let stockTotal = 0;
-        stockSnapshot.forEach(doc => {
-            stockTotal += doc.data().cantidad || 0;
-        });
-        
-        // Actualizar el stock total en el producto
-        await window.db.collection('products').doc(productoId).update({
-            stock: stockTotal,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        const productoId = loteInfo.productoId;
+        const stockTotal = await data.recalculateProductStock(productoId);
         
         // Actualizar cache local
         if (window.productsCache) {
@@ -1697,48 +1600,14 @@ window.crearLoteLegacy = async function(productId) {
                 `${descripcionEstado}`)) return;
     
     try {
-        // Obtener el siguiente número de lote para este producto
-        const lotesExistentes = await window.db.collection('stock_por_lote')
-            .where('productoId', '==', productId)
-            .get();
-        
-        const numeroLote = lotesExistentes.size + 1;
-        const loteId = `lote${numeroLote}`;
-        
-        // Datos del lote legacy
-        const loteData = {
-            productoId: productId,
+        const { loteId } = await data.createLegacyLot({
+            productId,
             productoNombre: producto.name || producto.nombre,
-            loteId: loteId,
-            cantidad: stockActual, // Stock actual del producto
-            cantidadOriginal: stockInicial, // Stock inicial histórico
-            costoUnitario: costoUnitario,
-            fechaIngreso: firebase.firestore.Timestamp.fromDate(fechaIngreso),
-            fechaVencimiento: null,
-            proveedorId: null,
-            proveedorNombre: 'Legacy - Stock Inicial',
-            compraId: null,
-            esLegacy: true,
-            usuario: window.currentUser?.email || 'sistema',
-            creadoEn: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        // Crear el lote legacy
-        await window.db.collection('stock_por_lote').add(loteData);
-        
-        // Registrar movimiento de inventario
-        await window.db.collection('movimientos_inventario').add({
-            fecha: firebase.firestore.Timestamp.fromDate(fechaIngreso),
-            productoId: productId,
-            productoNombre: producto.name || producto.nombre,
-            loteId: loteId,
-            cantidad: stockActual,
-            tipo: 'entrada',
-            subtipo: 'lote_legacy',
-            usuario: window.currentUser?.email || 'sistema',
-            observaciones: `Lote legacy creado. Stock original: ${stockInicial}, stock actual: ${stockActual} unidades`,
-            costoUnitario: costoUnitario,
-            proveedorNombre: 'Legacy - Stock Inicial'
+            stockActual,
+            stockInicial,
+            costoUnitario,
+            fechaIngreso,
+            usuario: window.currentUser?.email || 'sistema'
         });
         
         const estadoFinal = stockActual === 0 ? '(AGOTADO)' : '(ACTIVO)';
@@ -1787,33 +1656,16 @@ window.mostrarLotesProducto = async function(productoId) {
             return;
         }
         
-        // Obtener todos los lotes del producto
-        const snapshot = await window.db.collection('stock_por_lote')
-            .where('productoId', '==', productoId)
-            .get();
-            
-        const lotes = [];
-        snapshot.forEach(doc => {
-            lotes.push({id: doc.id, ...doc.data()});
-        });
+        const lotes = await data.fetchProductLots(productoId);
         
-        // Ordenar manualmente por fecha de ingreso (más reciente primero)
-        lotes.sort((a, b) => {
-            const fechaA = a.fechaIngreso ? 
-                (a.fechaIngreso.toDate ? a.fechaIngreso.toDate() : new Date(a.fechaIngreso)) : 
-                new Date(0);
-            const fechaB = b.fechaIngreso ? 
-                (b.fechaIngreso.toDate ? b.fechaIngreso.toDate() : new Date(b.fechaIngreso)) : 
-                new Date(0);
-            return fechaB - fechaA; // Orden descendente
-        });
-        
-        // Obtener información de proveedores para mostrar nombres
-        const proveedores = {};
-        if (window.proveedoresCache) {
+        let proveedores = {};
+        if (window.proveedoresCache && window.proveedoresCache.length) {
             window.proveedoresCache.forEach(p => {
                 proveedores[p.id] = p.nombre;
             });
+        } else {
+            proveedores = await data.fetchProvidersMap();
+            window.proveedoresCache = Object.entries(proveedores).map(([id, nombre]) => ({ id, nombre }));
         }
         
         mostrarModalLotesProducto(producto, lotes, proveedores);
@@ -2027,13 +1879,11 @@ function calcularCostoPromedioLotes(lotes) {
 // Función para ver detalle de un lote específico
 window.verDetalleLote = async function(loteId) {
     try {
-        const loteDoc = await window.db.collection('stock_por_lote').doc(loteId).get();
-        if (!loteDoc.exists) {
+        const lote = await data.fetchLotById(loteId);
+        if (!lote) {
             alert('El lote no existe');
             return;
         }
-        
-        const lote = loteDoc.data();
         
         // Obtener información del producto
         let productoNombre = 'Producto no encontrado';
@@ -2050,11 +1900,8 @@ window.verDetalleLote = async function(loteId) {
             // Asegurar que tenemos el cache de proveedores
             if (!window.proveedoresCache) {
                 try {
-                    const proveedoresSnapshot = await window.db.collection('proveedores').get();
-                    window.proveedoresCache = [];
-                    proveedoresSnapshot.forEach(doc => {
-                        window.proveedoresCache.push({id: doc.id, ...doc.data()});
-                    });
+                    const proveedoresMap = await data.fetchProvidersMap();
+                    window.proveedoresCache = Object.entries(proveedoresMap).map(([id, nombre]) => ({ id, nombre }));
                 } catch (error) {
                     console.log('Error cargando proveedores:', error);
                     window.proveedoresCache = [];
@@ -2074,9 +1921,8 @@ window.verDetalleLote = async function(loteId) {
         let compraInfo = 'Sin compra asociada';
         if (lote.compraId) {
             try {
-                const compraDoc = await window.db.collection('compras').doc(lote.compraId).get();
-                if (compraDoc.exists) {
-                    const compra = compraDoc.data();
+                const compra = await data.fetchPurchaseById(lote.compraId);
+                if (compra) {
                     const fechaCompra = compra.fecha ? 
                         (compra.fecha.toDate ? compra.fecha.toDate() : new Date(compra.fecha))
                         .toLocaleDateString('es-ES') : 'Sin fecha';
@@ -2198,27 +2044,7 @@ window.mostrarHistorialMovimientos = async function(productoId) {
     try {
         console.log('Cargando historial de movimientos para producto:', productoId);
         
-        // Obtener movimientos de inventario
-        const snapshot = await window.db.collection('movimientos_inventario')
-            .where('productoId', '==', productoId)
-            .limit(50)
-            .get();
-            
-        const movimientos = [];
-        snapshot.forEach(doc => {
-            movimientos.push({id: doc.id, ...doc.data()});
-        });
-        
-        // Ordenar manualmente por fecha (más reciente primero)
-        movimientos.sort((a, b) => {
-            const fechaA = a.fecha ? 
-                (a.fecha.toDate ? a.fecha.toDate() : new Date(a.fecha)) : 
-                new Date(0);
-            const fechaB = b.fecha ? 
-                (b.fecha.toDate ? b.fecha.toDate() : new Date(b.fecha)) : 
-                new Date(0);
-            return fechaB - fechaA; // Orden descendente
-        });
+        const movimientos = await data.fetchInventoryMovements(productoId, 50);
         
         const producto = window.productsCache?.find(p => p.id === productoId);
         const nombreProducto = producto ? (producto.name || producto.nombre) : 'Producto no encontrado';
@@ -2358,9 +2184,7 @@ window.ajustarStockProducto = function(productoId) {
 // Función para confirmar ajuste de stock
 async function ajustarStockProductoConfirmar(productoId, nuevoStock) {
     try {
-        await window.db.collection('products').doc(productoId).update({
-            stock: nuevoStock
-        });
+        await data.updateProductStock(productoId, nuevoStock);
         
         // Actualizar cache
         const productoIndex = window.productsCache?.findIndex(p => p.id === productoId);
@@ -2369,10 +2193,12 @@ async function ajustarStockProductoConfirmar(productoId, nuevoStock) {
         }
         
         // Registrar movimiento
-        await window.db.collection('movimientos_inventario').add({
-            fecha: firebase.firestore.FieldValue.serverTimestamp(),
+        const productoNombre = productoIndex !== -1 && window.productsCache
+            ? (window.productsCache[productoIndex].name || window.productsCache[productoIndex].nombre)
+            : 'Producto';
+        await data.recordInventoryMovement({
             productoId: productoId,
-            productoNombre: window.productsCache[productoIndex]?.name || window.productsCache[productoIndex]?.nombre || 'Producto',
+            productoNombre,
             cantidad: nuevoStock,
             tipo: 'ajuste',
             usuario: window.currentUser?.email || 'sistema',
@@ -2458,42 +2284,23 @@ window.ajustarStockLote = function(loteId, loteIdTexto, stockActual) {
 // Función para confirmar ajuste de stock de lote
 async function ajustarStockLoteConfirmar(loteId, loteIdTexto, nuevoStock, stockAnterior) {
     try {
-        // Obtener información del lote
-        const loteDoc = await window.db.collection('stock_por_lote').doc(loteId).get();
-        if (!loteDoc.exists) {
+        const loteData = await data.fetchLotById(loteId);
+        if (!loteData) {
             alert('El lote no existe');
             return;
         }
-        
-        const loteData = loteDoc.data();
+
         const diferencia = nuevoStock - stockAnterior;
         
-        // Actualizar stock del lote
-        await window.db.collection('stock_por_lote').doc(loteId).update({
-            cantidad: nuevoStock
+        await data.updateLotStock({
+            stockId: loteId,
+            nuevaCantidad: nuevoStock,
+            cantidadAnterior: stockAnterior
         });
         
         // Actualizar stock total del producto si es posible
         if (loteData.productoId) {
-            // Obtener todos los lotes del producto para calcular stock total
-            const lotesSnapshot = await window.db.collection('stock_por_lote')
-                .where('productoId', '==', loteData.productoId)
-                .get();
-            
-            let stockTotal = 0;
-            lotesSnapshot.forEach(doc => {
-                const lote = doc.data();
-                if (doc.id === loteId) {
-                    stockTotal += nuevoStock; // Usar el nuevo stock para este lote
-                } else {
-                    stockTotal += lote.cantidad || 0;
-                }
-            });
-            
-            // Actualizar stock del producto
-            await window.db.collection('products').doc(loteData.productoId).update({
-                stock: stockTotal
-            });
+            const stockTotal = await data.recalculateProductStock(loteData.productoId);
             
             // Actualizar cache si existe
             const productoIndex = window.productsCache?.findIndex(p => p.id === loteData.productoId);
@@ -2503,8 +2310,7 @@ async function ajustarStockLoteConfirmar(loteId, loteIdTexto, nuevoStock, stockA
         }
         
         // Registrar movimiento de inventario
-        await window.db.collection('movimientos_inventario').add({
-            fecha: firebase.firestore.FieldValue.serverTimestamp(),
+        await data.recordInventoryMovement({
             productoId: loteData.productoId,
             productoNombre: loteData.productoNombre || 'Producto',
             loteId: loteData.loteId || loteIdTexto,

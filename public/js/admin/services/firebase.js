@@ -2,6 +2,8 @@
 // Servicio centralizado para la inicialización de Firebase en el panel administrativo
 // Usa Firebase Compatibility Mode para mantener compatibilidad con el código existente
 
+export let db = null;
+
 /**
  * Inicializa Firebase y retorna las instancias de los servicios
  * @returns {Promise<{app: firebase.app.App, auth: firebase.auth.Auth, db: firebase.firestore.Firestore, storage: firebase.storage.Storage}>}
@@ -41,6 +43,7 @@ export async function initializeFirebase() {
  * @param {Object} services - Objeto con las instancias de Firebase
  */
 export function exposeFirebaseGlobally(services) {
+    db = services.db;
     window.auth = services.auth;
     window.db = services.db;
     window.storage = services.storage;

@@ -436,7 +436,9 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage-compat.js"></script>
     
-    <script>
+    <script type="module">
+        import { loadReportesPage } from './js/admin/pages/reportes/index.js';
+
         // Configuración de roles
         const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
         const SUPER_VENDEDOR_EMAILS = ['garyvv.1993@gmail.com', 'abrahamjimenez092003@gmail.com'];
@@ -829,7 +831,7 @@
         window.serverTimestamp = firebase.firestore.FieldValue.serverTimestamp;
         window.runTransaction = (db, updateFunction) => db.runTransaction(updateFunction);
 
-        function loadSection(section) {
+        async function loadSection(section) {
             currentSection = section;
             
             // Actualizar el hash en la URL
@@ -911,19 +913,12 @@
                     }
                     break;
                 case 'reportes':
-                    if (typeof loadReportes === 'function') {
+                    try {
                         console.log('Cargando reportes...');
-                        loadReportes();
-                    } else {
-                        console.log('loadReportes no está disponible');
-                        showLoading('Cargando Reportes...');
-                        setTimeout(() => {
-                            if (typeof loadReportes === 'function') {
-                                loadReportes();
-                            } else {
-                                showError('Error: No se pudo cargar los reportes');
-                            }
-                        }, 1000);
+                        await loadReportesPage();
+                    } catch (error) {
+                        console.error('Error cargando reportes:', error);
+                        showError('Error: No se pudo cargar los reportes');
                     }
                     break;
                 case 'rentabilidad':
@@ -1039,7 +1034,7 @@
             console.log('loadDashboard:', typeof loadDashboard);
             console.log('loadProductos:', typeof loadProductos);
             console.log('loadVentas:', typeof loadVentas);
-            console.log('loadReportes:', typeof loadReportes);
+            console.log('loadReportesPage:', typeof loadReportesPage);
             console.log('loadRentabilidad:', typeof loadRentabilidad);
             console.log('loadAlmacen:', typeof loadAlmacen);
             console.log('loadCompras:', typeof loadCompras);
@@ -1051,7 +1046,6 @@
     <script src="/js/admin-dashboard.js"></script>
     <script src="/js/admin-productos.js"></script>
     <script src="/js/admin-ventas.js"></script>
-    <script src="/js/admin-reportes.js"></script>
     <script src="/js/admin-rentabilidad.js"></script>
     <script src="/js/admin-almacen.js"></script>
     

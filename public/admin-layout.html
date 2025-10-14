@@ -10,7 +10,7 @@
     <link rel="icon" href="logo.jpg" type="image/jpeg">
     <!-- TinyMCE Editor -->
     <script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
-    <!-- Chart.js para gráficos -->
+    <!-- Chart.js para graficos -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- Day.js para manejo de fechas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.7/dayjs.min.js"></script>
@@ -37,7 +37,7 @@
             display: flex !important; 
         }
         
-        /* Mejorar la visualización de modales */
+    /* Mejorar la visualizacion de modales */
         .modal .bg-white {
             position: relative;
             z-index: 10000;
@@ -132,7 +132,7 @@
             padding-right: 0.75rem !important;
         }
         
-        /* Botón de toggle mejorado */
+    /* Boton de toggle mejorado */
         #sidebar-toggle {
             transition: all 0.3s ease;
             border-radius: 50%;
@@ -194,7 +194,7 @@
             background: rgba(255, 255, 255, 0.5);
         }
         
-        /* Ocultar completamente el scrollbar cuando esté colapsado */
+    /* Ocultar completamente el scrollbar cuando esta colapsado */
         .sidebar-collapsed .sidebar-nav {
             overflow-x: visible;
         }
@@ -203,7 +203,7 @@
             display: none;
         }
         
-        /* Asegurar que no se vea nada de texto cuando esté colapsado */
+        /* Asegurar que no se vea nada de texto cuando esta colapsado */
         .sidebar-collapsed * {
             overflow: hidden !important;
         }
@@ -216,7 +216,7 @@
             display: none !important;
         }
         
-        /* Centrar perfectamente los iconos cuando esté colapsado */
+    /* Centrar perfectamente los iconos cuando esta colapsado */
         .sidebar-collapsed .nav-link {
             justify-content: center !important;
             padding: 0.75rem !important;
@@ -226,7 +226,7 @@
             margin: 0 !important;
         }
         
-        /* Tooltip para mostrar el nombre cuando esté colapsado */
+        /* Tooltip para mostrar el nombre cuando esta colapsado */
         .sidebar-collapsed .nav-link {
             position: relative;
         }
@@ -364,27 +364,27 @@
                     </a>
                 </li>
                 <li class="mb-2" id="nav-rentabilidad-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="rentabilidad" data-tooltip="Análisis de Rentabilidad">
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="rentabilidad" data-tooltip="Analisis de Rentabilidad">
                         <i class="sidebar-icon fas fa-chart-pie mr-3"></i>
-                        <span class="sidebar-text">Análisis de Rentabilidad</span>
+                        <span class="sidebar-text">Analisis de Rentabilidad</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-almacen-li">
-                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="almacen" data-tooltip="Almacén">
+                    <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="almacen" data-tooltip="Almacen">
                         <i class="sidebar-icon fas fa-warehouse mr-3"></i>
-                        <span class="sidebar-text">Almacén 📦</span>
+                        <span class="sidebar-text">Almacen</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-compras-li">
                     <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="compras" data-tooltip="Compras">
                         <i class="sidebar-icon fas fa-shopping-basket mr-3"></i>
-                        <span class="sidebar-text">Compras 🛒</span>
+                        <span class="sidebar-text">Compras</span>
                     </a>
                 </li>
                 <li class="mb-2" id="nav-caja-li">
                     <a href="#" class="nav-link block py-3 px-4 hover:bg-rose-600 transition-colors rounded" data-section="caja" data-tooltip="Caja">
                         <i class="sidebar-icon fas fa-cash-register mr-3"></i>
-                        <span class="sidebar-text">Caja 💰</span>
+                        <span class="sidebar-text">Caja</span>
                     </a>
                 </li>
             </ul>
@@ -395,9 +395,9 @@
                 <i class="sidebar-icon fas fa-arrow-left mr-2"></i>
                 <span class="sidebar-text">Tienda</span>
             </a>
-            <button id="logout-btn" class="sidebar-footer-btn nav-link block w-full py-2 text-center bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors" data-tooltip="Cerrar Sesión">
+            <button id="logout-btn" class="sidebar-footer-btn nav-link block w-full py-2 text-center bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors" data-tooltip="Cerrar Sesion">
                 <i class="sidebar-icon fas fa-sign-out-alt mr-2"></i>
-                <span class="sidebar-text">Cerrar Sesión</span>
+                <span class="sidebar-text">Cerrar Sesion</span>
             </button>
         </div>
     </div>
@@ -422,7 +422,7 @@
         
         <!-- Content Area -->
         <main id="content-area" class="p-6">
-            <!-- El contenido específico de cada sección se cargará aquí -->
+            <!-- El contenido especifico de cada seccion se cargara aqui -->
             <div class="text-center py-8">
                 <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
                 <p class="text-gray-500">Cargando panel administrativo...</p>
@@ -442,8 +442,9 @@
         import { loadProductosPage } from './js/admin/pages/productos/index.js';
         import { loadVentasPage } from './js/admin/pages/ventas/index.js';
         import { loadCajaPage } from './js/admin/pages/caja/index.js';
+        import { loadComprasPage } from './js/admin/pages/compras/index.js';
 
-        // Configuración de roles
+    // Configuracion de roles
         const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
         const SUPER_VENDEDOR_EMAILS = ['garyvv.1993@gmail.com', 'abrahamjimenez092003@gmail.com'];
         const VENDEDOR_EMAILS = ['amvf280194@gmail.com', 'noeatlas28@gmail.com'];
@@ -455,7 +456,7 @@
         let categoriesCache = [];
         let allSales = [];
         let salesChart, categoryChart;
-        // Variables para ventas movidas a archivo específico
+    // Variables para ventas movidas a archivo especifico
 
         // Funciones para verificar roles
         function isSuperAdmin(email) {
@@ -516,7 +517,7 @@
                 }
             } catch (error) {
                 console.error("Error al inicializar Firebase:", error);
-                showError('Error de conexión. Por favor recarga la página.');
+                showError('Error de conexion. Por favor recarga la pagina.');
             }
         }
 
@@ -530,10 +531,10 @@
                     if (hasAccessToSales(user.email)) {
                         document.body.style.opacity = '1';
                         
-                        // Configurar interfaz según rol
+                        // Configurar interfaz segun rol
                         setupUserInterface(user.email);
                         
-                        // Mostrar información del usuario
+                        // Mostrar informacion del usuario
                         document.getElementById('user-info').innerHTML = `
                             <i class="fas fa-user mr-2"></i>
                             <span>${user.email}</span>
@@ -545,7 +546,7 @@
                         // Cargar datos iniciales
                         await loadInitialData();
                         
-                        // Cargar la sección por defecto o la especificada en el hash
+                        // Cargar la seccion por defecto o la especificada en el hash
                         const initialSection = window.location.hash.replace('#', '') || 'dashboard';
                         loadSection(initialSection);
                         
@@ -562,19 +563,19 @@
         }
 
         function setupUserInterface(userEmail) {
-            // Configurar navegación según el rol del usuario
+            // Configurar navegacion segun el rol del usuario
             if (isVendedor(userEmail)) {
                 // Los vendedores pueden ver dashboard y ventas
-                // Mantener dashboard y ventas visibles (están por defecto)
+                // Mantener dashboard y ventas visibles (estan por defecto)
                 
-                // Ocultar opciones de gestión de productos para vendedores simples
+                // Ocultar opciones de gestion de productos para vendedores simples
                 document.getElementById('nav-productos-li').style.display = 'none';
                 // Ocultar reportes para vendedores simples
                 document.getElementById('nav-reportes-li').style.display = 'none';
-                // Ocultar análisis de rentabilidad para vendedores simples
+                // Ocultar analisis de rentabilidad para vendedores simples
                 document.getElementById('nav-rentabilidad-li').style.display = 'none';
                 // Ocultar egresos para vendedores simples
-                // Ocultar nuevos módulos para vendedores simples
+                // Ocultar nuevos modulos para vendedores simples
                 document.getElementById('nav-almacen-li').style.display = 'none';
                 document.getElementById('nav-compras-li').style.display = 'none';
                 document.getElementById('nav-caja-li').style.display = 'none';
@@ -598,7 +599,7 @@
         }
 
         function setupEventListeners() {
-            // Navegación del sidebar
+            // Navegacion del sidebar
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
                     const section = this.dataset.section;
@@ -613,7 +614,7 @@
             // Toggle del sidebar
             document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
             
-            // Menú móvil
+            // Menu movil
             document.getElementById('mobile-menu-toggle').addEventListener('click', toggleMobileMenu);
             document.getElementById('mobile-overlay').addEventListener('click', closeMobileMenu);
 
@@ -622,18 +623,18 @@
                 auth.signOut().then(() => {
                     window.location.href = '/login.html';
                 }).catch(error => {
-                    console.error('Error al cerrar sesión:', error);
+                    console.error('Error al cerrar sesion:', error);
                 });
             });
 
-            // Configurar navegación de botones del navegador
+            // Configurar navegacion de botones del navegador
             window.addEventListener('popstate', function() {
                 const hash = window.location.hash.replace('#', '') || 'dashboard';
                 loadSection(hash);
             });
         }
 
-        // Función global para cerrar modales con Escape
+    // Funcion global para cerrar modales con Escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 const activeModal = document.querySelector('.modal.active');
@@ -643,7 +644,7 @@
             }
         });
 
-        // Función global para cerrar todos los modales
+    // Funcion global para cerrar todos los modales
         window.closeAllModals = function() {
             const modals = document.querySelectorAll('.modal');
             modals.forEach(modal => {
@@ -651,7 +652,7 @@
             });
         };
 
-        // Función de emergencia para limpiar modales problemáticos
+    // Funcion de emergencia para limpiar modales problematicos
         window.emergencyCloseModals = function() {
             // Remover todas las clases 'active' de todos los modales
             document.querySelectorAll('.modal').forEach(modal => {
@@ -659,7 +660,7 @@
                 modal.style.display = 'none';
             });
             
-            // Forzar ocultación con setTimeout
+            // Forzar ocultacion con setTimeout
             setTimeout(() => {
                 document.querySelectorAll('.modal').forEach(modal => {
                     modal.classList.remove('active');
@@ -668,7 +669,7 @@
             }, 100);
         };
 
-        // Ejecutar limpieza al cambiar de sección
+    // Ejecutar limpieza al cambiar de seccion
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('nav-link')) {
                 setTimeout(() => {
@@ -714,10 +715,10 @@
                 // Cargar productos siempre (para ventas)
                 await loadProducts();
                 
-                // Cargar categorías si tiene acceso a gestión de productos
+                // Cargar categorias si tiene acceso a gestion de productos
                 if (isAdmin(currentUser.email)) {
                     await loadCategories();
-                    // Cargar proveedores para gestión de compras
+                    // Cargar proveedores para gestion de compras
                     await loadProveedores();
                 }
                 
@@ -756,9 +757,9 @@
                 });
                 categoriesCache.sort((a, b) => a.name.localeCompare(b.name));
                 window.categoriesCache = categoriesCache;
-                console.log(`Cargadas ${categoriesCache.length} categorías`);
+                console.log(`Cargadas ${categoriesCache.length} categorias`);
             } catch (error) {
-                console.error("Error cargando categorías:", error);
+                console.error("Error cargando categorias:", error);
             }
         }
 
@@ -773,7 +774,7 @@
                 window.proveedoresCache = proveedoresCache;
                 console.log(`Cargados ${proveedoresCache.length} proveedores`);
                 
-                // Disparar evento para notificar que los proveedores están cargados
+                // Disparar evento para notificar que los proveedores estan cargados
                 window.dispatchEvent(new CustomEvent('proveedoresLoaded', { 
                     detail: { proveedores: proveedoresCache } 
                 }));
@@ -843,7 +844,7 @@
                 window.history.pushState(null, null, `#${section}`);
             }
             
-            // Actualizar navegación activa
+            // Actualizar navegacion activa
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('bg-rose-600');
                 if (link.dataset.section === section) {
@@ -851,21 +852,21 @@
                 }
             });
             
-            // Actualizar título
+            // Actualizar titulo
             const titles = {
                 'dashboard': 'Dashboard',
-                'productos': 'Gestión de Productos',
+                'productos': 'Gestion de Productos',
                 'ventas': 'Registro de Ventas',
                 'reportes': 'Reportes',
-                'rentabilidad': 'Análisis de Rentabilidad',
-                'almacen': 'Gestión de Almacén',
-                'compras': 'Gestión de Compras',
-                'caja': 'Gestión de Caja',
+                'rentabilidad': 'Analisis de Rentabilidad',
+                'almacen': 'Gestion de Almacen',
+                'compras': 'Gestion de Compras',
+                'caja': 'Gestion de Caja',
             };
             
             document.getElementById('page-title').textContent = titles[section] || 'Panel Admin';
             
-            // Cargar contenido de la sección
+            // Cargar contenido de la seccion
             switch(section) {
                 case 'dashboard':
                     showLoading('Cargando Dashboard...');
@@ -883,7 +884,7 @@
                         await loadProductosPage();
                     } catch (error) {
                         console.error('Error cargando productos:', error);
-                        showError('Error: No se pudo cargar la gestión de productos');
+                        showError('Error: No se pudo cargar la gestion de productos');
                     }
                     break;
                 case 'ventas':
@@ -907,50 +908,44 @@
                     break;
                 case 'rentabilidad':
                     if (typeof loadRentabilidad === 'function') {
-                        console.log('Cargando análisis de rentabilidad...');
+                        console.log('Cargando analisis de rentabilidad...');
                         loadRentabilidad();
                     } else {
-                        console.log('loadRentabilidad no está disponible');
-                        showLoading('Cargando Análisis de Rentabilidad...');
+                        console.log('loadRentabilidad no esta disponible');
+                        showLoading('Cargando Analisis de Rentabilidad...');
                         setTimeout(() => {
                             if (typeof loadRentabilidad === 'function') {
                                 loadRentabilidad();
                             } else {
-                                showError('Error: No se pudo cargar el análisis de rentabilidad');
+                                showError('Error: No se pudo cargar el analisis de rentabilidad');
                             }
                         }, 1000);
                     }
                     break;
                 case 'almacen':
                     if (typeof loadAlmacen === 'function') {
-                        console.log('Cargando almacén...');
+                        console.log('Cargando almacen...');
                         loadAlmacen();
                     } else {
-                        console.log('loadAlmacen no está disponible');
-                        showLoading('Cargando Almacén...');
+                        console.log('loadAlmacen no esta disponible');
+                        showLoading('Cargando Almacen...');
                         setTimeout(() => {
                             if (typeof loadAlmacen === 'function') {
                                 loadAlmacen();
                             } else {
-                                showError('Error: No se pudo cargar la gestión de almacén');
+                                showError('Error: No se pudo cargar la gestion de almacen');
                             }
                         }, 1000);
                     }
                     break;
                 case 'compras':
-                    if (typeof loadCompras === 'function') {
-                        console.log('Cargando compras...');
-                        loadCompras();
-                    } else {
-                        console.log('loadCompras no está disponible');
-                        showLoading('Cargando Compras...');
-                        setTimeout(() => {
-                            if (typeof loadCompras === 'function') {
-                                loadCompras();
-                            } else {
-                                showError('Error: No se pudo cargar la gestión de compras');
-                            }
-                        }, 1000);
+                    showLoading('Cargando Compras...');
+                    try {
+                        console.log('Cargando compras (modulo)...');
+                        await loadComprasPage();
+                    } catch (error) {
+                        console.error('Error cargando compras:', error);
+                        showError('Error: No se pudo cargar la gestion de compras');
                     }
                     break;
                 case 'caja':
@@ -973,7 +968,7 @@
                     }
             }
             
-            // Cerrar menú móvil si está abierto
+            // Cerrar menu movil si esta abierto
             closeMobileMenu();
         }
 
@@ -995,13 +990,13 @@
             `;
         }
 
-        // Inicializar la aplicación cuando se carga el DOM
+    // Inicializar la aplicacion cuando se carga el DOM
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM cargado, iniciando aplicación...');
+            console.log('DOM cargado, iniciando aplicacion...');
             initializeApp();
         });
 
-        // Verificar que las funciones de sección se carguen
+    // Verificar que las funciones de seccion se carguen
         window.addEventListener('load', function() {
             console.log('Verificando funciones cargadas:');
             console.log('loadDashboardPage:', typeof loadDashboardPage);
@@ -1010,7 +1005,7 @@
             console.log('loadReportesPage:', typeof loadReportesPage);
             console.log('loadRentabilidad:', typeof loadRentabilidad);
             console.log('loadAlmacen:', typeof loadAlmacen);
-            console.log('loadCompras:', typeof loadCompras);
+            console.log('loadComprasPage:', typeof loadComprasPage);
             console.log('loadCajaPage:', typeof loadCajaPage);
         });
     </script>
@@ -1019,14 +1014,10 @@
     <script src="/js/admin-rentabilidad.js"></script>
     <script src="/js/admin-almacen.js"></script>
     
-    <!-- Módulos de compras refactorizados -->
-    <script src="/js/admin-compras-utils.js"></script>
-    <script src="/js/admin-compras-data.js"></script>
-    <script src="/js/admin-compras-modals.js"></script>
-    <script src="/js/admin-compras-ui.js"></script>
-    <script src="/js/admin-compras-main.js"></script>
     
 </body>
 </html>
+
+
 
 

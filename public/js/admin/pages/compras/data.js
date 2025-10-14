@@ -1,7 +1,72 @@
-// admin-compras-data.js - Manejo de datos y lógica de negocio
-console.log('Cargando admin-compras-data.js...');
+import { db, storage } from '../../services/firebase.js';
 
-window.ComprasData = {
+export function getStorageInstance() {
+  return storage;
+}
+
+export const comprasState = {
+  productosCompraActual: [],
+  productosEditandoActual: [],
+  productosOriginalEditando: [],
+  compraEditandoId: null,
+  editandoCompra: false,
+  initialized: false,
+};
+
+let notificationHandler = null;
+let comprasTableRenderer = null;
+let integrationTester = null;
+
+export function setComprasNotificationHandler(handler) {
+  notificationHandler = typeof handler === 'function' ? handler : null;
+}
+
+export function setComprasTableRenderer(renderer) {
+  comprasTableRenderer = typeof renderer === 'function' ? renderer : null;
+}
+
+export function setComprasIntegrationTester(handler) {
+  integrationTester = typeof handler === 'function' ? handler : null;
+}
+
+function notify(message, type = 'info') {
+  if (notificationHandler) {
+    try {
+      notificationHandler(message, type);
+      return;
+    } catch (error) {
+      console.warn('Notification handler for compras failed:', error);
+    }
+  }
+
+  if (type === 'error') {
+    console.error(message);
+  } else {
+    console.log(message);
+  }
+}
+
+function renderComprasTable(compras) {
+  if (typeof comprasTableRenderer === 'function') {
+    try {
+      comprasTableRenderer(compras);
+    } catch (error) {
+      console.error('Compras table renderer failed:', error);
+    }
+  }
+}
+
+async function runIntegrationTest(compraId) {
+  if (typeof integrationTester === 'function') {
+    try {
+      await integrationTester(compraId);
+    } catch (error) {
+      console.warn('Compras integration tester failed:', error);
+    }
+  }
+}
+
+const comprasData = {
     
     async loadAllData() {
         try {
@@ -19,13 +84,13 @@ window.ComprasData = {
             
         } catch (error) {
             console.error('Error cargando datos de compras:', error);
-            ComprasUtils.showNotification('Error cargando datos de compras', 'error');
+            notify('Error cargando datos de compras', 'error');
         }
     },
 
     async loadProveedores() {
         try {
-            const querySnapshot = await window.db.collection('proveedores').get();
+            const querySnapshot = await db.collection('proveedores').get();
             window.proveedoresCache = [];
             querySnapshot.forEach((doc) => {
                 window.proveedoresCache.push({ id: doc.id, ...doc.data() });
@@ -43,7 +108,7 @@ window.ComprasData = {
 
     async loadCompras() {
         try {
-            const querySnapshot = await window.db.collection('compras').orderBy('fecha', 'desc').get();
+            const querySnapshot = await db.collection('compras').orderBy('fecha', 'desc').get();
             window.comprasCache = [];
             querySnapshot.forEach((doc) => {
                 window.comprasCache.push({ id: doc.id, ...doc.data() });
@@ -181,7 +246,7 @@ window.ComprasData = {
             return matchSearch && matchProveedor && matchFecha;
         });
         
-        ComprasUI.renderComprasTable(comprasFiltradas);
+        renderComprasTable(comprasFiltradas);
         this.updateElement('compras-count', `Mostrando ${comprasFiltradas.length} compras`);
     },
 
@@ -192,9 +257,9 @@ window.ComprasData = {
 
     async registrarCompra(formData) {
         try {
-            console.log('Productos para calcular total:', window.ComprasModule.productosCompraActual);
+            console.log('Productos para calcular total:', comprasState.productosCompraActual);
             
-            const totalInvertido = window.ComprasModule.productosCompraActual.reduce((sum, p) => {
+            const totalInvertido = comprasState.productosCompraActual.reduce((sum, p) => {
                 const subtotal = p.cantidad * p.precioCompra;
                 console.log(`Producto: ${p.nombre}, Cantidad: ${p.cantidad}, Precio: ${p.precioCompra}, Subtotal: ${subtotal}`);
                 return sum + subtotal;
@@ -203,7 +268,7 @@ window.ComprasData = {
             console.log('Total invertido calculado:', totalInvertido);
             
             if (totalInvertido <= 0) {
-                ComprasUtils.showNotification('Error: El total de la compra debe ser mayor a 0', 'error');
+                notify('Error: El total de la compra debe ser mayor a 0', 'error');
                 return false;
             }
             
@@ -213,7 +278,7 @@ window.ComprasData = {
                 factura: formData.factura,
                 metodoPago: formData.metodoPago,
                 observaciones: formData.observaciones,
-                productos: window.ComprasModule.productosCompraActual.map(p => ({
+                productos: comprasState.productosCompraActual.map(p => ({
                     id: p.id,
                     nombre: p.nombre,
                     cantidad: p.cantidad,
@@ -224,22 +289,22 @@ window.ComprasData = {
                 totalInvertido: totalInvertido,
                 totalVendido: 0,
                 estado: 'Registrada', // Estado inicial de la compra
-                cantidadProductos: window.ComprasModule.productosCompraActual.length,
+                cantidadProductos: comprasState.productosCompraActual.length,
                 usuario: window.currentUser.email,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
             
             // Registrar la compra
-            const compraRef = await window.db.collection('compras').add(compra);
+            const compraRef = await db.collection('compras').add(compra);
             
             // Actualizar stock de productos
-            await this.updateProductStock(window.ComprasModule.productosCompraActual);
+            await this.updateProductStock(comprasState.productosCompraActual);
             
             // Crear lotes en stock_por_lote
-            await this.createProductLots(window.ComprasModule.productosCompraActual, formData, compraRef.id);
+            await this.createProductLots(comprasState.productosCompraActual, formData, compraRef.id);
             
             // Registrar movimientos de inventario
-            await this.registerStockMovements(window.ComprasModule.productosCompraActual, formData.fecha, formData.factura, compraRef.id, formData);
+            await this.registerStockMovements(comprasState.productosCompraActual, formData.fecha, formData.factura, compraRef.id, formData);
             
             // Registrar egreso en caja
             await this.registrarEgresoCaja(formData, totalInvertido, compraRef.id);
@@ -250,24 +315,24 @@ window.ComprasData = {
             
             // Verificar que la integración completa funcionó correctamente
             setTimeout(async () => {
-                await ComprasUtils.probarIntegracionCompleta(compraRef.id);
+                await runIntegrationTest(compraRef.id);
             }, 1500);
             
-            ComprasUtils.showNotification('Compra registrada con integración completa: lotes, inventario y caja', 'success');
+            notify('Compra registrada con integración completa: lotes, inventario y caja', 'success');
             return true;
             
         } catch (error) {
             console.error('Error registrando compra:', error);
-            ComprasUtils.showNotification('Error al registrar la compra', 'error');
+            notify('Error al registrar la compra', 'error');
             return false;
         }
     },
 
     async updateProductStock(productos) {
-        const batch = window.db.batch();
+        const batch = db.batch();
         
         for (const producto of productos) {
-            const productoRef = window.db.collection('products').doc(producto.id);
+            const productoRef = db.collection('products').doc(producto.id);
             const productoDoc = await productoRef.get();
             
             if (productoDoc.exists) {
@@ -288,7 +353,7 @@ window.ComprasData = {
     },
 
     async createProductLots(productos, formData, compraId) {
-        const batch = window.db.batch();
+        const batch = db.batch();
         
         for (const producto of productos) {
             const loteInfo = producto.loteInfo || {};
@@ -311,7 +376,7 @@ window.ComprasData = {
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
             
-            const loteRef = window.db.collection('stock_por_lote').doc();
+            const loteRef = db.collection('stock_por_lote').doc();
             batch.set(loteRef, loteData);
         }
         
@@ -321,7 +386,7 @@ window.ComprasData = {
 
     async registerStockMovements(productos, fecha, factura, compraId, formData) {
         try {
-            const batch = window.db.batch();
+            const batch = db.batch();
             
             for (const producto of productos) {
                 // Obtener nombre del proveedor
@@ -344,7 +409,7 @@ window.ComprasData = {
                     observaciones: `Compra - Factura: ${factura}`
                 };
                 
-                const movimientoRef = window.db.collection('movimientos_inventario').doc();
+                const movimientoRef = db.collection('movimientos_inventario').doc();
                 batch.set(movimientoRef, movimiento);
             }
             
@@ -399,7 +464,7 @@ window.ComprasData = {
                     relatedId: compraId
                 };
                 
-                await window.db.collection('movimientos_caja').add(egresoData);
+                await db.collection('movimientos_caja').add(egresoData);
             }
             console.log('Egreso de caja registrado exitosamente con monto:', totalInvertido);
             return true;
@@ -417,32 +482,32 @@ window.ComprasData = {
                 usuario: window.currentUser.email
             };
             
-            await window.db.collection('proveedores').add(proveedor);
+            await db.collection('proveedores').add(proveedor);
             await this.loadProveedores();
             this.updateStats();
             
-            ComprasUtils.showNotification('Proveedor creado correctamente', 'success');
+            notify('Proveedor creado correctamente', 'success');
             return true;
             
         } catch (error) {
             console.error('Error creando proveedor:', error);
-            ComprasUtils.showNotification('Error al crear el proveedor', 'error');
+            notify('Error al crear el proveedor', 'error');
             return false;
         }
     },
 
     async eliminarProveedor(proveedorId) {
         try {
-            await window.db.collection('proveedores').doc(proveedorId).delete();
+            await db.collection('proveedores').doc(proveedorId).delete();
             await this.loadProveedores();
             this.updateStats();
             
-            ComprasUtils.showNotification('Proveedor eliminado correctamente', 'success');
+            notify('Proveedor eliminado correctamente', 'success');
             return true;
             
         } catch (error) {
             console.error('Error eliminando proveedor:', error);
-            ComprasUtils.showNotification('Error al eliminar el proveedor', 'error');
+            notify('Error al eliminar el proveedor', 'error');
             return false;
         }
     },
@@ -459,14 +524,14 @@ window.ComprasData = {
             const nuevoTotalInvertido = productosNuevos.reduce((sum, p) => sum + (p.cantidad * p.precioCompra), 0);
             
             if (nuevoTotalInvertido <= 0) {
-                ComprasUtils.showNotification('Error: El total de la compra debe ser mayor a 0', 'error');
+                notify('Error: El total de la compra debe ser mayor a 0', 'error');
                 return false;
             }
             
             // Obtener compra original
             const compraOriginal = window.comprasCache?.find(c => c.id === compraId);
             if (!compraOriginal) {
-                ComprasUtils.showNotification('Error: Compra original no encontrada', 'error');
+                notify('Error: Compra original no encontrada', 'error');
                 return false;
             }
             
@@ -501,12 +566,12 @@ window.ComprasData = {
             await this.loadCompras();
             this.updateStats();
             
-            ComprasUtils.showNotification('Compra actualizada correctamente con todos los ajustes', 'success');
+            notify('Compra actualizada correctamente con todos los ajustes', 'success');
             return true;
             
         } catch (error) {
             console.error('Error actualizando compra:', error);
-            ComprasUtils.showNotification('Error al actualizar la compra: ' + error.message, 'error');
+            notify('Error al actualizar la compra: ' + error.message, 'error');
             return false;
         }
     },
@@ -519,7 +584,7 @@ window.ComprasData = {
         await this.validarReduccionesNoMenorConsumido(compraId, deltas);
 
         // 2) Actualizar documento de compra (metadatos y arreglo de productos)
-        await window.db.collection('compras').doc(compraId).update(compraActualizada);
+        await db.collection('compras').doc(compraId).update(compraActualizada);
 
         // 3) Aplicar cambios de lotes SOLO para productos afectados
         await this.aplicarCambiosLotesCompra(compraId, deltas, formData);
@@ -602,7 +667,7 @@ window.ComprasData = {
 
     // Verificar que no se reduzca por debajo de lo disponible (ventas reducen 'cantidad')
     async validarReduccionesNoMenorConsumido(compraId, deltas) {
-        const db = window.db;
+        const db = db;
         // Casos con reducción: eliminados (quitar todo) y modificados con deltaCantidad < 0
         const candidatos = [
             ...deltas.eliminados.map(p => ({ productoId: p.id || p.productoId, reducir: Number(p.cantidad) || 0 })),
@@ -630,7 +695,7 @@ window.ComprasData = {
 
     // Aplica cambios de lotes solo a productos afectados por la edición
     async aplicarCambiosLotesCompra(compraId, deltas, formData) {
-        const db = window.db;
+        const db = db;
         const proveedorId = formData?.proveedorId || null;
         const nowTs = firebase.firestore.FieldValue.serverTimestamp();
 
@@ -714,7 +779,7 @@ window.ComprasData = {
 
     // Registra movimientos de ajuste por edición de compra (no borra históricos)
     async aplicarAjustesMovimientos(compraId, deltas, formData) {
-        const db = window.db;
+        const db = db;
         const batch = db.batch();
         const proveedor = window.proveedoresCache?.find(p => p.id === formData?.proveedorId);
         const proveedorNombre = proveedor ? proveedor.nombre : 'Proveedor no encontrado';
@@ -753,7 +818,7 @@ window.ComprasData = {
     async reconciliarStockProductos(productIds = []) {
         const ids = [...new Set((productIds || []).filter(Boolean))];
         for (const productoId of ids) {
-            const lotesSnap = await window.db.collection('stock_por_lote')
+            const lotesSnap = await db.collection('stock_por_lote')
                 .where('productoId', '==', productoId)
                 .get();
             let total = 0;
@@ -761,7 +826,7 @@ window.ComprasData = {
                 const d = doc.data();
                 total += Number(d.cantidad) || 0; // cantidad ya refleja ventas
             });
-            await window.db.collection('products').doc(productoId).update({ stock: total });
+            await db.collection('products').doc(productoId).update({ stock: total });
             // Actualizar cache local si existe
             if (window.productsCache) {
                 const idx = window.productsCache.findIndex(p => p.id === productoId);
@@ -771,7 +836,7 @@ window.ComprasData = {
     },
     
     async procesarCambiosProductos(compraId, productosOriginales, productosNuevos) {
-        const batch = window.db.batch();
+        const batch = db.batch();
         
         // Mapear productos por ID para comparación
         const productosOriginalesMap = new Map();
@@ -807,7 +872,7 @@ window.ComprasData = {
             
             if (diferenciaCantidad !== 0) {
                 // Actualizar stock del producto
-                const productoRef = window.db.collection('products').doc(productoId);
+                const productoRef = db.collection('products').doc(productoId);
                 const productoDoc = await productoRef.get();
                 
                 if (productoDoc.exists) {
@@ -832,11 +897,11 @@ window.ComprasData = {
     
     async actualizarLotesCompra(compraId, productosOriginales, productosNuevos, formData) {
         // Eliminar lotes originales de la compra
-        const lotesOriginales = await window.db.collection('stock_por_lote')
+        const lotesOriginales = await db.collection('stock_por_lote')
             .where('compraId', '==', compraId)
             .get();
         
-        const batch = window.db.batch();
+        const batch = db.batch();
         
         lotesOriginales.forEach(doc => {
             batch.delete(doc.ref);
@@ -863,7 +928,7 @@ window.ComprasData = {
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
             
-            const loteRef = window.db.collection('stock_por_lote').doc();
+            const loteRef = db.collection('stock_por_lote').doc();
             batch.set(loteRef, loteData);
         }
         
@@ -873,11 +938,11 @@ window.ComprasData = {
     
     async actualizarMovimientosInventario(compraId, productosOriginales, productosNuevos, formData) {
         // Eliminar movimientos originales de la compra
-        const movimientosOriginales = await window.db.collection('movimientos_inventario')
+        const movimientosOriginales = await db.collection('movimientos_inventario')
             .where('compraId', '==', compraId)
             .get();
         
-        const batch = window.db.batch();
+        const batch = db.batch();
         
         movimientosOriginales.forEach(doc => {
             batch.delete(doc.ref);
@@ -905,7 +970,7 @@ window.ComprasData = {
                 editado: true
             };
             
-            const movimientoRef = window.db.collection('movimientos_inventario').doc();
+            const movimientoRef = db.collection('movimientos_inventario').doc();
             batch.set(movimientoRef, movimiento);
         }
         
@@ -950,7 +1015,7 @@ window.ComprasData = {
                         relatedId: compraId
                     };
                     
-                    await window.db.collection('movimientos_caja').add(egresoData);
+                    await db.collection('movimientos_caja').add(egresoData);
                 }
             } else {
                 // La compra disminuyó, registrar ingreso (devolución)
@@ -983,7 +1048,7 @@ window.ComprasData = {
                         relatedId: compraId
                     };
                     
-                    await window.db.collection('movimientos_caja').add(ingresoData);
+                    await db.collection('movimientos_caja').add(ingresoData);
                 }
             }
             
@@ -995,4 +1060,36 @@ window.ComprasData = {
     }
 };
 
-console.log('admin-compras-data.js cargado completamente');
+export const loadAllData = (...args) => comprasData.loadAllData(...args);
+export const loadProveedores = (...args) => comprasData.loadProveedores(...args);
+export const loadCompras = (...args) => comprasData.loadCompras(...args);
+export const updateProveedoresSelectors = (...args) => comprasData.updateProveedoresSelectors(...args);
+export const loadProductosSelector = (...args) => comprasData.loadProductosSelector(...args);
+export const updateStats = (...args) => comprasData.updateStats(...args);
+export const updateElement = (...args) => comprasData.updateElement(...args);
+export const filterCompras = (...args) => comprasData.filterCompras(...args);
+export const getElementValue = (...args) => comprasData.getElementValue(...args);
+export const registrarCompra = (...args) => comprasData.registrarCompra(...args);
+export const updateProductStock = (...args) => comprasData.updateProductStock(...args);
+export const createProductLots = (...args) => comprasData.createProductLots(...args);
+export const registerStockMovements = (...args) => comprasData.registerStockMovements(...args);
+export const registrarEgresoCaja = (...args) => comprasData.registrarEgresoCaja(...args);
+export const crearProveedor = (...args) => comprasData.crearProveedor(...args);
+export const eliminarProveedor = (...args) => comprasData.eliminarProveedor(...args);
+export const actualizarCompra = (...args) => comprasData.actualizarCompra(...args);
+export const ejecutarActualizacionCompra = (...args) => comprasData.ejecutarActualizacionCompra(...args);
+export const calcularDeltasProductos = (...args) => comprasData.calcularDeltasProductos(...args);
+export const validarReduccionesNoMenorConsumido = (...args) => comprasData.validarReduccionesNoMenorConsumido(...args);
+export const aplicarCambiosLotesCompra = (...args) => comprasData.aplicarCambiosLotesCompra(...args);
+export const aplicarAjustesMovimientos = (...args) => comprasData.aplicarAjustesMovimientos(...args);
+export const reconciliarStockProductos = (...args) => comprasData.reconciliarStockProductos(...args);
+export const procesarCambiosProductos = (...args) => comprasData.procesarCambiosProductos(...args);
+export const actualizarLotesCompra = (...args) => comprasData.actualizarLotesCompra(...args);
+export const actualizarMovimientosInventario = (...args) => comprasData.actualizarMovimientosInventario(...args);
+export const ajustarCajaCompraEditada = (...args) => comprasData.ajustarCajaCompraEditada(...args);
+
+export default comprasData;
+
+if (typeof window !== 'undefined') {
+  window.ComprasData = comprasData;
+}

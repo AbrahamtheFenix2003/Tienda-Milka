@@ -1,23 +1,19 @@
-import { db as firebaseDb, storage as firebaseStorage } from '../../services/firebase.js';
+import { getDb, getStorage } from '../../services/firebase.js';
 
 function resolveDb() {
-  if (firebaseDb) {
-    return firebaseDb;
+  const database = getDb();
+  if (!database) {
+    throw new Error('Firestore no está inicializado. Inicializa Firebase antes de usar las funciones de productos.');
   }
-  if (typeof window !== 'undefined' && window.db) {
-    return window.db;
-  }
-  throw new Error('Firestore no está inicializado. Inicializa Firebase antes de usar las funciones de productos.');
+  return database;
 }
 
 function resolveStorage() {
-  if (firebaseStorage) {
-    return firebaseStorage;
+  const storageInstance = getStorage();
+  if (!storageInstance) {
+    throw new Error('Firebase Storage no está inicializado. Inicializa Firebase antes de subir imágenes.');
   }
-  if (typeof window !== 'undefined' && window.storage) {
-    return window.storage;
-  }
-  throw new Error('Firebase Storage no está inicializado. Inicializa Firebase antes de subir imágenes.');
+  return storageInstance;
 }
 
 function resolveFirebase() {

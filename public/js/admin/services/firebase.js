@@ -2,9 +2,50 @@
 // Servicio centralizado para la inicialización de Firebase en el panel administrativo
 // Usa Firebase Compatibility Mode para mantener compatibilidad con el código existente
 
-// Se exporta para que pueda ser importada en otros módulos
-export let db = null;
-export let storage = null; 
+// Variables internas que se actualizarán cuando Firebase se inicialice
+let _db = null;
+let _storage = null;
+
+// Funciones getter para acceder a las instancias de Firebase
+// Estas funciones permiten que los módulos obtengan las instancias actualizadas
+export function getDb() {
+    if (!_db && typeof window !== 'undefined' && window.db) {
+        _db = window.db;
+    }
+    return _db;
+}
+
+export function getStorage() {
+    if (!_storage && typeof window !== 'undefined' && window.storage) {
+        _storage = window.storage;
+    }
+    return _storage;
+}
+
+// Mantener compatibilidad con imports existentes usando getters
+export const db = new Proxy({}, {
+    get(target, prop) {
+        const database = getDb();
+        if (database && prop in database) {
+            return typeof database[prop] === 'function' 
+                ? database[prop].bind(database)
+                : database[prop];
+        }
+        return undefined;
+    }
+});
+
+export const storage = new Proxy({}, {
+    get(target, prop) {
+        const storageInstance = getStorage();
+        if (storageInstance && prop in storageInstance) {
+            return typeof storageInstance[prop] === 'function'
+                ? storageInstance[prop].bind(storageInstance)
+                : storageInstance[prop];
+        }
+        return undefined;
+    }
+}); 
 
 /**
  * Inicializa Firebase y retorna las instancias de los servicios
@@ -61,7 +102,8 @@ export async function initializeFirebase() {
  * @param {Object} services - Objeto con las instancias de Firebase
  */
 export function exposeFirebaseGlobally(services) {
-    db = services.db;
+    _db = services.db;
+    _storage = services.storage;
     window.auth = services.auth;
     window.db = services.db;
     window.storage = services.storage;

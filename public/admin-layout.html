@@ -439,6 +439,7 @@
     <script type="module">
         import { loadReportesPage } from './js/admin/pages/reportes/index.js';
         import { loadProductosPage } from './js/admin/pages/productos/index.js';
+        import { loadVentasPage } from './js/admin/pages/ventas/index.js';
 
         // Configuración de roles
         const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
@@ -891,19 +892,13 @@
                     }
                     break;
                 case 'ventas':
-                    if (typeof loadVentas === 'function') {
+                    showLoading('Cargando Ventas...');
+                    try {
                         console.log('Cargando ventas...');
-                        loadVentas();
-                    } else {
-                        console.log('loadVentas no está disponible');
-                        showLoading('Cargando Ventas...');
-                        setTimeout(() => {
-                            if (typeof loadVentas === 'function') {
-                                loadVentas();
-                            } else {
-                                showError('Error: No se pudo cargar el registro de ventas');
-                            }
-                        }, 1000);
+                        await loadVentasPage();
+                    } catch (error) {
+                        console.error('Error al cargar ventas:', error);
+                        showError('Error: No se pudo cargar el registro de ventas');
                     }
                     break;
                 case 'reportes':
@@ -1027,7 +1022,7 @@
             console.log('Verificando funciones cargadas:');
             console.log('loadDashboard:', typeof loadDashboard);
             console.log('loadProductosPage:', typeof loadProductosPage);
-            console.log('loadVentas:', typeof loadVentas);
+            console.log('loadVentasPage:', typeof loadVentasPage);
             console.log('loadReportesPage:', typeof loadReportesPage);
             console.log('loadRentabilidad:', typeof loadRentabilidad);
             console.log('loadAlmacen:', typeof loadAlmacen);
@@ -1038,7 +1033,6 @@
     
     <!-- Scripts para las secciones individuales -->
     <script src="/js/admin-dashboard.js"></script>
-    <script src="/js/admin-ventas.js"></script>
     <script src="/js/admin-rentabilidad.js"></script>
     <script src="/js/admin-almacen.js"></script>
     
@@ -1052,3 +1046,5 @@
     <script src="/js/admin-caja.js"></script>
 </body>
 </html>
+
+

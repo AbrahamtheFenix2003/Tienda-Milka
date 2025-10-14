@@ -1,10 +1,10 @@
-import { db as firebaseDb } from '../../services/firebase.js';
+import { getDb } from '../../services/firebase.js';
 
 let salesCache = [];
 let expensesCache = [];
 
 function resolveDb() {
-  const database = firebaseDb ?? window?.db ?? null;
+  const database = getDb();
   if (!database) {
     throw new Error('Firestore no esta inicializado. Asegurate de haber configurado Firebase antes de usar los reportes.');
   }

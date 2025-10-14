@@ -2251,10 +2251,13 @@ window.exportarLotesProducto = function(productoId, nombreProducto) {
 };
 
 // Hacer las funciones globales para que funcionen los onclick
+window.editarProducto = editarProducto;
+window.eliminarProducto = eliminarProducto;
 window.showCategoryModal = showCategoryModal;
 window.closeCategoryModal = closeCategoryModal;
 window.addCategory = addCategory;
 window.deleteCategory = deleteCategory;
+window.editCategory = editCategory;
 window.previewImage = previewImage;
 window.showImageModal = showImageModal;
 window.closeImageModal = closeImageModal;

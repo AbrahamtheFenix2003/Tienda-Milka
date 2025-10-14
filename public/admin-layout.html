@@ -437,6 +437,7 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage-compat.js"></script>
     
     <script type="module">
+        import { loadDashboardPage } from './js/admin/pages/dashboard/index.js';
         import { loadReportesPage } from './js/admin/pages/reportes/index.js';
         import { loadProductosPage } from './js/admin/pages/productos/index.js';
         import { loadVentasPage } from './js/admin/pages/ventas/index.js';
@@ -867,20 +868,13 @@
             // Cargar contenido de la sección
             switch(section) {
                 case 'dashboard':
-                    if (typeof loadDashboard === 'function') {
+                    showLoading('Cargando Dashboard...');
+                    try {
                         console.log('Cargando dashboard...');
-                        loadDashboard();
-                    } else {
-                        console.log('loadDashboard no está disponible, esperando...');
-                        showLoading('Cargando Dashboard...');
-                        // Intentar de nuevo después de un breve delay
-                        setTimeout(() => {
-                            if (typeof loadDashboard === 'function') {
-                                loadDashboard();
-                            } else {
-                                showError('Error: No se pudo cargar el dashboard');
-                            }
-                        }, 1000);
+                        await loadDashboardPage();
+                    } catch (error) {
+                        console.error('Error cargando dashboard:', error);
+                        showError('Error: No se pudo cargar el dashboard');
                     }
                     break;
                 case 'productos':
@@ -970,17 +964,12 @@
                     }
                     break;
                 default:
-                    if (typeof loadDashboard === 'function') {
-                        loadDashboard();
-                    } else {
-                        showLoading('Cargando Dashboard...');
-                        setTimeout(() => {
-                            if (typeof loadDashboard === 'function') {
-                                loadDashboard();
-                            } else {
-                                showError('Error: No se pudo cargar el dashboard');
-                            }
-                        }, 1000);
+                    showLoading('Cargando Dashboard...');
+                    try {
+                        await loadDashboardPage();
+                    } catch (error) {
+                        console.error('Error cargando dashboard:', error);
+                        showError('Error: No se pudo cargar el dashboard');
                     }
             }
             
@@ -1015,7 +1004,7 @@
         // Verificar que las funciones de sección se carguen
         window.addEventListener('load', function() {
             console.log('Verificando funciones cargadas:');
-            console.log('loadDashboard:', typeof loadDashboard);
+            console.log('loadDashboardPage:', typeof loadDashboardPage);
             console.log('loadProductosPage:', typeof loadProductosPage);
             console.log('loadVentasPage:', typeof loadVentasPage);
             console.log('loadReportesPage:', typeof loadReportesPage);
@@ -1027,7 +1016,6 @@
     </script>
     
     <!-- Scripts para las secciones individuales -->
-    <script src="/js/admin-dashboard.js"></script>
     <script src="/js/admin-rentabilidad.js"></script>
     <script src="/js/admin-almacen.js"></script>
     

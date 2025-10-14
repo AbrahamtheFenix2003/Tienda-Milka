@@ -138,6 +138,12 @@ function displayProducts(productos = null) {
     
     // Actualizar contador
     actualizarContadorProductos(productsToShow.length, window.productsCache ? window.productsCache.length : 0);
+
+    // Si el contenedor ya no existe (por ejemplo, al cambiar de módulo) salimos sin mostrar error
+    if (!productsList) {
+        console.warn('displayProducts: contenedor #products-list no encontrado; se omite render.');
+        return;
+    }
     
     if (productsToShow.length === 0) {
         const mensaje = productos === null ? 

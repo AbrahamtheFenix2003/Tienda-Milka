@@ -95,7 +95,7 @@ Admin panel loads section-specific scripts dynamically:
   - [admin-compras-ui.js](public/js/admin-compras-ui.js) (rendering)
   - [admin-compras-modals.js](public/js/admin-compras-modals.js) (modals)
   - [admin-compras-utils.js](public/js/admin-compras-utils.js) (utilities)
-- Cash Register: [admin-caja.js](public/js/admin-caja.js)
+- Cash Register: Modularized under `public/js/admin/pages/caja/` (`data.js`, `ui.js`, `index.js`)
 
 ### Customer Storefront
 

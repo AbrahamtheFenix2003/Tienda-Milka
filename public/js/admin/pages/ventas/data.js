@@ -240,6 +240,12 @@ async function procesarVentaSinLotes(productId, cantidadVendida, ventaId, custom
 async function procesarVentaConLotes(productId, cantidadVendida, ventaId, customerName, currentUserEmail, productInfo = {}) {
     const db = ensureDb();
 
+    if (!productId) {
+        const msg = 'productoId faltante o inválido en procesarVentaConLotes';
+        console.error(msg, { productId, productInfo });
+        throw new Error(msg);
+    }
+
     try {
         const lotesDisponibles = await obtenerLotesDisponibles(productId);
 
@@ -298,7 +304,7 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
             movimientos.push({
                 fecha: new Date().toISOString().split('T')[0],
                 timestamp: getServerTimestampValue(),
-                productoId,
+                productoId: productId,
                 productoNombre: lote.productoNombre || productInfo.name || '',
                 loteId: lote.loteId || lote.id,
                 cantidad: cantidadTomada,
@@ -322,8 +328,6 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
                 `No hay suficiente stock en lotes para completar la venta. Falta: ${cantidadPendiente}`
             );
         }
-
-        const db = ensureDb();
         
         for (const movimiento of movimientos) {
             await db.collection(COLLECTIONS.INVENTORY_MOVEMENTS).add(movimiento);
@@ -433,8 +437,7 @@ export async function processSale({
 
     const gananciaReal = totalSale - costoRealTotal;
 
-    const db2 = ensureDb();
-    await db2.collection(COLLECTIONS.SALES).doc(saleRef.id).update({
+    await db.collection(COLLECTIONS.SALES).doc(saleRef.id).update({
         totalCost: costoRealTotal,
         profit: gananciaReal,
         lotesInfo: lotesResults.map((resultado) => ({
@@ -457,7 +460,7 @@ export async function processSale({
         );
     } else {
         try {
-            await db2.collection(COLLECTIONS.CASH_MOVEMENTS).add({
+            await db.collection(COLLECTIONS.CASH_MOVEMENTS).add({
                 tipo: 'entrada',
                 monto: totalSale,
                 categoria: 'ventas',

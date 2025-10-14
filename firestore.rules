@@ -33,7 +33,7 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
       // Super vendedores y vendedores pueden actualizar solo el stock (para ventas)
       allow update: if (isSuperAdmin() || hasAccessToSales()) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'stockReal']) &&
         request.resource.data.stock >= 0;
     }
 
@@ -104,7 +104,7 @@ service cloud.firestore {
       allow read: if hasAccessToSales();
       // Vendedores pueden actualizar solo la cantidad (para procesar ventas con sistema FIFO)
       allow update: if hasAccessToSales() && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cantidad']) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cantidad', 'ultimaActualizacion']) &&
         request.resource.data.cantidad >= 0;
       // Solo admins pueden crear y eliminar lotes
       allow create, delete: if isAdmin();

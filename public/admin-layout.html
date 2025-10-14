@@ -440,6 +440,7 @@
         import { loadReportesPage } from './js/admin/pages/reportes/index.js';
         import { loadProductosPage } from './js/admin/pages/productos/index.js';
         import { loadVentasPage } from './js/admin/pages/ventas/index.js';
+        import { loadCajaPage } from './js/admin/pages/caja/index.js';
 
         // Configuración de roles
         const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
@@ -959,19 +960,13 @@
                     }
                     break;
                 case 'caja':
-                    if (typeof loadCaja === 'function') {
-                        console.log('Cargando caja...');
-                        loadCaja();
-                    } else {
-                        console.log('loadCaja no está disponible');
-                        showLoading('Cargando Caja...');
-                        setTimeout(() => {
-                            if (typeof loadCaja === 'function') {
-                                loadCaja();
-                            } else {
-                                showError('Error: No se pudo cargar la gestión de caja');
-                            }
-                        }, 1000);
+                    showLoading('Cargando Caja...');
+                    try {
+                        console.log('Cargando caja (modulo)...');
+                        await loadCajaPage();
+                    } catch (error) {
+                        console.error('Error cargando caja:', error);
+                        showError('Error: No se pudo cargar la gestion de caja');
                     }
                     break;
                 default:
@@ -1027,7 +1022,7 @@
             console.log('loadRentabilidad:', typeof loadRentabilidad);
             console.log('loadAlmacen:', typeof loadAlmacen);
             console.log('loadCompras:', typeof loadCompras);
-            console.log('loadCaja:', typeof loadCaja);
+            console.log('loadCajaPage:', typeof loadCajaPage);
         });
     </script>
     
@@ -1043,7 +1038,6 @@
     <script src="/js/admin-compras-ui.js"></script>
     <script src="/js/admin-compras-main.js"></script>
     
-    <script src="/js/admin-caja.js"></script>
 </body>
 </html>
 

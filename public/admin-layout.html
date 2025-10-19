@@ -443,6 +443,8 @@
         import { loadVentasPage } from './js/admin/pages/ventas/index.js';
         import { loadCajaPage } from './js/admin/pages/caja/index.js';
         import { loadComprasPage } from './js/admin/pages/compras/index.js';
+        import { loadRentabilidadPage } from './js/admin/pages/rentabilidad/index.js';
+        import { loadAlmacenPage } from './js/admin/pages/almacen/index.js';
 
     // Configuracion de roles
         const SUPER_ADMIN_EMAILS = ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
@@ -907,35 +909,23 @@
                     }
                     break;
                 case 'rentabilidad':
-                    if (typeof loadRentabilidad === 'function') {
-                        console.log('Cargando analisis de rentabilidad...');
-                        loadRentabilidad();
-                    } else {
-                        console.log('loadRentabilidad no esta disponible');
-                        showLoading('Cargando Analisis de Rentabilidad...');
-                        setTimeout(() => {
-                            if (typeof loadRentabilidad === 'function') {
-                                loadRentabilidad();
-                            } else {
-                                showError('Error: No se pudo cargar el analisis de rentabilidad');
-                            }
-                        }, 1000);
+                    showLoading('Cargando Análisis de Rentabilidad...');
+                    try {
+                        console.log('Cargando análisis de rentabilidad...');
+                        await loadRentabilidadPage();
+                    } catch (error) {
+                        console.error('Error cargando rentabilidad:', error);
+                        showError('Error: No se pudo cargar el análisis de rentabilidad');
                     }
                     break;
                 case 'almacen':
-                    if (typeof loadAlmacen === 'function') {
+                    showLoading('Cargando Almacen...');
+                    try {
                         console.log('Cargando almacen...');
-                        loadAlmacen();
-                    } else {
-                        console.log('loadAlmacen no esta disponible');
-                        showLoading('Cargando Almacen...');
-                        setTimeout(() => {
-                            if (typeof loadAlmacen === 'function') {
-                                loadAlmacen();
-                            } else {
-                                showError('Error: No se pudo cargar la gestion de almacen');
-                            }
-                        }, 1000);
+                        await loadAlmacenPage();
+                    } catch (error) {
+                        console.error('Error cargando almacen:', error);
+                        showError('Error: No se pudo cargar la gestion de almacen');
                     }
                     break;
                 case 'compras':
@@ -1003,17 +993,12 @@
             console.log('loadProductosPage:', typeof loadProductosPage);
             console.log('loadVentasPage:', typeof loadVentasPage);
             console.log('loadReportesPage:', typeof loadReportesPage);
-            console.log('loadRentabilidad:', typeof loadRentabilidad);
-            console.log('loadAlmacen:', typeof loadAlmacen);
+            console.log('loadRentabilidadPage:', typeof loadRentabilidadPage);
+            console.log('loadAlmacenPage:', typeof loadAlmacenPage);
             console.log('loadComprasPage:', typeof loadComprasPage);
             console.log('loadCajaPage:', typeof loadCajaPage);
         });
     </script>
-    
-    <!-- Scripts para las secciones individuales -->
-    <script src="/js/admin-rentabilidad.js"></script>
-    <script src="/js/admin-almacen.js"></script>
-    
     
 </body>
 </html>

@@ -66,8 +66,17 @@ async function runIntegrationTest(compraId) {
   }
 }
 
+// Helper para parsear fechas en formato YYYY-MM-DD como fechas locales
+function parseLocalDate(dateString) {
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+    return new Date(dateString);
+}
+
 const comprasData = {
-    
+
     async loadAllData() {
         try {
             // Cargar proveedores primero
@@ -176,7 +185,7 @@ const comprasData = {
         
         // Compras del mes actual
         const comprasMes = window.comprasCache.filter(compra => {
-            const fechaCompra = new Date(compra.fecha);
+            const fechaCompra = parseLocalDate(compra.fecha);
             return fechaCompra.getMonth() === mesActual && fechaCompra.getFullYear() === añoActual;
         });
         
@@ -234,12 +243,12 @@ const comprasData = {
             
             let matchFecha = true;
             if (fechaDesde || fechaHasta) {
-                const fechaCompra = new Date(compra.fecha);
+                const fechaCompra = parseLocalDate(compra.fecha);
                 if (fechaDesde) {
-                    matchFecha = matchFecha && fechaCompra >= new Date(fechaDesde);
+                    matchFecha = matchFecha && fechaCompra >= parseLocalDate(fechaDesde);
                 }
                 if (fechaHasta) {
-                    matchFecha = matchFecha && fechaCompra <= new Date(fechaHasta);
+                    matchFecha = matchFecha && fechaCompra <= parseLocalDate(fechaHasta);
                 }
             }
             
@@ -577,8 +586,14 @@ const comprasData = {
     },
     
     async ejecutarActualizacionCompra(compraId, compraActualizada, productosOriginales, productosNuevos, diferenciaCaja, formData) {
+        console.log('=== INICIO ACTUALIZACIÓN COMPRA ===');
+        console.log('CompraId:', compraId);
+        console.log('Productos originales:', JSON.stringify(productosOriginales, null, 2));
+        console.log('Productos nuevos:', JSON.stringify(productosNuevos, null, 2));
+
         // 0) Calcular deltas entre productos originales y nuevos
         const deltas = this.calcularDeltasProductos(productosOriginales, productosNuevos);
+        console.log('Deltas calculados:', JSON.stringify(deltas, null, 2));
 
         // 1) Validar reducciones seguras (no por debajo de lo ya vendido/consumido)
         await this.validarReduccionesNoMenorConsumido(compraId, deltas);
@@ -587,6 +602,7 @@ const comprasData = {
         await db.collection('compras').doc(compraId).update(compraActualizada);
 
         // 3) Aplicar cambios de lotes SOLO para productos afectados
+        console.log('=== APLICANDO CAMBIOS A LOTES ===');
         await this.aplicarCambiosLotesCompra(compraId, deltas, formData);
 
         // 4) Registrar movimientos de ajuste en vez de borrar y recrear
@@ -599,6 +615,8 @@ const comprasData = {
                 ...productosNuevos.map(p => p.id).filter(Boolean)
             ])
         ];
+        console.log('=== RECONCILIANDO STOCK ===');
+        console.log('IDs afectados:', idsAfectados);
         await this.reconciliarStockProductos(idsAfectados);
 
         // 6) Ajustar caja si hay diferencia
@@ -606,7 +624,7 @@ const comprasData = {
             await this.ajustarCajaCompraEditada(compraId, diferenciaCaja, formData);
         }
 
-        console.log('Actualización de compra (delta) completada exitosamente');
+        console.log('=== FIN ACTUALIZACIÓN COMPRA ===');
     },
 
     // ======================== NUEVO FLUJO DELTA DE EDICIÓN ========================
@@ -667,7 +685,6 @@ const comprasData = {
 
     // Verificar que no se reduzca por debajo de lo disponible (ventas reducen 'cantidad')
     async validarReduccionesNoMenorConsumido(compraId, deltas) {
-        const db = db;
         // Casos con reducción: eliminados (quitar todo) y modificados con deltaCantidad < 0
         const candidatos = [
             ...deltas.eliminados.map(p => ({ productoId: p.id || p.productoId, reducir: Number(p.cantidad) || 0 })),
@@ -695,7 +712,6 @@ const comprasData = {
 
     // Aplica cambios de lotes solo a productos afectados por la edición
     async aplicarCambiosLotesCompra(compraId, deltas, formData) {
-        const db = db;
         const proveedorId = formData?.proveedorId || null;
         const nowTs = firebase.firestore.FieldValue.serverTimestamp();
 
@@ -729,6 +745,8 @@ const comprasData = {
                 .where('productoId', '==', productoId)
                 .get();
 
+            console.log(`Modificando producto ${productoId}: delta=${m.deltaCantidad}, lotes encontrados=${lotesSnap.size}`);
+
             let restante = m.deltaCantidad; // puede ser negativo, cero o positivo
             // Aplica delta distribuyéndolo entre los lotes de la compra (si hubiera varios)
             for (const doc of lotesSnap.docs) {
@@ -738,6 +756,7 @@ const comprasData = {
                 if (restante > 0) {
                     // Aumentar
                     const nuevo = actual + restante;
+                    console.log(`Aumentando lote ${doc.id}: ${actual} → ${nuevo}`);
                     await doc.ref.update({
                         cantidad: nuevo,
                         // cantidadOriginal opcionalmente también puede aumentar si consideramos que es la compra editada
@@ -751,6 +770,7 @@ const comprasData = {
                     // Disminuir sin dejar negativo
                     const reducir = Math.min(actual, Math.abs(restante));
                     const nuevo = actual - reducir;
+                    console.log(`Disminuyendo lote ${doc.id}: ${actual} → ${nuevo}`);
                     await doc.ref.update({
                         cantidad: nuevo,
                         // cantidadOriginal no se reduce para conservar histórico de adquisición
@@ -760,6 +780,14 @@ const comprasData = {
                     });
                     restante += reducir; // restante es negativo, al sumar reducir se acerca a 0
                 }
+            }
+
+            // Si no se encontraron lotes o quedó restante sin aplicar, loguear advertencia
+            if (lotesSnap.size === 0) {
+                console.warn(`⚠️ No se encontraron lotes para el producto ${productoId} en compra ${compraId}`);
+            }
+            if (restante !== 0) {
+                console.warn(`⚠️ Quedó restante sin aplicar: ${restante} para producto ${productoId}`);
             }
         }
 
@@ -779,7 +807,6 @@ const comprasData = {
 
     // Registra movimientos de ajuste por edición de compra (no borra históricos)
     async aplicarAjustesMovimientos(compraId, deltas, formData) {
-        const db = db;
         const batch = db.batch();
         const proveedor = window.proveedoresCache?.find(p => p.id === formData?.proveedorId);
         const proveedorNombre = proveedor ? proveedor.nombre : 'Proveedor no encontrado';
@@ -817,20 +844,32 @@ const comprasData = {
     // Recalcula y sincroniza stock del producto sumando cantidades de todos sus lotes
     async reconciliarStockProductos(productIds = []) {
         const ids = [...new Set((productIds || []).filter(Boolean))];
+        console.log(`Reconciliando stock de ${ids.length} productos`);
         for (const productoId of ids) {
             const lotesSnap = await db.collection('stock_por_lote')
                 .where('productoId', '==', productoId)
                 .get();
             let total = 0;
+            const lotes = [];
             lotesSnap.forEach(doc => {
                 const d = doc.data();
-                total += Number(d.cantidad) || 0; // cantidad ya refleja ventas
+                const cantidad = Number(d.cantidad) || 0;
+                lotes.push({ id: doc.id, cantidad, compraId: d.compraId });
+                total += cantidad;
             });
+            console.log(`Producto ${productoId}: ${lotesSnap.size} lotes encontrados, stock total calculado: ${total}`);
+            console.log('Detalle de lotes:', lotes);
+
             await db.collection('products').doc(productoId).update({ stock: total });
+            console.log(`Stock actualizado en Firestore para producto ${productoId}: ${total}`);
+
             // Actualizar cache local si existe
             if (window.productsCache) {
                 const idx = window.productsCache.findIndex(p => p.id === productoId);
-                if (idx !== -1) window.productsCache[idx].stock = total;
+                if (idx !== -1) {
+                    window.productsCache[idx].stock = total;
+                    console.log(`Cache local actualizado para producto ${productoId}`);
+                }
             }
         }
     },
@@ -982,18 +1021,18 @@ const comprasData = {
         try {
             const proveedor = window.proveedoresCache?.find(p => p.id === formData.proveedorId);
             const proveedorNombre = proveedor ? proveedor.nombre : 'Proveedor no encontrado';
-            
+
             if (diferencia > 0) {
                 // La compra aumentó, registrar egreso adicional
                 const descripcion = `Ajuste por edición de compra - ${proveedorNombre} - Factura: ${formData.factura || 'Sin número'}`;
-                
+
                 if (window.registrarMovimientoCaja) {
                     await window.registrarMovimientoCaja(
-                        'salida', 
-                        Math.abs(diferencia), 
-                        'compras', 
-                        descripcion, 
-                        'ajuste-compra-editada', 
+                        'salida',
+                        Math.abs(diferencia),
+                        'compras',
+                        descripcion,
+                        'ajuste-compra-editada',
                         compraId
                     );
                 } else {
@@ -1014,20 +1053,20 @@ const comprasData = {
                         relatedTo: 'ajuste-compra-editada',
                         relatedId: compraId
                     };
-                    
+
                     await db.collection('movimientos_caja').add(egresoData);
                 }
             } else {
                 // La compra disminuyó, registrar ingreso (devolución)
                 const descripcion = `Devolución por edición de compra - ${proveedorNombre} - Factura: ${formData.factura || 'Sin número'}`;
-                
+
                 if (window.registrarMovimientoCaja) {
                     await window.registrarMovimientoCaja(
-                        'entrada', 
-                        Math.abs(diferencia), 
-                        'compras', 
-                        descripcion, 
-                        'ajuste-compra-editada', 
+                        'entrada',
+                        Math.abs(diferencia),
+                        'compras',
+                        descripcion,
+                        'ajuste-compra-editada',
                         compraId
                     );
                 } else {
@@ -1047,15 +1086,151 @@ const comprasData = {
                         relatedTo: 'ajuste-compra-editada',
                         relatedId: compraId
                     };
-                    
+
                     await db.collection('movimientos_caja').add(ingresoData);
                 }
             }
-            
+
             console.log(`Ajuste de caja registrado: S/ ${diferencia.toFixed(2)}`);
         } catch (error) {
             console.error('Error al ajustar caja:', error);
             throw error;
+        }
+    },
+
+    // ======================== ELIMINACIÓN DE COMPRAS ========================
+
+    /**
+     * Elimina una compra y revierte todas sus operaciones asociadas de forma atómica.
+     * @param {string} purchaseId - El ID de la compra a eliminar.
+     * @returns {Promise<void>}
+     */
+    async deletePurchase(purchaseId) {
+        if (!purchaseId) {
+            throw new Error('Se requiere un ID de compra para eliminarla.');
+        }
+
+        try {
+            // === FASE 1: LECTURAS (fuera de la transacción) ===
+
+            // 1. Obtener la compra
+            const purchaseRef = db.collection('compras').doc(purchaseId);
+            const purchaseDoc = await purchaseRef.get();
+
+            if (!purchaseDoc.exists) {
+                throw new Error('La compra que intentas eliminar no existe.');
+            }
+
+            const purchaseData = purchaseDoc.data();
+            console.log('Datos de la compra a eliminar:', purchaseData);
+
+            // 2. Obtener todos los productos afectados
+            const productRefs = [];
+            for (const item of purchaseData.productos || []) {
+                const productId = item.id || item.productoId;
+                if (productId) {
+                    productRefs.push({
+                        id: productId,
+                        cantidad: item.cantidad || 0
+                    });
+                }
+            }
+
+            // 3. Obtener lotes asociados
+            const lotesSnapshot = await db.collection('stock_por_lote')
+                .where('compraId', '==', purchaseId)
+                .get();
+
+            // 4. Obtener movimientos de inventario asociados
+            const movimientosSnapshot = await db.collection('movimientos_inventario')
+                .where('compraId', '==', purchaseId)
+                .get();
+
+            // 5. Obtener movimientos de caja asociados
+            const cashMovementSnapshot = await db.collection('movimientos_caja')
+                .where('compraId', '==', purchaseId)
+                .get();
+
+            // 6. Si no hay movimientos por compraId, buscar por relatedId
+            let cashMovementByRelatedId = null;
+            if (cashMovementSnapshot.empty) {
+                cashMovementByRelatedId = await db.collection('movimientos_caja')
+                    .where('relatedId', '==', purchaseId)
+                    .where('relatedTo', '==', 'compra')
+                    .get();
+            }
+
+            // === FASE 2: ESCRITURAS (dentro de transacción) ===
+
+            await db.runTransaction(async (transaction) => {
+                // TODAS LAS LECTURAS PRIMERO
+                const productDocs = [];
+                for (const item of productRefs) {
+                    const productRef = db.collection('products').doc(item.id);
+                    const productDoc = await transaction.get(productRef);
+                    productDocs.push({
+                        ref: productRef,
+                        doc: productDoc,
+                        cantidad: item.cantidad
+                    });
+                }
+
+                // AHORA TODAS LAS ESCRITURAS
+
+                // 1. Actualizar stock de productos
+                for (const prod of productDocs) {
+                    if (prod.doc.exists) {
+                        const currentStock = prod.doc.data().stock || 0;
+                        const newStock = currentStock - prod.cantidad;
+                        transaction.update(prod.ref, { stock: Math.max(0, newStock) });
+                        console.log(`Stock revertido para producto ${prod.ref.id}: ${currentStock} → ${Math.max(0, newStock)}`);
+                    } else {
+                        console.warn(`Producto con ID ${prod.ref.id} no encontrado`);
+                    }
+                }
+
+                // 2. Eliminar lotes
+                lotesSnapshot.forEach((loteDoc) => {
+                    transaction.delete(loteDoc.ref);
+                });
+                console.log(`${lotesSnapshot.size} lotes marcados para eliminación`);
+
+                // 3. Eliminar movimientos de inventario
+                movimientosSnapshot.forEach((movDoc) => {
+                    transaction.delete(movDoc.ref);
+                });
+                console.log(`${movimientosSnapshot.size} movimientos de inventario marcados para eliminación`);
+
+                // 4. Eliminar movimientos de caja
+                if (!cashMovementSnapshot.empty) {
+                    cashMovementSnapshot.forEach((cashDoc) => {
+                        transaction.delete(cashDoc.ref);
+                    });
+                    console.log(`${cashMovementSnapshot.size} movimientos de caja marcados para eliminación`);
+                } else if (cashMovementByRelatedId && !cashMovementByRelatedId.empty) {
+                    cashMovementByRelatedId.forEach((cashDoc) => {
+                        transaction.delete(cashDoc.ref);
+                    });
+                    console.log(`${cashMovementByRelatedId.size} movimientos de caja (por relatedId) marcados para eliminación`);
+                }
+
+                // 5. Eliminar el documento de la compra
+                transaction.delete(purchaseRef);
+                console.log(`Documento de compra ${purchaseId} marcado para eliminación`);
+            });
+
+            console.log(`✅ Compra ${purchaseId} y todas sus operaciones asociadas han sido eliminadas exitosamente.`);
+
+            // Recargar datos y actualizar UI
+            await this.loadCompras();
+            this.updateStats();
+
+            notify('Compra eliminada exitosamente y todas las operaciones revertidas', 'success');
+
+        } catch (error) {
+            console.error('Error al eliminar la compra:', error);
+            notify(`Error al eliminar la compra: ${error.message}`, 'error');
+            throw error; // Re-lanzar el error para que la UI lo maneje
         }
     }
 };
@@ -1087,6 +1262,7 @@ export const procesarCambiosProductos = (...args) => comprasData.procesarCambios
 export const actualizarLotesCompra = (...args) => comprasData.actualizarLotesCompra(...args);
 export const actualizarMovimientosInventario = (...args) => comprasData.actualizarMovimientosInventario(...args);
 export const ajustarCajaCompraEditada = (...args) => comprasData.ajustarCajaCompraEditada(...args);
+export const deletePurchase = (...args) => comprasData.deletePurchase(...args);
 
 export default comprasData;
 

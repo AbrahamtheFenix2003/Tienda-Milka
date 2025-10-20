@@ -67,6 +67,7 @@ export async function initializeFirebase() {
         
         // --- INICIO DE CÓDIGO AÑADIDO ---
         // Conectar a los emuladores si estamos en localhost (entorno de desarrollo)
+        /*
         if (window.location.hostname === 'localhost') {
             console.log("Modo de desarrollo: Conectando a los emuladores de Firebase...");
             try {
@@ -79,6 +80,7 @@ export async function initializeFirebase() {
                 console.error("❌ Error al conectar con los emuladores. ¿Están corriendo?", error);
             }
         }
+        */
         // --- FIN DE CÓDIGO AÑADIDO ---
 
         console.log('✅ Firebase inicializado correctamente');

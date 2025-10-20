@@ -90,7 +90,7 @@ const ComprasUtils = {
                 }
                 
                 return [
-                    new Date(compra.fecha).toLocaleDateString('es-PE'),
+                    ComprasUtils.formatDate(compra.fecha),
                     nombreProveedor,
                     compra.factura || 'N/A',
                     compra.metodoPago,
@@ -180,7 +180,7 @@ const ComprasUtils = {
             
             html += `
                 <tr>
-                    <td>${new Date(compra.fecha).toLocaleDateString('es-PE')}</td>
+                    <td>${ComprasUtils.formatDate(compra.fecha)}</td>
                     <td>${nombreProveedor}</td>
                     <td>${compra.factura || 'N/A'}</td>
                     <td>S/ ${compra.totalInvertido.toFixed(2)}</td>
@@ -213,6 +213,11 @@ const ComprasUtils = {
     },
 
     formatDate(date) {
+        // Si la fecha está en formato YYYY-MM-DD, parsearla como fecha local para evitar problemas de zona horaria
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            const [year, month, day] = date.split('-').map(Number);
+            return new Date(year, month - 1, day).toLocaleDateString('es-PE');
+        }
         return new Date(date).toLocaleDateString('es-PE');
     },
 
@@ -946,6 +951,14 @@ const ComprasModals = {
         this.resetForm('form-agregar-producto');
         this.setupProductSearch();
         this.openModal('modal-agregar-producto');
+
+        // Aumentar z-index del modal de agregar producto para que aparezca encima del modal de nueva compra
+        setTimeout(() => {
+            const modalAgregarProducto = document.getElementById('modal-agregar-producto');
+            if (modalAgregarProducto) {
+                modalAgregarProducto.style.zIndex = '60'; // Mayor que z-50 del modal de nueva compra
+            }
+        }, 50);
     },
     
     cancelarAgregarProducto() {
@@ -1205,19 +1218,27 @@ const ComprasModals = {
 
     handleAgregarProducto(e) {
         e.preventDefault();
-        
+
         const productoId = document.getElementById('producto-seleccion').value;
         const cantidad = parseInt(document.getElementById('cantidad-producto').value);
         const precioCompra = parseFloat(document.getElementById('precio-compra-producto').value);
-        
+
         // Capturar información del lote
         const loteNumero = document.getElementById('lote-numero').value.trim();
         const fechaVencimiento = document.getElementById('fecha-vencimiento').value;
-        
-        const producto = window.productsCache?.find(p => p.id === productoId);
-        if (!producto) {
-            ComprasUtils.showNotification('Producto no encontrado', 'error');
-            return;
+
+        // Intentar obtener el nombre del producto del input o del cache
+        const inputSearch = document.getElementById('producto-seleccion-input');
+        let productoNombre = inputSearch?.dataset.selectedName || inputSearch?.value;
+
+        // Si no hay nombre del input, buscar en el cache
+        if (!productoNombre) {
+            const producto = window.productsCache?.find(p => p.id === productoId);
+            if (!producto) {
+                ComprasUtils.showNotification('Producto no encontrado', 'error');
+                return;
+            }
+            productoNombre = producto.name;
         }
         
         // Determinar a qué array agregar el producto (nueva compra o edición)
@@ -1235,7 +1256,7 @@ const ComprasModals = {
             if (loteNumero || fechaVencimiento) {
                 productosArray.push({
                     id: productoId,
-                    nombre: producto.name,
+                    nombre: productoNombre,
                     cantidad: cantidad,
                     precioCompra: precioCompra,
                     subtotal: cantidad * precioCompra,
@@ -1249,12 +1270,12 @@ const ComprasModals = {
             // Agregar nuevo producto
             const productoCompra = {
                 id: productoId,
-                nombre: producto.name,
+                nombre: productoNombre,
                 cantidad: cantidad,
                 precioCompra: precioCompra,
                 subtotal: cantidad * precioCompra
             };
-            
+
             // Agregar información del lote si existe
             if (loteNumero || fechaVencimiento) {
                 productoCompra.loteInfo = {
@@ -1262,7 +1283,7 @@ const ComprasModals = {
                     fechaVencimiento: fechaVencimiento
                 };
             }
-            
+
             productosArray.push(productoCompra);
         }
         
@@ -1274,7 +1295,6 @@ const ComprasModals = {
         }
         
         // Limpiar el formulario
-        const inputSearch = document.getElementById('producto-seleccion-input');
         if (inputSearch) {
             inputSearch.value = '';
             delete inputSearch.dataset.selectedName;
@@ -1423,7 +1443,7 @@ const ComprasModals = {
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div><strong>Proveedor:</strong> ${proveedor ? proveedor.nombre : 'No encontrado'}</div>
-                    <div><strong>Fecha:</strong> ${new Date(compra.fecha).toLocaleDateString('es-PE')}</div>
+                    <div><strong>Fecha:</strong> ${ComprasUtils.formatDate(compra.fecha)}</div>
                     <div><strong>Factura:</strong> ${compra.factura || 'N/A'}</div>
                     <div><strong>Método de Pago:</strong> ${compra.metodoPago}</div>
                 </div>
@@ -1495,30 +1515,41 @@ const ComprasModals = {
 
     // ======================== FUNCIONES DE EDICIÓN ========================
     
-    editarCompra(compraId) {
-        const compra = window.comprasCache?.find(c => c.id === compraId);
-        if (!compra) {
-            ComprasUtils.showNotification('Compra no encontrada', 'error');
-            return;
+    async editarCompra(compraId) {
+        try {
+            // Cargar la compra directamente desde Firestore para obtener datos actualizados
+            const compraDoc = await window.db.collection('compras').doc(compraId).get();
+
+            if (!compraDoc.exists) {
+                ComprasUtils.showNotification('Compra no encontrada', 'error');
+                return;
+            }
+
+            const compra = { id: compraDoc.id, ...compraDoc.data() };
+
+            // Guardar el estado original de los productos para referencia (deep copy)
+            comprasState.productosOriginalEditando = JSON.parse(JSON.stringify(compra.productos || []));
+            comprasState.productosEditandoActual = JSON.parse(JSON.stringify(compra.productos || []));
+            comprasState.compraEditandoId = compraId;
+
+            console.log('Productos originales cargados desde Firestore:', comprasState.productosOriginalEditando);
+
+            // Cargar datos en el modal
+            this.cargarDatosCompraEdicion(compra);
+
+            // Actualizar selectores de proveedores
+            comprasData.updateProveedoresSelectors();
+            this.updateProveedoresSelectoresEdicion();
+
+            // Abrir modal
+            this.openModal('modal-editar-compra');
+
+            // Configurar event listeners específicos
+            setTimeout(() => this.setupModalEventListeners(), 100);
+        } catch (error) {
+            console.error('Error cargando compra para editar:', error);
+            ComprasUtils.showNotification('Error al cargar la compra', 'error');
         }
-        
-        // Guardar el estado original de los productos para referencia
-        comprasState.productosOriginalEditando = [...(compra.productos || [])];
-        comprasState.productosEditandoActual = [...(compra.productos || [])];
-        comprasState.compraEditandoId = compraId;
-        
-        // Cargar datos en el modal
-        this.cargarDatosCompraEdicion(compra);
-        
-        // Actualizar selectores de proveedores
-        comprasData.updateProveedoresSelectors();
-        this.updateProveedoresSelectoresEdicion();
-        
-        // Abrir modal
-        this.openModal('modal-editar-compra');
-        
-        // Configurar event listeners específicos
-        setTimeout(() => this.setupModalEventListeners(), 100);
     },
     
     cargarDatosCompraEdicion(compra) {
@@ -1875,17 +1906,30 @@ const ComprasUI = {
         this.addClickListener('nueva-compra-btn', () => ComprasModals.openNuevaCompra());
         this.addClickListener('gestionar-proveedores-btn', () => ComprasModals.openProveedores());
         this.addClickListener('analisis-rentabilidad-btn', () => this.showAnalysisROI());
-        
+
         // Filtros
         this.addInputListener('search-compras', () => comprasData.filterCompras());
         this.addChangeListener('filter-proveedor', () => comprasData.filterCompras());
         this.addChangeListener('filter-fecha-desde', () => comprasData.filterCompras());
         this.addChangeListener('filter-fecha-hasta', () => comprasData.filterCompras());
         this.addClickListener('limpiar-filtros-btn', () => this.clearFilters());
-        
+
         // Botones de exportar/imprimir
         this.addClickListener('export-compras-btn', () => ComprasUtils.exportCompras());
         this.addClickListener('print-compras-btn', () => ComprasUtils.printCompras());
+
+        // Event delegation para botones de eliminar compra (dinámicos en la tabla)
+        const comprasTable = document.getElementById('compras-table');
+        if (comprasTable) {
+            comprasTable.addEventListener('click', async (e) => {
+                const deleteBtn = e.target.closest('.delete-purchase-btn');
+                if (deleteBtn) {
+                    e.preventDefault();
+                    const purchaseId = deleteBtn.dataset.id;
+                    await this.handleDeletePurchase(purchaseId);
+                }
+            });
+        }
     },
 
     addClickListener(id, handler) {
@@ -1921,8 +1965,8 @@ const ComprasUI = {
         tbody.innerHTML = compras.map(compra => {
             const proveedor = window.proveedoresCache?.find(p => p.id === compra.proveedorId);
             const nombreProveedor = proveedor ? proveedor.nombre : 'Proveedor no encontrado';
-            
-            const fecha = new Date(compra.fecha).toLocaleDateString('es-PE');
+
+            const fecha = ComprasUtils.formatDate(compra.fecha);
             const numProductos = compra.productos ? compra.productos.length : 0;
             const totalInvertido = compra.totalInvertido || 0;
             const totalVendido = compra.totalVendido || 0;
@@ -1996,6 +2040,9 @@ const ComprasUI = {
                             <button onclick="ComprasModals.editarCompra('${compra.id}')" class="text-green-600 hover:text-green-900" title="Editar compra">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            <button class="delete-purchase-btn text-red-600 hover:text-red-900" data-id="${compra.id}" title="Eliminar compra">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -2012,6 +2059,34 @@ const ComprasUI = {
             }
         });
         comprasData.filterCompras();
+    },
+
+    async handleDeletePurchase(purchaseId) {
+        if (!purchaseId) {
+            ComprasUtils.showNotification('Error: ID de compra no válido', 'error');
+            return;
+        }
+
+        // Confirmar con el usuario antes de eliminar
+        const confirmed = confirm('¿Estás seguro de que deseas eliminar esta compra? Esta acción revertirá todas las operaciones asociadas (stock, lotes, inventario y caja) y no se puede deshacer.');
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            // Importar la función deletePurchase desde data.js
+            const { deletePurchase } = await import('./data.js');
+
+            // Ejecutar la eliminación
+            await deletePurchase(purchaseId);
+
+            // La función deletePurchase ya actualiza la tabla y las estadísticas
+            // No es necesario hacer nada más aquí
+        } catch (error) {
+            console.error('Error al eliminar la compra:', error);
+            ComprasUtils.showNotification(`Error al eliminar la compra: ${error.message}`, 'error');
+        }
     },
 
     showAnalysisROI() {
@@ -2080,7 +2155,7 @@ const ComprasUI = {
                         <tbody>
                             ${analisis.map(compra => `
                                 <tr>
-                                    <td class="px-4 py-2">${new Date(compra.fecha).toLocaleDateString('es-PE')}</td>
+                                    <td class="px-4 py-2">${ComprasUtils.formatDate(compra.fecha)}</td>
                                     <td class="px-4 py-2">${compra.nombreProveedor}</td>
                                     <td class="px-4 py-2">S/ ${compra.totalInvertido.toFixed(2)}</td>
                                     <td class="px-4 py-2">S/ ${(compra.totalVendido || 0).toFixed(2)}</td>

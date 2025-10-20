@@ -3,7 +3,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Definimos funciones para verificar roles
+    // =============================================
+    // FUNCIONES DE AUTENTICACIÓN Y ROLES
+    // =============================================
     function isSuperAdmin() {
       return request.auth != null && request.auth.token.email in ['elinquisidor09@gmail.com', 'milkavv.2001@gmail.com'];
     }
@@ -16,110 +18,89 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email in ['amvf280194@gmail.com', 'noeatlas28@gmail.com'];
     }
     
-    // Función combinada para verificar si es admin (cualquier tipo)
     function isAdmin() {
       return isSuperAdmin() || isSuperVendedor();
     }
     
-    // Función para verificar acceso a ventas
     function hasAccessToSales() {
       return isAdmin() || isVendedor();
     }
+    
+    // =============================================
+    // REGLAS POR COLECCIÓN
+    // =============================================
 
-    // Colección de Productos
     match /products/{productId} {
-      allow read: if request.auth != null;
-      // Super admins pueden escribir productos completamente
-      allow write: if isSuperAdmin();
-      // Super vendedores y vendedores pueden actualizar solo el stock (para ventas)
-      allow update: if (isSuperAdmin() || hasAccessToSales()) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'stockReal']) &&
-        request.resource.data.stock >= 0;
+      allow get, list: if request.auth != null;
+      allow create, delete: if isSuperAdmin();
+
+      // --- LA CORRECCIÓN CLAVE ESTÁ AQUÍ ---
+      // Se separa la lógica de actualización. Los administradores pueden actualizar cualquier campo del producto.
+      // Los vendedores solo pueden actualizar el stock (necesario para las ventas).
+      allow update: if isAdmin() || 
+                      (hasAccessToSales() &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'stockReal']) &&
+                       request.resource.data.stock >= 0);
+
+      // Subcolección de lotes
+      match /lotes/{loteId} {
+        // Los administradores tienen control total sobre los lotes para poder hacer ajustes.
+        // `read` es atajo para `get` y `list`. `write` es atajo para `create`, `update`, `delete`.
+        allow read, write: if isAdmin();
+      }
     }
 
-    // Colección de Ventas
     match /sales/{saleId} {
-      // Todos los tipos de admin y vendedores pueden leer y crear ventas
-      allow read: if hasAccessToSales();
-      allow create: if hasAccessToSales();
-      // Vendedores pueden actualizar solo campos específicos (información de lotes y costos)
-      allow update: if hasAccessToSales() && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalCost', 'profit', 'lotesInfo']);
-      // Solo admins pueden hacer otras modificaciones y eliminar ventas
-      allow update: if isAdmin();
+      allow get, list, create: if hasAccessToSales();
+      allow update: if (isAdmin()) || 
+                    (hasAccessToSales() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalCost', 'profit', 'lotesInfo']));
       allow delete: if isAdmin();
     }
 
-    // NUEVA REGLA PARA LA COLECCIÓN DE CATEGORÍAS
     match /categories/{categoryId} {
-      // Cualquiera puede leer las categorías para mostrarlas en la tienda
-      allow read: if true;
-      // Solo super admins pueden gestionar categorías
+      allow get, list: if true;
       allow write: if isSuperAdmin();
     }
 
-    // Colección de Egresos (Solo para Super Admin y Super Vendedor)
     match /expenses/{expenseId} {
-      // Solo admins (Super Admin y Super Vendedor) pueden leer, escribir y eliminar egresos
-      allow read, write, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-    // Colección de Movimientos de Inventario
     match /movimientos_inventario/{movimientoId} {
-      // Todos los que pueden hacer ventas pueden crear movimientos de inventario
-      allow create: if hasAccessToSales();
-      // Solo admins pueden leer, modificar y eliminar
-      allow read, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-    // Colección de Movimientos de Caja
     match /movimientos_caja/{movimientoId} {
-      // Todos los que pueden hacer ventas pueden crear movimientos de caja
       allow create: if hasAccessToSales();
-      // Solo admins pueden leer, modificar y eliminar
       allow read, update, delete: if isAdmin();
     }
 
-    // Colección de Compras
     match /compras/{compraId} {
-      // Solo admins pueden gestionar compras
-      allow read, write, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-    // Colección de Proveedores
     match /proveedores/{proveedorId} {
-      // Solo admins pueden gestionar proveedores
-      allow read, write, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
-
-    // Colección de Historial de Lotes
-    match /historial_lotes/{historialId} {
-      // Solo admins pueden gestionar historial de lotes
-      allow read, write, delete: if isAdmin();
-    }
-
-    // Colección de Stock por Lote
-    match /stock_por_lote/{stockId} {
-      // Todos los que pueden hacer ventas pueden leer stock por lote (necesario para calcular stock real)
-      allow read: if hasAccessToSales();
-      // Vendedores pueden actualizar solo la cantidad (para procesar ventas con sistema FIFO)
-      allow update: if hasAccessToSales() && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cantidad', 'ultimaActualizacion']) &&
-        request.resource.data.cantidad >= 0;
-      // Solo admins pueden crear y eliminar lotes
-      allow create, delete: if isAdmin();
-    }
-
-    // Colección de Arqueos de Caja
+    
     match /arqueos_caja/{arqueoId} {
-      // Solo admins pueden gestionar arqueos de caja
-      allow read, write, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-    // Colección de Ganancia Neta Acumulada
+    match /historial_lotes/{historialId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /stock_por_lote/{stockId} {
+      allow read: if hasAccessToSales();
+      allow write: if isAdmin();
+      allow update: if hasAccessToSales() && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cantidad', 'ultimaActualizacion']) &&
+                    request.resource.data.cantidad >= 0;
+    }
+
     match /ganancia_neta_acumulada/{document} {
-      // Solo admins pueden gestionar la ganancia neta acumulada
-      allow read, write, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
   }
 }

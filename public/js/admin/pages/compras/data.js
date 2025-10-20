@@ -770,14 +770,22 @@ const comprasData = {
                     // Disminuir sin dejar negativo
                     const reducir = Math.min(actual, Math.abs(restante));
                     const nuevo = actual - reducir;
-                    console.log(`Disminuyendo lote ${doc.id}: ${actual} → ${nuevo}`);
+                    const cantidadOriginalActual = Number(d.cantidadOriginal) || actual;
+                    const nuevaCantidadOriginal = Math.max(0, cantidadOriginalActual - reducir);
+
+                    console.log(`Disminuyendo lote ${doc.id}:`);
+                    console.log(`  - Cantidad: ${actual} → ${nuevo} (reducir: ${reducir})`);
+                    console.log(`  - CantidadOriginal: ${cantidadOriginalActual} → ${nuevaCantidadOriginal}`);
+
                     await doc.ref.update({
                         cantidad: nuevo,
-                        // cantidadOriginal no se reduce para conservar histórico de adquisición
+                        cantidadOriginal: nuevaCantidadOriginal, // Reducir también cantidadOriginal al editar compra
                         costoUnitario: Number(m.after.precioCompra) || Number(d.costoUnitario) || 0,
                         actualizado: true,
                         timestamp: nowTs
                     });
+
+                    console.log(`  ✓ Lote actualizado en Firestore`);
                     restante += reducir; // restante es negativo, al sumar reducir se acerca a 0
                 }
             }
@@ -844,34 +852,53 @@ const comprasData = {
     // Recalcula y sincroniza stock del producto sumando cantidades de todos sus lotes
     async reconciliarStockProductos(productIds = []) {
         const ids = [...new Set((productIds || []).filter(Boolean))];
-        console.log(`Reconciliando stock de ${ids.length} productos`);
+        console.log(`=== RECONCILIANDO STOCK DE ${ids.length} PRODUCTOS ===`);
+
         for (const productoId of ids) {
+            console.log(`\n📦 Procesando producto: ${productoId}`);
+
             const lotesSnap = await db.collection('stock_por_lote')
                 .where('productoId', '==', productoId)
                 .get();
+
             let total = 0;
             const lotes = [];
             lotesSnap.forEach(doc => {
                 const d = doc.data();
                 const cantidad = Number(d.cantidad) || 0;
-                lotes.push({ id: doc.id, cantidad, compraId: d.compraId });
+                const cantidadOriginal = Number(d.cantidadOriginal) || 0;
+                lotes.push({
+                    id: doc.id,
+                    loteId: d.loteId,
+                    cantidad,
+                    cantidadOriginal,
+                    compraId: d.compraId
+                });
                 total += cantidad;
             });
-            console.log(`Producto ${productoId}: ${lotesSnap.size} lotes encontrados, stock total calculado: ${total}`);
-            console.log('Detalle de lotes:', lotes);
+
+            console.log(`  - Lotes encontrados: ${lotesSnap.size}`);
+            console.log(`  - Stock total calculado: ${total}`);
+            console.log(`  - Detalle de lotes:`, lotes);
+
+            // Obtener stock actual antes de la actualización
+            const productoDoc = await db.collection('products').doc(productoId).get();
+            const stockAnterior = productoDoc.exists ? (productoDoc.data().stock || 0) : 0;
 
             await db.collection('products').doc(productoId).update({ stock: total });
-            console.log(`Stock actualizado en Firestore para producto ${productoId}: ${total}`);
+            console.log(`  ✓ Stock actualizado en Firestore: ${stockAnterior} → ${total}`);
 
             // Actualizar cache local si existe
             if (window.productsCache) {
                 const idx = window.productsCache.findIndex(p => p.id === productoId);
                 if (idx !== -1) {
                     window.productsCache[idx].stock = total;
-                    console.log(`Cache local actualizado para producto ${productoId}`);
+                    console.log(`  ✓ Cache local actualizado`);
                 }
             }
         }
+
+        console.log(`\n=== FIN RECONCILIACIÓN ===\n`);
     },
     
     async procesarCambiosProductos(compraId, productosOriginales, productosNuevos) {

@@ -201,7 +201,7 @@ export function renderAlmacenUI() {
             </thead>
             <tbody id="productos-almacen-tbody" class="bg-white divide-y divide-gray-200">
               <tr>
-                <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
                   <i class="fas fa-spinner fa-spin mr-2"></i>Cargando inventario...
                 </td>
               </tr>
@@ -387,7 +387,6 @@ function setupEventHandlers() {
     button?.addEventListener('click', () => closeModal(modal));
   });
 
-  productosTbody?.addEventListener('click', handleTableActionClick);
 }
 
 function setupGlobalModalDismiss() {
@@ -513,8 +512,6 @@ function applyFilters() {
 
     if (estadoFiltro !== 'todos') {
       const stock = Number(product.stock || 0);
-      const minimo = Number(product.stockMinimo || 5);
-      const maximo = Number(product.stockMaximo || 100);
 
       if (estadoFiltro === 'sin-stock') {
         if (stock !== 0) return false;
@@ -543,7 +540,7 @@ function renderProductosAlmacen(productos) {
   if (!productos || productos.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
           <i class="fas fa-inbox text-2xl mb-3 block"></i>
           No hay productos para mostrar
         </td>
@@ -555,10 +552,8 @@ function renderProductosAlmacen(productos) {
   tbody.innerHTML = productos
     .map((product) => {
       const stockActual = Number(product.stock || 0);
-      const stockMinimo = Number(product.stockMinimo || 5);
-      const stockMaximo = Number(product.stockMaximo || 100);
       const precio = Number(product.price || 0);
-      const { badgeClass, label } = getStockStatus(stockActual, stockMinimo, stockMaximo);
+      const { badgeClass, label } = getStockStatus(stockActual);
       const categoria = getCategoryName(product) || 'Sin categoria';
       const productName = product.name || product.nombre || 'Producto sin nombre';
 
@@ -585,32 +580,12 @@ function renderProductosAlmacen(productos) {
           <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${
             stockActual === 0 ? 'text-red-600' : 'text-gray-900'
           }">${stockActual}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${stockMinimo}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${stockMaximo}</td>
           <td class="px-6 py-4 whitespace-nowrap">
             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">
               ${label}
             </span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">S/ ${priceText}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-            <button
-              class="text-blue-600 hover:text-blue-900"
-              title="Configurar stock"
-              data-action="config-stock"
-              data-product-id="${product.id}"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-            <button
-              class="text-green-600 hover:text-green-900"
-              title="Ver historial"
-              data-action="view-history"
-              data-product-id="${product.id}"
-            >
-              <i class="fas fa-history"></i>
-            </button>
-          </td>
         </tr>
       `;
     })
@@ -1083,7 +1058,6 @@ function exportarAlmacenPDF() {
     productosOrdenados.forEach((product, index) => {
       const stock = Number(product.stock || 0);
       const precio = Number(product.price || 0);
-      const stockMinimo = Number(product.stockMinimo || 5);
       const valorProducto = stock * precio;
       const categoriaNombre = getCategoryName(product) || 'Sin categoria';
       const estado = stock === 0 ? 'Sin Stock' : 'En Stock';

@@ -8,6 +8,21 @@ const COLLECTIONS = {
     CASH_MOVEMENTS: 'movimientos_caja',
 };
 
+async function runTransaction(updateFunction) {
+    const db = ensureDb();
+    if (typeof db.runTransaction !== 'function') {
+        console.warn('db.runTransaction no es una función. Ejecutando sin transacción para mantener la funcionalidad.');
+        const fakeTransaction = {
+            get: (ref) => ref.get(),
+            update: (ref, data) => ref.update(data),
+            set: (ref, data) => ref.set(data),
+        };
+        return updateFunction(fakeTransaction);
+    }
+    return db.runTransaction(updateFunction);
+}
+
+
 function ensureDb() {
     const db = getDb();
     if (!db) {
@@ -92,7 +107,7 @@ export async function fetchAllSales() {
     return orderedSales;
 }
 
-export async function calcularStockRealProducto(productId) {
+export async function calcularStockRealProducto(productId, transaction = null) {
     const db = ensureDb();
 
     if (!productId) {
@@ -100,11 +115,12 @@ export async function calcularStockRealProducto(productId) {
     }
 
     try {
-        const lotesSnapshot = await db
-            .collection(COLLECTIONS.STOCK_BY_LOT)
+        const lotesCollection = db.collection(COLLECTIONS.STOCK_BY_LOT);
+        const query = lotesCollection
             .where('productoId', '==', productId)
-            .where('cantidad', '>', 0)
-            .get();
+            .where('cantidad', '>', 0);
+
+        const lotesSnapshot = transaction ? await transaction.get(query) : await query.get();
 
         let stockReal = 0;
         lotesSnapshot.forEach((doc) => {
@@ -112,7 +128,6 @@ export async function calcularStockRealProducto(productId) {
             stockReal += lote.cantidad || 0;
         });
 
-        console.log(`Stock real calculado para producto ${productId}: ${stockReal}`);
         return stockReal;
     } catch (error) {
         console.error('Error calculando stock real:', error);
@@ -120,17 +135,18 @@ export async function calcularStockRealProducto(productId) {
     }
 }
 
-async function obtenerLotesDisponibles(productId) {
+async function obtenerLotesDisponibles(productId, transaction = null) {
     const db = ensureDb();
 
     try {
         console.log(`Consultando lotes para producto: ${productId}`);
 
-        const lotesSnapshot = await db
-            .collection(COLLECTIONS.STOCK_BY_LOT)
+        const lotesCollection = db.collection(COLLECTIONS.STOCK_BY_LOT);
+        const query = lotesCollection
             .where('productoId', '==', productId)
-            .where('cantidad', '>', 0)
-            .get();
+            .where('cantidad', '>', 0);
+
+        const lotesSnapshot = transaction ? await transaction.get(query) : await query.get();
 
         const lotes = [];
         lotesSnapshot.forEach((doc) => {
@@ -175,7 +191,7 @@ async function obtenerLotesDisponibles(productId) {
     }
 }
 
-async function procesarVentaSinLotes(productId, cantidadVendida, ventaId, customerName, productData, currentUserEmail) {
+async function procesarVentaSinLotes(transaction, productId, cantidadVendida, ventaId, customerName, productData, currentUserEmail) {
     const db = ensureDb();
 
     try {
@@ -185,9 +201,8 @@ async function procesarVentaSinLotes(productId, cantidadVendida, ventaId, custom
         const costoTotal = cantidadVendida * costoUnitario;
         const nuevoStock = (productData.stock || 0) - cantidadVendida;
 
-        await db.collection(COLLECTIONS.PRODUCTS).doc(productId).update({
-            stock: nuevoStock,
-        });
+        const productRef = db.collection(COLLECTIONS.PRODUCTS).doc(productId);
+        transaction.update(productRef, { stock: nuevoStock });
 
         const movimiento = {
             fecha: new Date().toISOString().split('T')[0],
@@ -207,7 +222,8 @@ async function procesarVentaSinLotes(productId, cantidadVendida, ventaId, custom
             observaciones: `Venta a ${customerName} - ${ventaId} (modo legacy sin lotes)`,
         };
 
-        await db.collection(COLLECTIONS.INVENTORY_MOVEMENTS).add(movimiento);
+        const newMovementRef = db.collection(COLLECTIONS.INVENTORY_MOVEMENTS).doc();
+        transaction.set(newMovementRef, movimiento);
 
         console.log(`Venta procesada sin lotes para producto ${productData.name}:`, {
             cantidadVendida,
@@ -237,7 +253,7 @@ async function procesarVentaSinLotes(productId, cantidadVendida, ventaId, custom
     }
 }
 
-async function procesarVentaConLotes(productId, cantidadVendida, ventaId, customerName, currentUserEmail, productInfo = {}) {
+async function procesarVentaConLotes(transaction, productId, cantidadVendida, ventaId, customerName, currentUserEmail, productInfo = {}) {
     const db = ensureDb();
 
     if (!productId) {
@@ -247,11 +263,12 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
     }
 
     try {
-        const lotesDisponibles = await obtenerLotesDisponibles(productId);
+        const lotesDisponibles = await obtenerLotesDisponibles(productId, transaction);
 
         if (lotesDisponibles.length === 0) {
             console.log(`No se encontraron lotes para producto ${productId}, verificando stock directo...`);
-            const productDoc = await db.collection(COLLECTIONS.PRODUCTS).doc(productId).get();
+            const productRef = db.collection(COLLECTIONS.PRODUCTS).doc(productId);
+            const productDoc = await transaction.get(productRef);
 
             if (!productDoc.exists) {
                 throw new Error(`Producto ${productId} no encontrado`);
@@ -266,7 +283,7 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
                 );
             }
 
-            return procesarVentaSinLotes(productId, cantidadVendida, ventaId, customerName, productData, currentUserEmail);
+            return procesarVentaSinLotes(transaction, productId, cantidadVendida, ventaId, customerName, productData, currentUserEmail);
         }
 
         let cantidadPendiente = cantidadVendida;
@@ -288,7 +305,8 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
             const costoUnitario = lote.costoUnitario || productInfo.cost || productInfo.acquisitionCost || 0;
             const costoLote = cantidadTomada * costoUnitario;
 
-            await db.collection(COLLECTIONS.STOCK_BY_LOT).doc(lote.id).update({
+            const loteRef = db.collection(COLLECTIONS.STOCK_BY_LOT).doc(lote.id);
+            transaction.update(loteRef, {
                 cantidad: cantidadDisponible - cantidadTomada,
                 ultimaActualizacion: getServerTimestampValue(),
             });
@@ -330,13 +348,13 @@ async function procesarVentaConLotes(productId, cantidadVendida, ventaId, custom
         }
         
         for (const movimiento of movimientos) {
-            await db.collection(COLLECTIONS.INVENTORY_MOVEMENTS).add(movimiento);
+            const newMovementRef = db.collection(COLLECTIONS.INVENTORY_MOVEMENTS).doc();
+            transaction.set(newMovementRef, movimiento);
         }
 
-        const stockRealActualizado = await calcularStockRealProducto(productId);
-        await db.collection(COLLECTIONS.PRODUCTS).doc(productId).update({
-            stock: stockRealActualizado,
-        });
+        const stockRealActualizado = await calcularStockRealProducto(productId, transaction);
+        const productRef = db.collection(COLLECTIONS.PRODUCTS).doc(productId);
+        transaction.update(productRef, { stock: stockRealActualizado });
 
         console.log(`Venta procesada con lotes FIFO para producto ${productId}:`, {
             cantidadVendida,
@@ -401,14 +419,15 @@ export async function processSale({
     const saleRef = await db.collection(COLLECTIONS.SALES).add(saleRecord);
     console.log('Venta creada con ID:', saleRef.id);
 
-    const lotesResults = [];
-    const stockUpdates = [];
-    let costoRealTotal = 0;
+    const { lotesResults, stockUpdates, costoRealTotal } = await runTransaction(async (transaction) => {
+        const lotesResults = [];
+        const stockUpdates = [];
+        let costoRealTotal = 0;
 
-    for (const item of items) {
-        try {
+        for (const item of items) {
             console.log(`Procesando producto ${item.name} (${item.id}) - Cantidad: ${item.quantity}`);
             const resultado = await procesarVentaConLotes(
+                transaction,
                 item.id,
                 item.quantity,
                 saleRef.id,
@@ -429,11 +448,10 @@ export async function processSale({
             });
 
             costoRealTotal += resultado.costoTotal;
-        } catch (error) {
-            console.error(`Error procesando producto ${item.name}:`, error);
-            throw new Error(`Error procesando ${item.name}: ${error.message}`);
         }
-    }
+
+        return { lotesResults, stockUpdates, costoRealTotal };
+    });
 
     const gananciaReal = totalSale - costoRealTotal;
 

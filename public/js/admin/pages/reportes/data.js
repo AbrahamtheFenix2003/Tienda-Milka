@@ -386,6 +386,72 @@ async function deleteCashMovements(database, saleId) {
   }
 }
 
+export function filterSalesByPeriod(sales, periodValue, dateFrom, dateTo) {
+  if (!Array.isArray(sales) || sales.length === 0) {
+    return [];
+  }
 
+  let filteredSales = [...sales];
+
+  // Prioridad 1: Si hay rango de fechas personalizado (dateFrom o dateTo)
+  if (dateFrom || dateTo) {
+    filteredSales = filteredSales.filter((sale) => {
+      const saleDate = getSaleDate(sale);
+      if (!saleDate) return false;
+
+      const saleDateNormalized = new Date(
+        saleDate.getFullYear(),
+        saleDate.getMonth(),
+        saleDate.getDate()
+      );
+
+      let matchesFrom = true;
+      let matchesTo = true;
+
+      if (dateFrom) {
+        const [year, month, day] = dateFrom.split('-').map(Number);
+        const fromDateNormalized = new Date(year, month - 1, day);
+        matchesFrom = saleDateNormalized >= fromDateNormalized;
+      }
+
+      if (dateTo) {
+        const [year, month, day] = dateTo.split('-').map(Number);
+        const toDateNormalized = new Date(year, month - 1, day);
+        matchesTo = saleDateNormalized <= toDateNormalized;
+      }
+
+      return matchesFrom && matchesTo;
+    });
+  }
+  // Prioridad 2: Usar periodo predefinido si no hay rango personalizado
+  else if (periodValue && periodValue !== 'all') {
+    const today = new Date();
+    const startDate = new Date(today);
+
+    switch (periodValue) {
+      case 'today':
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      case 'quarter':
+        startDate.setMonth(today.getMonth() - 3);
+        break;
+      default:
+        break;
+    }
+
+    filteredSales = filteredSales.filter((sale) => {
+      const saleDate = getSaleDate(sale);
+      return saleDate && saleDate >= startDate;
+    });
+  }
+
+  return filteredSales;
+}
 
 

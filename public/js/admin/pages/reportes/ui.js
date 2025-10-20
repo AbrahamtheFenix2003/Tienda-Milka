@@ -1,4 +1,4 @@
-import { annulSale, getSaleDate, getSaleDetails, loadAllSalesAndExpenses } from './data.js';
+import { annulSale, getSaleDate, getSaleDetails, loadAllSalesAndExpenses, filterSalesByPeriod } from './data.js';
 import { renderSalesPerformanceChart, renderCategorySalesChart } from './charts.js';
 
 let isVendor = false;
@@ -37,10 +37,9 @@ export function updateSummaryCards(allSales = [], allExpenses = []) {
 
   const revenueEl = document.getElementById('total-revenue');
   const costEl = document.getElementById('total-cost');
-  const expensesEl = document.getElementById('total-expenses');
   const profitEl = document.getElementById('net-profit');
 
-  if (!revenueEl || !costEl || !expensesEl || !profitEl) {
+  if (!revenueEl || !costEl || !profitEl) {
     return;
   }
 
@@ -56,7 +55,6 @@ export function updateSummaryCards(allSales = [], allExpenses = []) {
 
   revenueEl.textContent = `S/ ${totalRevenue.toFixed(2)}`;
   costEl.textContent = `S/ ${totalCost.toFixed(2)}`;
-  expensesEl.textContent = `S/ ${totalExpenses.toFixed(2)}`;
   profitEl.textContent = `S/ ${netProfit.toFixed(2)}`;
 }
 
@@ -140,6 +138,7 @@ export function showErrorMessage(message) {
 function buildReportesTemplate() {
   const summarySection = isVendor ? renderVendorBanner() : renderSummaryAndCharts();
   return `
+    ${renderDateFilterSection()}
     ${summarySection}
     ${renderHistorySection()}
     ${renderSaleDetailsModal()}
@@ -147,9 +146,36 @@ function buildReportesTemplate() {
   `;
 }
 
+function renderDateFilterSection() {
+  return `
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <h3 class="text-xl font-bold text-gray-800">Filtrar por Periodo</h3>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+          <div class="flex items-center space-x-2">
+            <label class="text-sm font-medium text-gray-700">Desde:</label>
+            <input type="date" id="date-from" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
+          </div>
+          <div class="flex items-center space-x-2">
+            <label class="text-sm font-medium text-gray-700">Hasta:</label>
+            <input type="date" id="date-to" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
+          </div>
+          <select id="period-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
+            <option value="all">Todas las fechas</option>
+            <option value="today">Hoy</option>
+            <option value="week">Esta semana</option>
+            <option value="month">Este mes</option>
+            <option value="quarter">Ultimos 90 dias</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderSummaryAndCharts() {
   return `
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div class="bg-blue-50 rounded-lg p-6">
         <div class="flex items-center">
           <div class="p-3 rounded-full bg-blue-100 text-blue-500">
@@ -169,17 +195,6 @@ function renderSummaryAndCharts() {
           <div class="ml-4">
             <p class="text-sm font-medium text-red-800">COSTOS TOTALES</p>
             <p class="text-2xl font-bold text-red-900" id="total-cost">S/ 0.00</p>
-          </div>
-        </div>
-      </div>
-      <div class="bg-orange-50 rounded-lg p-6">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-orange-100 text-orange-500">
-            <i class="fas fa-credit-card text-xl"></i>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-orange-800">EGRESOS TOTALES</p>
-            <p class="text-2xl font-bold text-orange-900" id="total-expenses">S/ 0.00</p>
           </div>
         </div>
       </div>
@@ -238,25 +253,13 @@ function renderHistorySection() {
   return `
     <div class="bg-white rounded-lg shadow p-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-        <div class="flex items-center w-full sm:w-auto space-x-3">
-          <div>
-            <h3 class="text-xl font-bold">Historial de Ventas</h3>
-            <p id="sales-counter" class="text-sm text-gray-600 mt-1">0 ventas encontradas</p>
-          </div>
-          <button id="generate-pdf-btn" class="inline-flex items-center px-3 py-2 bg-rose-500 text-white text-sm font-semibold rounded-md hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            Generar PDF
-          </button>
+        <div>
+          <h3 class="text-xl font-bold">Historial de Ventas</h3>
+          <p id="sales-counter" class="text-sm text-gray-600 mt-1">0 ventas encontradas</p>
         </div>
-        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-          <input type="date" id="date-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
-          <select id="period-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500">
-            <option value="all">Todas las fechas</option>
-            <option value="today">Hoy</option>
-            <option value="week">Esta semana</option>
-            <option value="month">Este mes</option>
-            <option value="quarter">Ultimos 90 dias</option>
-          </select>
-        </div>
+        <button id="generate-pdf-btn" class="inline-flex items-center px-3 py-2 bg-rose-500 text-white text-sm font-semibold rounded-md hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          Generar PDF
+        </button>
       </div>
       <div id="sales-history" class="space-y-4"></div>
     </div>
@@ -384,12 +387,17 @@ function setupEventHandlers() {
         target.classList.remove('bg-gray-200');
 
         currentChartPeriod = target.dataset.period || 'month';
-        renderSalesPerformanceChart(salesData, currentChartPeriod);
+        const dateFrom = document.getElementById('date-from')?.value || '';
+        const dateTo = document.getElementById('date-to')?.value || '';
+        const periodFilterValue = document.getElementById('period-filter')?.value || 'all';
+        const filteredSales = filterSalesByPeriod(salesData, periodFilterValue, dateFrom, dateTo);
+        renderSalesPerformanceChart(filteredSales, currentChartPeriod);
       }),
     );
   }
 
-  const dateFilter = document.getElementById('date-filter');
+  const dateFrom = document.getElementById('date-from');
+  const dateTo = document.getElementById('date-to');
   const periodFilter = document.getElementById('period-filter');
   const pdfButton = document.getElementById('generate-pdf-btn');
   const downloadButton = document.getElementById('download-sale-details-btn');
@@ -398,11 +406,14 @@ function setupEventHandlers() {
   const cancelAnnul = document.getElementById('cancel-annul-sale');
   const confirmAnnul = document.getElementById('confirm-annul-sale');
 
-  if (dateFilter) {
-    dateFilter.addEventListener('change', filterSalesHistory);
+  if (dateFrom) {
+    dateFrom.addEventListener('change', applyDateFilter);
+  }
+  if (dateTo) {
+    dateTo.addEventListener('change', applyDateFilter);
   }
   if (periodFilter) {
-    periodFilter.addEventListener('change', filterSalesHistory);
+    periodFilter.addEventListener('change', applyDateFilter);
   }
   if (pdfButton) {
     pdfButton.addEventListener('click', generateSalesHistoryPdf);
@@ -424,62 +435,30 @@ function setupEventHandlers() {
   }
 }
 
-function filterSalesHistory() {
+function applyDateFilter() {
   if (!Array.isArray(salesData) || salesData.length === 0) {
     displaySalesHistory([]);
+    if (!isVendor) {
+      updateSummaryCards([], expensesData);
+      renderSalesPerformanceChart([], currentChartPeriod);
+      renderCategorySalesChart([]);
+    }
     return;
   }
 
-  const dateFilterValue = document.getElementById('date-filter')?.value || '';
+  const dateFrom = document.getElementById('date-from')?.value || '';
+  const dateTo = document.getElementById('date-to')?.value || '';
   const periodFilterValue = document.getElementById('period-filter')?.value || 'all';
 
-  let filteredSales = [...salesData];
-
-  if (periodFilterValue !== 'all') {
-    const today = new Date();
-    const startDate = new Date(today);
-
-    switch (periodFilterValue) {
-      case 'today':
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'week':
-        startDate.setDate(today.getDate() - 7);
-        break;
-      case 'month':
-        startDate.setMonth(today.getMonth() - 1);
-        break;
-      case 'quarter':
-        startDate.setMonth(today.getMonth() - 3);
-        break;
-      default:
-        break;
-    }
-
-    filteredSales = filteredSales.filter((sale) => {
-      const saleDate = getSaleDate(sale);
-      return saleDate && saleDate >= startDate;
-    });
-  }
-
-  if (dateFilterValue) {
-    // Crear la fecha del filtro en zona horaria local (evita desfase UTC)
-    const [year, month, day] = dateFilterValue.split('-').map(Number);
-    const filterDate = new Date(year, month - 1, day);
-
-    filteredSales = filteredSales.filter((sale) => {
-      const saleDate = getSaleDate(sale);
-      if (!saleDate) return false;
-
-      // Normalizar ambas fechas a medianoche local para comparación
-      const saleDateNormalized = new Date(saleDate.getFullYear(), saleDate.getMonth(), saleDate.getDate());
-      const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
-
-      return saleDateNormalized.getTime() === filterDateNormalized.getTime();
-    });
-  }
+  const filteredSales = filterSalesByPeriod(salesData, periodFilterValue, dateFrom, dateTo);
 
   displaySalesHistory(filteredSales, { updateBase: false });
+
+  if (!isVendor) {
+    updateSummaryCards(filteredSales, expensesData);
+    renderSalesPerformanceChart(filteredSales, currentChartPeriod);
+    renderCategorySalesChart(filteredSales);
+  }
 }
 function generateSalesHistoryPdf() {
   const JsPdfConstructor = window.jspdf?.jsPDF || window.jsPDF;
@@ -523,24 +502,29 @@ function generateSalesHistoryPdf() {
   doc.text(`Generado: ${generatedAt.toLocaleString('es-PE')}`, margin, y);
 
   const periodSelect = document.getElementById('period-filter');
-  const dateFilterInput = document.getElementById('date-filter');
+  const dateFromInput = document.getElementById('date-from');
+  const dateToInput = document.getElementById('date-to');
   const periodValue = periodSelect ? periodSelect.value : 'all';
-  const dateFilterValue = dateFilterInput ? dateFilterInput.value : '';
+  const dateFromValue = dateFromInput ? dateFromInput.value : '';
+  const dateToValue = dateToInput ? dateToInput.value : '';
 
-  const periodLabels = {
-    all: 'Todas las fechas',
-    today: 'Hoy',
-    week: 'Ultimos 7 dias',
-    month: 'Ultimos 30 dias',
-    quarter: 'Ultimos 90 dias',
-  };
+  let filterLabel = '';
+  if (dateFromValue || dateToValue) {
+    const fromLabel = dateFromValue ? new Date(dateFromValue).toLocaleDateString('es-PE') : 'Inicio';
+    const toLabel = dateToValue ? new Date(dateToValue).toLocaleDateString('es-PE') : 'Presente';
+    filterLabel = `Rango: Desde ${fromLabel} hasta ${toLabel}`;
+  } else {
+    const periodLabels = {
+      all: 'Todas las fechas',
+      today: 'Hoy',
+      week: 'Ultimos 7 dias',
+      month: 'Ultimos 30 dias',
+      quarter: 'Ultimos 90 dias',
+    };
+    filterLabel = `Periodo: ${periodLabels[periodValue] || 'Personalizado'}`;
+  }
 
-  const periodLabel = periodLabels[periodValue] || 'Personalizado';
-  const dateLabel = dateFilterValue ? new Date(dateFilterValue).toLocaleDateString('es-PE') : 'Sin fecha especifica';
-
-  doc.text(`Periodo: ${periodLabel}`, pageWidth - margin, y, { align: 'right' });
-  y += 6;
-  doc.text(`Filtro por fecha: ${dateLabel}`, margin, y);
+  doc.text(filterLabel, pageWidth - margin, y, { align: 'right' });
   y += 8;
 
   const totalAmount = currentSalesHistory.reduce((sum, sale) => sum + (sale.totalSale || 0), 0);

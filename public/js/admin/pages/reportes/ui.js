@@ -88,6 +88,12 @@ export function displaySalesHistory(salesList = null, { updateBase = true } = {}
     delete detailButton.dataset.saleId;
   }
 
+  // Actualizar contador de ventas
+  const salesCounter = document.getElementById('sales-counter');
+  if (salesCounter) {
+    salesCounter.textContent = `${listToRender.length} venta${listToRender.length !== 1 ? 's' : ''} encontrada${listToRender.length !== 1 ? 's' : ''}`;
+  }
+
   if (listToRender.length === 0) {
     container.innerHTML = '<p class="text-center text-gray-500 py-4">No hay ventas para mostrar</p>';
     return;
@@ -98,7 +104,24 @@ export function displaySalesHistory(salesList = null, { updateBase = true } = {}
     typeof window.isAdmin === 'function' &&
     window.isAdmin(window.currentUser?.email || '');
 
-  container.innerHTML = listToRender.map((sale) => createSaleCardHtml(sale, canAnnulSale)).join('');
+  // Ordenar ventas de más antigua a más reciente para la numeración
+  const sortedForNumbering = [...listToRender].sort((a, b) => {
+    const dateA = getSaleDate(a)?.getTime() ?? 0;
+    const dateB = getSaleDate(b)?.getTime() ?? 0;
+    return dateA - dateB; // Ascendente: más antigua primero
+  });
+
+  // Crear un mapa de ID a número de venta
+  const saleNumberMap = new Map();
+  sortedForNumbering.forEach((sale, index) => {
+    saleNumberMap.set(sale.id, index + 1);
+  });
+
+  // Renderizar en el orden original (más reciente primero en la UI)
+  container.innerHTML = listToRender.map((sale) => {
+    const saleNumber = saleNumberMap.get(sale.id);
+    return createSaleCardHtml(sale, canAnnulSale, saleNumber);
+  }).join('');
 }
 
 export function showErrorMessage(message) {
@@ -216,7 +239,10 @@ function renderHistorySection() {
     <div class="bg-white rounded-lg shadow p-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
         <div class="flex items-center w-full sm:w-auto space-x-3">
-          <h3 class="text-xl font-bold">Historial de Ventas</h3>
+          <div>
+            <h3 class="text-xl font-bold">Historial de Ventas</h3>
+            <p id="sales-counter" class="text-sm text-gray-600 mt-1">0 ventas encontradas</p>
+          </div>
           <button id="generate-pdf-btn" class="inline-flex items-center px-3 py-2 bg-rose-500 text-white text-sm font-semibold rounded-md hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             Generar PDF
           </button>
@@ -272,7 +298,7 @@ function renderAnnulSaleModal() {
     </div>
   `;
 }
-function createSaleCardHtml(sale, canAnnulSale) {
+function createSaleCardHtml(sale, canAnnulSale, saleNumber) {
   const saleDate = getSaleDate(sale) || new Date();
   let productsDisplay = '';
 
@@ -305,6 +331,7 @@ function createSaleCardHtml(sale, canAnnulSale) {
         <div class="flex-1">
           <div class="flex justify-between items-start mb-2">
             <div>
+              ${saleNumber ? `<p class="text-xs font-bold text-rose-600 mb-1">Venta #${saleNumber}</p>` : ''}
               <p class="font-semibold text-gray-900">${sale.customerName || 'Cliente no especificado'}</p>
               <p class="text-sm text-gray-600">${sale.customerPhone || 'Sin telefono'}</p>
               ${deliveryInfo}
@@ -436,10 +463,19 @@ function filterSalesHistory() {
   }
 
   if (dateFilterValue) {
-    const filterDate = new Date(dateFilterValue);
+    // Crear la fecha del filtro en zona horaria local (evita desfase UTC)
+    const [year, month, day] = dateFilterValue.split('-').map(Number);
+    const filterDate = new Date(year, month - 1, day);
+
     filteredSales = filteredSales.filter((sale) => {
       const saleDate = getSaleDate(sale);
-      return saleDate && saleDate.toDateString() === filterDate.toDateString();
+      if (!saleDate) return false;
+
+      // Normalizar ambas fechas a medianoche local para comparación
+      const saleDateNormalized = new Date(saleDate.getFullYear(), saleDate.getMonth(), saleDate.getDate());
+      const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+
+      return saleDateNormalized.getTime() === filterDateNormalized.getTime();
     });
   }
 
@@ -532,7 +568,14 @@ function generateSalesHistoryPdf() {
   doc.setDrawColor(subtle.r, subtle.g, subtle.b);
   doc.setLineWidth(0.2);
 
-  currentSalesHistory.forEach((sale, index) => {
+  // Ordenar ventas de más antigua a más reciente para la numeración en el PDF
+  const sortedSalesForPdf = [...currentSalesHistory].sort((a, b) => {
+    const dateA = getSaleDate(a)?.getTime() ?? 0;
+    const dateB = getSaleDate(b)?.getTime() ?? 0;
+    return dateA - dateB; // Ascendente: más antigua primero
+  });
+
+  sortedSalesForPdf.forEach((sale, index) => {
     const saleDate = getSaleDate(sale) || new Date();
 
     let products = '';

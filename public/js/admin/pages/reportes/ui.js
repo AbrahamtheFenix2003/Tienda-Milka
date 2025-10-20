@@ -47,6 +47,7 @@ export function updateSummaryCards(allSales = [], allExpenses = []) {
   const expensesList = Array.isArray(allExpenses) ? allExpenses : [];
 
   expensesData = [...expensesList];
+  salesData = [...salesList];
 
   const totalRevenue = salesList.reduce((sum, sale) => sum + (sale.totalSale || 0), 0);
   const totalCost = salesList.reduce((sum, sale) => sum + (sale.totalCost || 0), 0);
@@ -391,7 +392,7 @@ function setupEventHandlers() {
         const dateTo = document.getElementById('date-to')?.value || '';
         const periodFilterValue = document.getElementById('period-filter')?.value || 'all';
         const filteredSales = filterSalesByPeriod(salesData, periodFilterValue, dateFrom, dateTo);
-        renderSalesPerformanceChart(filteredSales, currentChartPeriod);
+        renderSalesPerformanceChart(filteredSales, currentChartPeriod, dateFrom, dateTo);
       }),
     );
   }
@@ -440,7 +441,7 @@ function applyDateFilter() {
     displaySalesHistory([]);
     if (!isVendor) {
       updateSummaryCards([], expensesData);
-      renderSalesPerformanceChart([], currentChartPeriod);
+      renderSalesPerformanceChart([], currentChartPeriod, '', '');
       renderCategorySalesChart([]);
     }
     return;
@@ -456,7 +457,7 @@ function applyDateFilter() {
 
   if (!isVendor) {
     updateSummaryCards(filteredSales, expensesData);
-    renderSalesPerformanceChart(filteredSales, currentChartPeriod);
+    renderSalesPerformanceChart(filteredSales, currentChartPeriod, dateFrom, dateTo);
     renderCategorySalesChart(filteredSales);
   }
 }
@@ -1007,7 +1008,9 @@ async function handleAnnulSale(event) {
     displaySalesHistory(allSales);
     if (!isVendor) {
       updateSummaryCards(allSales, allExpenses);
-      renderSalesPerformanceChart(allSales, currentChartPeriod);
+      const dateFrom = document.getElementById('date-from')?.value || '';
+      const dateTo = document.getElementById('date-to')?.value || '';
+      renderSalesPerformanceChart(allSales, currentChartPeriod, dateFrom, dateTo);
       renderCategorySalesChart(allSales);
     }
     closeAnnulSaleModal();

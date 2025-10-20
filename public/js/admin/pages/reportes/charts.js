@@ -7,7 +7,7 @@ function hasChartJs() {
   return typeof Chart !== 'undefined';
 }
 
-export function renderSalesPerformanceChart(sales = [], period = 'month') {
+export function renderSalesPerformanceChart(sales = [], period = 'month', dateFrom = '', dateTo = '') {
   const canvas = document.getElementById('sales-performance-chart');
   if (!canvas || !hasChartJs()) {
     if (salesChartInstance) {
@@ -18,21 +18,59 @@ export function renderSalesPerformanceChart(sales = [], period = 'month') {
   }
 
   const ctx = canvas.getContext('2d');
-  const today = new Date();
-  const days = period === 'week' ? 7 : 30;
-
   const salesByDay = {};
   const labels = [];
 
-  for (let i = days - 1; i >= 0; i -= 1) {
-    const date = new Date(today);
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() - i);
-    const dateKey = date.toISOString().split('T')[0];
-    salesByDay[dateKey] = 0;
-    labels.push(date.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' }));
+  // Calcular rango de fechas basado en filtros o periodo
+  let startDate, endDate;
+
+  if (dateFrom || dateTo) {
+    // Si hay filtros personalizados, usarlos
+    if (dateFrom) {
+      const [year, month, day] = dateFrom.split('-').map(Number);
+      startDate = new Date(year, month - 1, day);
+    } else {
+      // Si solo hay dateTo, usar la venta más antigua como inicio
+      const oldestSale = (Array.isArray(sales) ? sales : [])
+        .map((sale) => getSaleDate(sale))
+        .filter(Boolean)
+        .sort((a, b) => a.getTime() - b.getTime())[0];
+      startDate = oldestSale || new Date();
+    }
+
+    if (dateTo) {
+      const [year, month, day] = dateTo.split('-').map(Number);
+      endDate = new Date(year, month - 1, day);
+    } else {
+      // Si solo hay dateFrom, usar hoy como fin
+      endDate = new Date();
+      endDate.setHours(0, 0, 0, 0);
+    }
+  } else {
+    // Si no hay filtros personalizados, usar periodo predefinido
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate = today;
+
+    const days = period === 'week' ? 7 : 30;
+    startDate = new Date(today);
+    startDate.setDate(today.getDate() - (days - 1));
   }
 
+  // Normalizar fechas
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  // Generar todas las fechas en el rango
+  const currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    const dateKey = currentDate.toISOString().split('T')[0];
+    salesByDay[dateKey] = 0;
+    labels.push(currentDate.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' }));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // Contar ventas por día
   (Array.isArray(sales) ? sales : []).forEach((sale) => {
     const saleDate = getSaleDate(sale);
     if (!saleDate) {

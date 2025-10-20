@@ -10,7 +10,7 @@ export async function loadReportesPage() {
     displaySalesHistory(allSales);
     updateSummaryCards(allSales, allExpenses);
 
-    renderSalesPerformanceChart(allSales);
+    renderSalesPerformanceChart(allSales, 'month', '', '');
     renderCategorySalesChart(allSales);
   } catch (error) {
     console.error('Error al cargar la pagina de reportes:', error);

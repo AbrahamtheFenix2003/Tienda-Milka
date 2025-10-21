@@ -107,7 +107,8 @@ export function renderAlmacenUI() {
                   <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
                   <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual</th>
                   <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Unitario</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Actual</th>
                 </tr>
               </thead>
               <tbody id="lista-resumen-productos-detalle" class="bg-white divide-y divide-gray-200">
@@ -662,7 +663,7 @@ function renderResumenProductosDetalle() {
     .map((product) => {
       const stock = Number(product.stock || 0);
       const precio = Number(product.price || product.precio || 0);
-      const valorTotal = stock * precio;
+      const valorActual = stock * precio;
       const name = product.name || product.nombre || 'Producto sin nombre';
       const displayName = name.length > 60 ? `${name.substring(0, 57)}...` : name;
 
@@ -683,6 +684,7 @@ function renderResumenProductosDetalle() {
             <td class="px-4 py-2 text-sm text-gray-800">${stock}</td>
             <td class="px-4 py-2 text-sm font-semibold ${stock === 0 ? 'text-red-600' : 'text-green-600'}">${stock === 0 ? 'Sin Stock' : 'En Stock'}</td>
             <td class="px-4 py-2 text-sm text-gray-800">S/ ${Number.isFinite(precio) ? precio.toFixed(2) : '0.00'}</td>
+            <td class="px-4 py-2 text-sm font-semibold text-gray-900">S/ ${Number.isFinite(valorActual) ? valorActual.toFixed(2) : '0.00'}</td>
           </tr>
         `;
     })
@@ -902,7 +904,7 @@ async function ensureXlsxLoaded() {
 
 /**
  * Exporta el contenido del panel "Resumen de Productos" (lo que muestra el botón "Ver detalles")
- * Columnas: Producto, Categoria, Stock Actual, Estado, Precio
+ * Columnas: Producto, Categoria, Stock Actual, Estado, Precio Unitario, Valor Actual
  */
 async function exportarDetallesExcel() {
   try {
@@ -911,7 +913,7 @@ async function exportarDetallesExcel() {
     const sourceList = hasFilter ? filteredProductsState : productsState;
 
     const rows = [
-      ['Producto', 'Categoria', 'Stock Actual', 'Estado', 'Precio']
+      ['Producto', 'Categoria', 'Stock Actual', 'Estado', 'Precio Unitario', 'Valor Actual']
     ];
 
     (sourceList || []).forEach(p => {
@@ -920,8 +922,16 @@ async function exportarDetallesExcel() {
       const stock = Number(p.stock || 0);
       const estado = stock === 0 ? 'Sin Stock' : 'En Stock';
       const precio = Number(p.price ?? p.precio ?? 0);
+      const valorActual = stock * precio;
 
-      rows.push([nombre, categoria, stock, estado, Number(precio.toFixed ? precio.toFixed(2) : precio)]);
+      rows.push([
+        nombre,
+        categoria,
+        stock,
+        estado,
+        Number(precio.toFixed ? precio.toFixed(2) : precio),
+        Number(valorActual.toFixed ? valorActual.toFixed(2) : valorActual)
+      ]);
     });
 
     const ws = XLSX.utils.aoa_to_sheet(rows);

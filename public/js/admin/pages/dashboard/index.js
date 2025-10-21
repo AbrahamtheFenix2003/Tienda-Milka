@@ -4,6 +4,7 @@ import {
     renderSalesChart,
     renderCategorySalesChart,
     renderTopProducts,
+    renderTopProfitableProducts,
     renderRecentActivity,
     showDashboardError,
 } from './ui.js';
@@ -13,6 +14,7 @@ import {
     getSalesChartData,
     getCategorySalesData,
     getTopProducts,
+    getTopProfitableProducts,
     getRecentActivity,
 } from './data.js';
 
@@ -36,11 +38,12 @@ export async function loadDashboardPage() {
     const adminContext = resolveAdminContext();
 
     try {
-        const [metrics, chartData, categoryData, topProducts, activities] = await Promise.all([
+        const [metrics, chartData, categoryData, topProducts, topProfitableProducts, activities] = await Promise.all([
             getDashboardMetrics(),
             getSalesChartData({ days: 7 }),
             getCategorySalesData(),
             getTopProducts(5),
+            getTopProfitableProducts(5),
             getRecentActivity(adminContext),
         ]);
 
@@ -48,6 +51,7 @@ export async function loadDashboardPage() {
         renderSalesChart(chartData);
         renderCategorySalesChart(categoryData);
         renderTopProducts(topProducts);
+        renderTopProfitableProducts(topProfitableProducts);
         renderRecentActivity(activities);
     } catch (error) {
         console.error('Error loading dashboard page:', error);

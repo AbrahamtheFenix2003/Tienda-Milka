@@ -81,6 +81,12 @@ export function renderDashboardUI() {
                     <p class="text-gray-500 text-center py-4">Cargando datos...</p>
                 </div>
             </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold mb-4">Productos M&aacute;s Rentables</h3>
+                <div id="top-profitable-products" class="space-y-3">
+                    <p class="text-gray-500 text-center py-4">Cargando datos...</p>
+                </div>
+            </div>
         </div>
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold mb-4">Actividad Reciente</h3>
@@ -186,6 +192,40 @@ export function renderTopProducts(products) {
         </div>
     `,
         )
+        .join('');
+}
+
+export function renderTopProfitableProducts(products) {
+    const container = document.getElementById('top-profitable-products');
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(products) || products.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay datos de rentabilidad</p>';
+        return;
+    }
+
+    container.innerHTML = products
+        .map((product) => {
+            const unitsSold = Number(product.unitsSold || 0);
+            const unitsLabel = unitsSold === 1
+                ? '1 unidad vendida'
+                : `${unitsSold.toLocaleString('es-PE')} unidades vendidas`;
+            const grossProfit = Number(product.grossProfit || 0).toFixed(2);
+            const productName = product.name || 'Producto sin nombre';
+            return `
+        <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+            <div>
+                <p class="font-medium text-gray-900">${productName}</p>
+                <p class="text-sm text-gray-500">${unitsLabel}</p>
+            </div>
+            <div class="text-right">
+                <p class="font-semibold text-green-600">S/ ${grossProfit}</p>
+            </div>
+        </div>
+    `;
+        })
         .join('');
 }
 

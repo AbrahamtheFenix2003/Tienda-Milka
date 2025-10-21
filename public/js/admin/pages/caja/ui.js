@@ -13,24 +13,30 @@ const DEFAULT_RESUMEN = {
     saldoActual: 0
 };
 
-const ENTRADA_CATEGORIES = [
-    ['ventas', 'Ventas'],
-    ['inyeccion-dinero', 'Inyeccion de dinero'],
-    ['otros-ingresos', 'Otros ingresos'],
-    ['prestamo', 'Prestamo'],
-    ['capital', 'Aporte de capital']
+const CATEGORY_CONFIG = [
+    { value: 'ventas', label: 'Ventas', tipo: 'entrada', aliases: ['ventas'] },
+    {
+        value: 'otros-ingresos',
+        label: 'Otros ingresos',
+        tipo: 'entrada',
+        aliases: ['otros-ingresos', 'inyeccion-dinero', 'prestamo']
+    },
+    { value: 'capital', label: 'Aporte de capital', tipo: 'entrada', aliases: ['capital', 'aporte-de-capital'] },
+    { value: 'compras', label: 'Compras de mercaderia', tipo: 'salida', aliases: ['compras', 'compras-de-mercaderia'] },
+    { value: 'egresos-manuales', label: 'Egresos manuales', tipo: 'salida', aliases: ['egresos-manuales'] },
+    {
+        value: 'gastos-operativos',
+        label: 'Gastos operativos',
+        tipo: 'salida',
+        aliases: ['gastos-operativos', 'servicios', 'salarios', 'impuestos']
+    },
+    { value: 'otros', label: 'Otros', tipo: 'salida', aliases: ['otros', 'retiro-personal'] }
 ];
 
-const SALIDA_CATEGORIES = [
-    ['compras', 'Compras de mercaderia'],
-    ['egresos-manuales', 'Egresos manuales'],
-    ['gastos-operativos', 'Gastos operativos'],
-    ['servicios', 'Servicios'],
-    ['salarios', 'Salarios'],
-    ['impuestos', 'Impuestos'],
-    ['retiro-personal', 'Retiro personal'],
-    ['otros', 'Otros gastos']
-];
+const ENTRADA_CATEGORIES = CATEGORY_CONFIG.filter(item => item.tipo === 'entrada')
+    .map(item => [item.value, item.label]);
+const SALIDA_CATEGORIES = CATEGORY_CONFIG.filter(item => item.tipo === 'salida')
+    .map(item => [item.value, item.label]);
 
 const FILTER_TYPE_OPTIONS = [
     ['todos', 'Todos'],
@@ -41,19 +47,7 @@ const FILTER_TYPE_OPTIONS = [
 
 const FILTER_CATEGORY_OPTIONS = [
     ['todas', 'Todas'],
-    ['ventas', 'Ventas'],
-    ['inyeccion-dinero', 'Inyeccion de dinero'],
-    ['otros-ingresos', 'Otros ingresos'],
-    ['prestamo', 'Prestamo'],
-    ['capital', 'Aporte de capital'],
-    ['compras', 'Compras de mercaderia'],
-    ['egresos-manuales', 'Egresos manuales'],
-    ['gastos-operativos', 'Gastos operativos'],
-    ['servicios', 'Servicios'],
-    ['salarios', 'Salarios'],
-    ['impuestos', 'Impuestos'],
-    ['retiro-personal', 'Retiro personal'],
-    ['otros', 'Otros']
+    ...CATEGORY_CONFIG.map(item => [item.value, item.label])
 ];
 
 let movimientosState = [];
@@ -480,7 +474,7 @@ function applyFilters() {
     }
 
     if (categoria !== 'todas') {
-        filtrados = filtrados.filter(movimiento => movimiento.categoria === categoria);
+        filtrados = filtrados.filter(movimiento => getCategoryValue(movimiento.categoria) === categoria);
     }
 
     renderMovimientosTabla(filtrados);
@@ -630,6 +624,8 @@ function renderMovimientosTabla(movimientos) {
         const signo = tipoEsEntrada ? '+' : '-';
         const monto = Number(movimiento.monto || 0).toFixed(2);
 
+        const categoriaLabel = getCategoryLabel(movimiento.categoria);
+
         return `
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fechaHora}</td>
@@ -638,7 +634,7 @@ function renderMovimientosTabla(movimientos) {
                         ${etiquetaTipo}
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${movimiento.categoria || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${categoriaLabel}</td>
                 <td class="px-6 py-4 text-sm text-gray-900">${movimiento.descripcion || '-'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${claseMonto}">
                     ${signo}S/ ${monto}
@@ -987,5 +983,46 @@ function buildOptions(options, settings = {}) {
         parts.push(`<option value="${value}">${label}</option>`);
     });
     return parts.join('');
+}
+
+function normalizeCategory(value) {
+    if (!value) {
+        return '';
+    }
+    return value
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_]+/g, '-')
+        .replace(/-+/g, '-');
+}
+
+function getCategoryLabel(value) {
+    const configItem = getCategoryConfig(value);
+    if (configItem) {
+        return configItem.label;
+    }
+    return value || '-';
+}
+
+function getCategoryValue(value) {
+    const configItem = getCategoryConfig(value);
+    if (configItem) {
+        return configItem.value;
+    }
+    return normalizeCategory(value);
+}
+
+function getCategoryConfig(value) {
+    if (!value) {
+        return undefined;
+    }
+    const normalized = normalizeCategory(value);
+    return CATEGORY_CONFIG.find(item => {
+        if (item.value === normalized) {
+            return true;
+        }
+        return Array.isArray(item.aliases) && item.aliases.includes(normalized);
+    });
 }
 

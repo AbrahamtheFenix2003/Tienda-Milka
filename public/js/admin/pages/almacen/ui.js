@@ -1,6 +1,4 @@
-﻿import { updateStockThresholds, getMovementHistory } from './data.js';
-
-let productsState = [];
+﻿let productsState = [];
 let categoriesState = [];
 let filteredProductsState = [];
 
@@ -32,12 +30,6 @@ export function renderAlmacenUI() {
           </button>
           <button id="export-vista-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
             <i class="fas fa-file-excel mr-2"></i>Exportar Vista Actual (Excel)
-          </button>
-          <button id="config-stock-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
-            <i class="fas fa-cog mr-2"></i>Configurar Stock
-          </button>
-          <button id="movimientos-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
-            <i class="fas fa-exchange-alt mr-2"></i>Movimientos
           </button>
         </div>
       </div>
@@ -179,11 +171,6 @@ export function renderAlmacenUI() {
             </select>
           </div>
 
-          <div class="flex-shrink-0">
-            <button id="btn-alertas" class="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600">
-              <i class="fas fa-bell mr-1"></i>Alertas
-            </button>
-          </div>
         </div>
       </div>
 
@@ -209,92 +196,6 @@ export function renderAlmacenUI() {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
-
-    <!-- Modal Configuracion de Stock -->
-    <div id="modal-config-stock" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Configurar Stock</h3>
-          <button id="close-config-stock" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <form id="form-config-stock">
-          <input type="hidden" id="config-product-id">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
-            <p id="config-product-name" class="text-gray-900 font-medium"></p>
-          </div>
-          <div class="mb-4">
-            <label for="config-stock-minimo" class="block text-sm font-medium text-gray-700 mb-1">Stock minimo</label>
-            <input
-              type="number"
-              id="config-stock-minimo"
-              min="0"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
-              required
-            >
-          </div>
-          <div class="mb-4">
-            <label for="config-stock-maximo" class="block text-sm font-medium text-gray-700 mb-1">Stock maximo</label>
-            <input
-              type="number"
-              id="config-stock-maximo"
-              min="0"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
-              required
-            >
-          </div>
-          <div class="flex justify-end space-x-3">
-            <button type="button" id="cancel-config-stock" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Cancelar</button>
-            <button type="submit" class="px-4 py-2 text-white bg-rose-500 rounded-md hover:bg-rose-600">Guardar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal Movimientos -->
-    <div id="modal-movimientos" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full max-h-96 overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Historial de movimientos</h3>
-          <button id="close-movimientos" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Stock anterior</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Stock nuevo</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Observacion</th>
-              </tr>
-            </thead>
-            <tbody id="movimientos-tbody" class="bg-white divide-y divide-gray-200"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Alertas -->
-    <div id="modal-alertas" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold text-yellow-600">
-            <i class="fas fa-bell mr-2"></i>Alertas de stock
-          </h3>
-          <button id="close-alertas" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div id="alertas-content" class="space-y-3"></div>
       </div>
     </div>
   `;
@@ -343,11 +244,6 @@ function setupEventHandlers() {
   const toggleResumenBtn = document.getElementById('toggle-resumen-detail');
   const exportDetallesBtn = document.getElementById('export-detalles-btn');
   const exportVistaBtn = document.getElementById('export-vista-btn');
-  const movimientosBtn = document.getElementById('movimientos-btn');
-  const alertasBtn = document.getElementById('btn-alertas');
-  const configStockBtn = document.getElementById('config-stock-btn');
-  const formConfigStock = document.getElementById('form-config-stock');
-  const productosTbody = document.getElementById('productos-almacen-tbody');
 
   nombreFiltro?.addEventListener('input', () => {
     filterState.nombre = nombreFiltro.value.toLowerCase();
@@ -367,27 +263,6 @@ function setupEventHandlers() {
   toggleResumenBtn?.addEventListener('click', toggleResumenDetail);
   exportDetallesBtn?.addEventListener('click', exportarDetallesExcel);
   exportVistaBtn?.addEventListener('click', exportarVistaActualExcel);
-  movimientosBtn?.addEventListener('click', showMovimientosModal);
-  alertasBtn?.addEventListener('click', showAlertasModal);
-
-  configStockBtn?.addEventListener('click', () => {
-    showMessage('Selecciona un producto desde la tabla para configurar su stock.', 'warning');
-  });
-
-  formConfigStock?.addEventListener('submit', handleStockConfigSubmit);
-
-  const closeButtons = [
-    { id: 'close-config-stock', modal: 'modal-config-stock' },
-    { id: 'cancel-config-stock', modal: 'modal-config-stock' },
-    { id: 'close-movimientos', modal: 'modal-movimientos' },
-    { id: 'close-alertas', modal: 'modal-alertas' },
-  ];
-
-  closeButtons.forEach(({ id, modal }) => {
-    const button = document.getElementById(id);
-    button?.addEventListener('click', () => closeModal(modal));
-  });
-
 }
 
 function setupGlobalModalDismiss() {
@@ -439,55 +314,6 @@ function renderCategoryOptions() {
 
   select.innerHTML = options.join('');
   select.value = categoryNames.has(previousValue) ? previousValue : 'todas';
-}
-
-function handleTableActionClick(event) {
-  const button = (event.target instanceof HTMLElement)
-    ? event.target.closest('button[data-action]')
-    : null;
-
-  if (!button) {
-    return;
-  }
-
-  const productId = button.getAttribute('data-product-id');
-  if (!productId) {
-    return;
-  }
-
-  const action = button.getAttribute('data-action');
-  if (action === 'config-stock') {
-    openConfigStock(productId);
-  } else if (action === 'view-history') {
-    viewProductHistory(productId);
-  }
-}
-function openConfigStock(productId) {
-  const product = productsState.find((item) => item.id === productId);
-  if (!product) {
-    showMessage('No se encontro el producto seleccionado.', 'error');
-    return;
-  }
-
-  const idField = document.getElementById('config-product-id');
-  const nameField = document.getElementById('config-product-name');
-  const minimoField = document.getElementById('config-stock-minimo');
-  const maximoField = document.getElementById('config-stock-maximo');
-
-  if (!idField || !nameField || !minimoField || !maximoField) {
-    return;
-  }
-
-  idField.value = product.id;
-  nameField.textContent = product.name || product.nombre || 'Producto sin nombre';
-  minimoField.value = Number(product.stockMinimo || 5);
-  maximoField.value = Number(product.stockMaximo || 100);
-
-  document.getElementById('modal-config-stock')?.classList.add('active');
-}
-
-function closeModal(modalId) {
-  document.getElementById(modalId)?.classList.remove('active');
 }
 
 function closeAllModals() {
@@ -709,181 +535,6 @@ function toggleResumenDetail() {
     resumenDetail.classList.add('hidden');
     toggleBtn.innerHTML = '<i class="fas fa-expand-arrows-alt mr-1"></i>Ver detalles';
   }
-}
-async function handleStockConfigSubmit(event) {
-  event.preventDefault();
-
-  const productId = document.getElementById('config-product-id')?.value;
-  const stockMinimo = Number(document.getElementById('config-stock-minimo')?.value);
-  const stockMaximo = Number(document.getElementById('config-stock-maximo')?.value);
-
-  if (!productId) {
-    showMessage('Producto no valido.', 'error');
-    return;
-  }
-
-  if (!Number.isFinite(stockMinimo) || !Number.isFinite(stockMaximo)) {
-    showMessage('Los valores de stock deben ser numeros validos.', 'error');
-    return;
-  }
-
-  if (stockMinimo >= stockMaximo) {
-    showMessage('El stock minimo debe ser menor al stock maximo.', 'error');
-    return;
-  }
-
-  try {
-    await updateStockThresholds(productId, { stockMinimo, stockMaximo });
-
-    const productIndex = productsState.findIndex((product) => product.id === productId);
-    if (productIndex !== -1) {
-      productsState[productIndex] = {
-        ...productsState[productIndex],
-        stockMinimo,
-        stockMaximo,
-      };
-    }
-
-    closeModal('modal-config-stock');
-    applyFilters();
-    renderResumenProductosDetalle();
-
-    showMessage('Configuracion de stock actualizada correctamente.', 'success');
-  } catch (error) {
-    console.error('Error actualizando configuracion de stock:', error);
-    showMessage(error.message || 'No fue posible actualizar la configuracion de stock.', 'error');
-  }
-}
-
-async function showMovimientosModal() {
-  const tbody = document.getElementById('movimientos-tbody');
-  if (!tbody) {
-    return;
-  }
-
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="7" class="px-4 py-3 text-center text-gray-500">
-        <i class="fas fa-spinner fa-spin mr-2"></i>Cargando movimientos...
-      </td>
-    </tr>
-  `;
-
-  try {
-    const movimientos = await getMovementHistory(50);
-
-    if (!movimientos || movimientos.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="px-4 py-3 text-center text-gray-500">
-            No hay movimientos registrados
-          </td>
-        </tr>
-      `;
-    } else {
-      tbody.innerHTML = movimientos
-        .map((movimiento) => {
-          const fecha = movementTimestampToString(movimiento.timestamp || movimiento.fecha);
-          const productId = movimiento.productId || movimiento.productoId;
-          const productName =
-            productsState.find((product) => product.id === productId)?.name ||
-            productsState.find((product) => product.id === productId)?.nombre ||
-            productId ||
-            'Producto';
-
-          const tipo = movimiento.tipo || 'entrada';
-          const cantidad = movimiento.cantidad ?? '-';
-          const stockAnterior = movimiento.stockAnterior ?? '-';
-          const stockNuevo = movimiento.stockNuevo ?? '-';
-          const observacion = movimiento.observacion || '-';
-          const tipoClase = tipo === 'entrada' ? 'text-green-600' : 'text-red-600';
-          const tipoEtiqueta = tipo === 'entrada' ? '+ Entrada' : '- Salida';
-
-          return `
-            <tr>
-              <td class="px-4 py-2 text-sm text-gray-900">${fecha}</td>
-              <td class="px-4 py-2 text-sm text-gray-900">${productName}</td>
-              <td class="px-4 py-2 text-sm ${tipoClase} font-medium">${tipoEtiqueta}</td>
-              <td class="px-4 py-2 text-sm text-gray-900">${cantidad}</td>
-              <td class="px-4 py-2 text-sm text-gray-900">${stockAnterior}</td>
-              <td class="px-4 py-2 text-sm text-gray-900">${stockNuevo}</td>
-              <td class="px-4 py-2 text-sm text-gray-500">${observacion}</td>
-            </tr>
-          `;
-        })
-        .join('');
-    }
-
-    document.getElementById('modal-movimientos')?.classList.add('active');
-  } catch (error) {
-    console.error('Error cargando movimientos:', error);
-    showMessage('No se pudo cargar el historial de movimientos.', 'error');
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="px-4 py-3 text-center text-red-500">
-          Error al cargar los movimientos
-        </td>
-      </tr>
-    `;
-  }
-}
-function showAlertasModal() {
-  const alertasContent = document.getElementById('alertas-content');
-  if (!alertasContent) {
-    return;
-  }
-
-  const alertas = [];
-
-  productsState.forEach((product) => {
-    const stock = Number(product.stock || 0);
-    const nombre = product.name || product.nombre || 'Producto';
-
-    if (stock === 0) {
-      alertas.push({
-        tipo: 'sin-stock',
-        producto: nombre,
-        mensaje: 'Producto sin stock',
-        nivel: 'error',
-      });
-    }
-  });
-
-  if (alertas.length === 0) {
-    alertasContent.innerHTML = `
-      <div class="text-center py-4">
-        <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
-        <p class="text-gray-600">No hay alertas de stock</p>
-      </div>
-    `;
-  } else {
-    alertasContent.innerHTML = alertas
-      .map((alerta) => {
-        const colorClase =
-          alerta.nivel === 'error'
-            ? 'border-red-200 bg-red-50'
-            : 'border-yellow-200 bg-yellow-50';
-        const iconoClase =
-          alerta.nivel === 'error'
-            ? 'text-red-500 fa-times-circle'
-            : 'text-yellow-500 fa-exclamation-triangle';
-
-        return `
-          <div class="border ${colorClase} rounded-lg p-3">
-            <div class="flex items-center">
-              <i class="fas ${iconoClase} mr-3"></i>
-              <div>
-                <p class="font-medium text-gray-900">${alerta.producto}</p>
-                <p class="text-sm text-gray-600">${alerta.mensaje}</p>
-              </div>
-            </div>
-          </div>
-        `;
-      })
-      .join('');
-  }
-
-  document.getElementById('modal-alertas')?.classList.add('active');
 }
 
 /* --- Helpers para exportar a Excel (SheetJS) --- */
@@ -1128,12 +779,6 @@ function exportarAlmacenPDF() {
   }
 }
 
-function viewProductHistory(productId) {
-  const product = productsState.find((item) => item.id === productId);
-  const productName = product?.name || product?.nombre || 'producto';
-  showMessage(`Historial detallado para ${productName} aun no esta disponible.`, 'info');
-}
-
 function getCategoryName(product) {
   if (!product) {
     return '';
@@ -1164,23 +809,6 @@ function getStockStatus(stock) {
     return { label: 'Sin Stock', badgeClass: 'bg-red-100 text-red-800' };
   }
   return { label: 'En Stock', badgeClass: 'bg-green-100 text-green-800' };
-}
-
-function movementTimestampToString(value) {
-  if (!value) {
-    return 'Sin fecha';
-  }
-
-  if (typeof value.toDate === 'function') {
-    return value.toDate().toLocaleString('es-PE');
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'Sin fecha';
-  }
-
-  return date.toLocaleString('es-PE');
 }
 
 function showMessage(message, type = 'info') {

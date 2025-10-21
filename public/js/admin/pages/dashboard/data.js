@@ -184,3 +184,31 @@ export async function getRecentActivity({ isAdminFn, currentUser } = {}) {
     return activities.slice(0, 8);
 }
 
+export async function getCategorySalesData() {
+    const { sales } = await ensureBaseData();
+    const salesByCategory = {};
+
+    sales.forEach((sale) => {
+        if (Array.isArray(sale.items) && sale.items.length > 0) {
+            sale.items.forEach((item) => {
+                const category = item.category || 'Sin Categoria';
+                if (!salesByCategory[category]) {
+                    salesByCategory[category] = 0;
+                }
+                salesByCategory[category] += toNumber(item.quantity) * toNumber(item.price);
+            });
+        } else {
+            const category = sale.category || 'Sin Categoria';
+            if (!salesByCategory[category]) {
+                salesByCategory[category] = 0;
+            }
+            salesByCategory[category] += toNumber(sale.totalSale);
+        }
+    });
+
+    return {
+        labels: Object.keys(salesByCategory),
+        totals: Object.values(salesByCategory),
+    };
+}
+

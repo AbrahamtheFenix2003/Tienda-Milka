@@ -2,6 +2,7 @@ import {
     renderDashboardUI,
     updateSummaryCards,
     renderSalesChart,
+    renderCategorySalesChart,
     renderTopProducts,
     renderRecentActivity,
     showDashboardError,
@@ -10,6 +11,7 @@ import {
 import {
     getDashboardMetrics,
     getSalesChartData,
+    getCategorySalesData,
     getTopProducts,
     getRecentActivity,
 } from './data.js';
@@ -34,15 +36,17 @@ export async function loadDashboardPage() {
     const adminContext = resolveAdminContext();
 
     try {
-        const [metrics, chartData, topProducts, activities] = await Promise.all([
+        const [metrics, chartData, categoryData, topProducts, activities] = await Promise.all([
             getDashboardMetrics(),
             getSalesChartData({ days: 7 }),
+            getCategorySalesData(),
             getTopProducts(5),
             getRecentActivity(adminContext),
         ]);
 
         updateSummaryCards(metrics);
         renderSalesChart(chartData);
+        renderCategorySalesChart(categoryData);
         renderTopProducts(topProducts);
         renderRecentActivity(activities);
     } catch (error) {

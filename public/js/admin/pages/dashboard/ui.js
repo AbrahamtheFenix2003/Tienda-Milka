@@ -1,4 +1,5 @@
 let salesChartInstance = null;
+let categoryChartInstance = null;
 
 function getContentArea() {
     return document.getElementById('content-area');
@@ -68,6 +69,12 @@ export function renderDashboardUI() {
                 <h3 class="text-lg font-semibold mb-4">Ventas de los &Uacute;ltimos 7 D&iacute;as</h3>
                 <canvas id="dashboard-sales-chart"></canvas>
             </div>
+            <div class="bg-white rounded-lg shadow p-6 dashboard-chart-container">
+                <h3 class="text-lg font-semibold mb-4">Ventas por Categor&iacute;a</h3>
+                <canvas id="dashboard-category-chart"></canvas>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-lg font-semibold mb-4">Productos M&aacute;s Vendidos</h3>
                 <div id="top-products" class="space-y-3">
@@ -210,6 +217,63 @@ export function renderRecentActivity(activities) {
     `;
         })
         .join('');
+}
+
+export function renderCategorySalesChart({ labels, totals }) {
+    const canvas = document.getElementById('dashboard-category-chart');
+    if (!canvas || typeof Chart === 'undefined') {
+        return;
+    }
+
+    if (categoryChartInstance) {
+        categoryChartInstance.destroy();
+        categoryChartInstance = null;
+    }
+
+    const context = canvas.getContext('2d');
+
+    const backgroundColors = [
+        '#f43f5e',
+        '#3b82f6',
+        '#10b981',
+        '#f97316',
+        '#8b5cf6',
+        '#ec4899',
+        '#6366f1',
+        '#f59e0b',
+        '#06b6d4',
+        '#d946ef',
+    ];
+
+    categoryChartInstance = new Chart(context, {
+        type: 'doughnut',
+        data: {
+            labels: Array.isArray(labels) ? labels : [],
+            datasets: [
+                {
+                    data: Array.isArray(totals) ? totals : [],
+                    backgroundColor: backgroundColors.slice(0, labels.length),
+                    hoverOffset: 4,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15,
+                        font: {
+                            size: 11,
+                        },
+                    },
+                },
+            },
+        },
+    });
 }
 
 export function showDashboardError(message) {

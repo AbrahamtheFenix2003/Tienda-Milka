@@ -1771,9 +1771,6 @@ const ComprasUI = {
                                 <button id="gestionar-proveedores-btn" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors">
                                     <i class="fas fa-truck mr-2"></i>Proveedores
                                 </button>
-                                <button id="analisis-rentabilidad-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
-                                    <i class="fas fa-chart-bar mr-2"></i>Análisis ROI
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -1863,7 +1860,6 @@ const ComprasUI = {
         // Botones principales
         this.addClickListener('nueva-compra-btn', () => ComprasModals.openNuevaCompra());
         this.addClickListener('gestionar-proveedores-btn', () => ComprasModals.openProveedores());
-        this.addClickListener('analisis-rentabilidad-btn', () => this.showAnalysisROI());
 
         // Filtros
         this.addInputListener('search-compras', () => comprasData.filterCompras());
@@ -2003,18 +1999,55 @@ const ComprasUI = {
             return;
         }
 
-        try {
-            // Importar la función deletePurchase desde data.js
-            const { deletePurchase } = await import('./data.js');
+        // Id del overlay temporal
+        const overlayId = 'overlay-eliminando-compra';
 
-            // Ejecutar la eliminación
+        // Crear overlay si no existe
+        if (!document.getElementById(overlayId)) {
+            const overlay = document.createElement('div');
+            overlay.id = overlayId;
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
+            overlay.innerHTML = `
+                <div class="bg-white p-4 rounded flex items-center space-x-3">
+                    <i class="fas fa-spinner fa-spin text-lg"></i>
+                    <span class="font-medium">Eliminando compra...</span>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        // Botones de eliminar (para deshabilitarlos durante la operación)
+        const deleteButtons = Array.from(document.querySelectorAll('.delete-purchase-btn'));
+        const clickedBtn = document.querySelector(`.delete-purchase-btn[data-id="${purchaseId}"]`);
+
+        try {
+            // Deshabilitar botones y mostrar spinner en el botón clickeado
+            deleteButtons.forEach(btn => btn.disabled = true);
+            if (clickedBtn) {
+                clickedBtn._originalHtml = clickedBtn.innerHTML;
+                clickedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+
+            // Importar la función deletePurchase desde data.js y ejecutar la eliminación
+            const { deletePurchase } = await import('./data.js');
             await deletePurchase(purchaseId);
 
-            // La función deletePurchase ya actualiza la tabla y las estadísticas
-            // No es necesario hacer nada más aquí
+            // Nota: deletePurchase se encarga de actualizar la tabla y estadísticas
         } catch (error) {
             console.error('Error al eliminar la compra:', error);
             ComprasUtils.showNotification(`Error al eliminar la compra: ${error.message}`, 'error');
+        } finally {
+            // Remover overlay y restaurar botones
+            const ov = document.getElementById(overlayId);
+            if (ov) ov.remove();
+
+            deleteButtons.forEach(btn => {
+                btn.disabled = false;
+                if (btn._originalHtml) {
+                    btn.innerHTML = btn._originalHtml;
+                    delete btn._originalHtml;
+                }
+            });
         }
     },
 

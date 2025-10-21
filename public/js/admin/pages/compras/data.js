@@ -178,40 +178,28 @@ const comprasData = {
             console.log('comprasCache no disponible para actualizar estadísticas');
             return;
         }
-        
+
         const fechaActual = new Date();
         const mesActual = fechaActual.getMonth();
         const añoActual = fechaActual.getFullYear();
-        
+
         // Compras del mes actual
         const comprasMes = window.comprasCache.filter(compra => {
             const fechaCompra = parseLocalDate(compra.fecha);
             return fechaCompra.getMonth() === mesActual && fechaCompra.getFullYear() === añoActual;
         });
-        
+
         // Inversión total
         const inversionTotal = window.comprasCache.reduce((sum, compra) => sum + (compra.totalInvertido || 0), 0);
-        
+
         // Total de proveedores registrados
         const totalProveedores = window.proveedoresCache ? window.proveedoresCache.length : 0;
-        
-        // ROI promedio
-        let roiPromedio = 0;
-        const comprasConVentas = window.comprasCache.filter(compra => (compra.totalVendido || 0) > 0);
-        if (comprasConVentas.length > 0) {
-            const roiTotal = comprasConVentas.reduce((sum, compra) => {
-                const roi = ((compra.totalVendido - compra.totalInvertido) / compra.totalInvertido) * 100;
-                return sum + roi;
-            }, 0);
-            roiPromedio = roiTotal / comprasConVentas.length;
-        }
-        
+
         // Actualizar elementos del DOM
         this.updateElement('compras-mes', comprasMes.length);
         this.updateElement('inversion-total', `S/ ${inversionTotal.toFixed(2)}`);
         this.updateElement('total-proveedores', totalProveedores);
-        this.updateElement('roi-promedio', `${roiPromedio.toFixed(1)}%`);
-        
+
         console.log(`Estadísticas actualizadas - Proveedores: ${totalProveedores}, Compras del mes: ${comprasMes.length}`);
     },
 

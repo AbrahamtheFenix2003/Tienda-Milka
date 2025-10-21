@@ -75,28 +75,20 @@ const ComprasUtils = {
                 return;
             }
 
-            const headers = ['Fecha', 'Proveedor', 'Factura', 'Método Pago', 'Total Invertido', 'Total Vendido', 'ROI', 'Estado'];
+            const headers = ['Fecha', 'Proveedor', 'Productos', 'Factura', 'Método Pago', 'Total Invertido', 'Estado'];
             const data = window.comprasCache.map(compra => {
                 const proveedor = window.proveedoresCache?.find(p => p.id === compra.proveedorId);
                 const nombreProveedor = proveedor ? proveedor.nombre : 'No encontrado';
-                const roi = compra.totalInvertido > 0 ? 
-                    (((compra.totalVendido || 0) - compra.totalInvertido) / compra.totalInvertido * 100) : 0;
-                
-                let estado = 'Pendiente';
-                if (compra.totalVendido >= compra.totalInvertido) {
-                    estado = 'Recuperado';
-                } else if (compra.totalVendido > 0) {
-                    estado = 'En progreso';
-                }
-                
+
+                const estado = compra.estado || 'Registrada';
+
                 return [
                     ComprasUtils.formatDate(compra.fecha),
                     nombreProveedor,
+                    compra.productos?.length || 0,
                     compra.factura || 'N/A',
                     compra.metodoPago,
                     compra.totalInvertido.toFixed(2),
-                    (compra.totalVendido || 0).toFixed(2),
-                    roi.toFixed(1) + '%',
                     estado
                 ];
             });
@@ -153,39 +145,28 @@ const ComprasUtils = {
                         <tr>
                             <th>Fecha</th>
                             <th>Proveedor</th>
+                            <th>Productos</th>
                             <th>Factura</th>
                             <th>Invertido</th>
-                            <th>Vendido</th>
-                            <th>ROI</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
-        
+
         window.comprasCache.forEach(compra => {
             const proveedor = window.proveedoresCache?.find(p => p.id === compra.proveedorId);
             const nombreProveedor = proveedor ? proveedor.nombre : 'No encontrado';
-            const roi = compra.totalInvertido > 0 ? 
-                (((compra.totalVendido || 0) - compra.totalInvertido) / compra.totalInvertido * 100) : 0;
-            
-            let estado = 'Pendiente';
-            if (compra.totalVendido >= compra.totalInvertido) {
-                estado = 'Recuperado';
-            } else if (compra.totalVendido > 0) {
-                estado = 'En progreso';
-            }
-            
-            const roiClass = roi >= 0 ? 'positivo' : 'negativo';
-            
+
+            const estado = compra.estado || 'Registrada';
+
             html += `
                 <tr>
                     <td>${ComprasUtils.formatDate(compra.fecha)}</td>
                     <td>${nombreProveedor}</td>
+                    <td>${compra.productos?.length || 0}</td>
                     <td>${compra.factura || 'N/A'}</td>
                     <td>S/ ${compra.totalInvertido.toFixed(2)}</td>
-                    <td>S/ ${(compra.totalVendido || 0).toFixed(2)}</td>
-                    <td class="${roiClass}">${roi.toFixed(1)}%</td>
                     <td>${estado}</td>
                 </tr>
             `;
@@ -221,20 +202,19 @@ const ComprasUtils = {
         return new Date(date).toLocaleDateString('es-PE');
     },
 
-    formatROI(totalInvertido, totalVendido) {
-        if (totalInvertido <= 0) return '0.0%';
-        const roi = ((totalVendido - totalInvertido) / totalInvertido) * 100;
-        return `${roi.toFixed(1)}%`;
-    },
+    getEstadoCompra(compra) {
+        const estado = compra.estado || 'Registrada';
+        let cssClass = 'bg-gray-100 text-gray-800';
 
-    getEstadoCompra(totalInvertido, totalVendido) {
-        if (totalVendido >= totalInvertido) {
-            return { estado: 'Recuperado', class: 'bg-blue-100 text-blue-800' };
-        } else if (totalVendido > 0) {
-            return { estado: 'En progreso', class: 'bg-yellow-100 text-yellow-800' };
-        } else {
-            return { estado: 'Pendiente', class: 'bg-gray-100 text-gray-800' };
+        if (estado === 'Completada') {
+            cssClass = 'bg-green-100 text-green-800';
+        } else if (estado === 'En proceso') {
+            cssClass = 'bg-yellow-100 text-yellow-800';
+        } else if (estado === 'Registrada') {
+            cssClass = 'bg-blue-100 text-blue-800';
         }
+
+        return { estado, class: cssClass };
     },
 
     validateForm(formId) {
@@ -1486,18 +1466,10 @@ const ComprasModals = {
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-3 gap-4 pt-4 border-t">
+                <div class="pt-4 border-t">
                     <div>
                         <strong>Total Invertido:</strong><br>
                         S/ ${compra.totalInvertido.toFixed(2)}
-                    </div>
-                    <div>
-                        <strong>Total Vendido:</strong><br>
-                        S/ ${(compra.totalVendido || 0).toFixed(2)}
-                    </div>
-                    <div>
-                        <strong>ROI:</strong><br>
-                        ${compra.totalInvertido > 0 ? (((compra.totalVendido || 0) - compra.totalInvertido) / compra.totalInvertido * 100).toFixed(1) : 0}%
                     </div>
                 </div>
                 
@@ -1785,18 +1757,6 @@ const ComprasUI = {
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-yellow-100 text-yellow-500">
-                                <i class="fas fa-chart-line text-xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500">ROI Promedio</p>
-                                <p class="text-2xl font-semibold text-yellow-600" id="roi-promedio">0%</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 
                 <!-- Panel de Control -->
@@ -1845,15 +1805,13 @@ const ComprasUI = {
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Productos</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Invertido</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendido</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROI</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="compras-table" class="bg-white divide-y divide-gray-200">
                                 <tr>
-                                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">Cargando compras...</td>
+                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">Cargando compras...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1956,12 +1914,12 @@ const ComprasUI = {
     renderComprasTable(compras) {
         const tbody = document.getElementById('compras-table');
         if (!tbody) return;
-        
+
         if (compras.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No se encontraron compras</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No se encontraron compras</td></tr>';
             return;
         }
-        
+
         tbody.innerHTML = compras.map(compra => {
             const proveedor = window.proveedoresCache?.find(p => p.id === compra.proveedorId);
             const nombreProveedor = proveedor ? proveedor.nombre : 'Proveedor no encontrado';
@@ -1969,15 +1927,11 @@ const ComprasUI = {
             const fecha = ComprasUtils.formatDate(compra.fecha);
             const numProductos = compra.productos ? compra.productos.length : 0;
             const totalInvertido = compra.totalInvertido || 0;
-            const totalVendido = compra.totalVendido || 0;
-            
-            let roi = 0;
-            let roiClass = 'text-gray-600';
-            
-            // Usar el estado de la compra o calcular uno por defecto
-            let estado = compra.estado || 'Registrada';
+
+            // Usar el estado de la compra
+            const estado = compra.estado || 'Registrada';
             let estadoClass = 'bg-gray-100 text-gray-800'; // Default
-            
+
             // Determinar clase CSS basada en el estado
             switch(estado) {
                 case 'Registrada':
@@ -1995,38 +1949,13 @@ const ComprasUI = {
                 default:
                     estadoClass = 'bg-gray-100 text-gray-800';
             }
-            
-            if (totalInvertido > 0) {
-                roi = ((totalVendido - totalInvertido) / totalInvertido) * 100;
-                
-                if (roi > 0) {
-                    roiClass = 'text-green-600';
-                } else if (roi < 0) {
-                    roiClass = 'text-red-600';
-                }
-                
-                // Actualizar estado basado en ventas si no está anulada
-                if (estado !== 'Anulada') {
-                    if (totalVendido >= totalInvertido) {
-                        estado = 'Recuperado';
-                        estadoClass = 'bg-blue-100 text-blue-800';
-                    } else if (totalVendido > 0) {
-                        estado = 'Parcial';
-                        estadoClass = 'bg-yellow-100 text-yellow-800';
-                    }
-                }
-            }
-            
+
             return `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm">${fecha}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">${nombreProveedor}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">${numProductos} productos</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold">S/ ${totalInvertido.toFixed(2)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">S/ ${totalVendido.toFixed(2)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${roiClass}">
-                        ${roi.toFixed(1)}%
-                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoClass}">
                             ${estado}

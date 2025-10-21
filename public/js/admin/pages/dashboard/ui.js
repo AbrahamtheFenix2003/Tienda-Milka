@@ -55,11 +55,11 @@ export function renderDashboardUI() {
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center">
                     <div class="p-3 rounded-full bg-red-100 text-red-500">
-                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                        <i class="fas fa-times-circle text-xl"></i>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Stock Bajo</p>
-                        <p class="text-2xl font-semibold text-gray-900" id="low-stock">0</p>
+                        <p class="text-sm font-medium text-gray-500">Sin Stock</p>
+                        <p class="text-2xl font-semibold text-gray-900" id="out-of-stock">0</p>
                     </div>
                 </div>
             </div>
@@ -97,7 +97,7 @@ export function renderDashboardUI() {
     `;
 }
 
-export function updateSummaryCards({ totalSales, totalRevenue, totalProducts, lowStock }) {
+export function updateSummaryCards({ totalSales, totalRevenue, totalProducts, outOfStock }) {
     const setText = (id, text) => {
         const element = document.getElementById(id);
         if (element) {
@@ -108,7 +108,7 @@ export function updateSummaryCards({ totalSales, totalRevenue, totalProducts, lo
     setText('total-sales', totalSales ?? 0);
     setText('total-revenue', `S/ ${(Number(totalRevenue) || 0).toFixed(2)}`);
     setText('total-products', totalProducts ?? 0);
-    setText('low-stock', lowStock ?? 0);
+    setText('out-of-stock', outOfStock ?? 0);
 }
 
 export function renderSalesChart({ dates, totals }) {

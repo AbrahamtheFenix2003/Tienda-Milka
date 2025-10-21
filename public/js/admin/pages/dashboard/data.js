@@ -2,7 +2,6 @@ import { loadAllSalesAndExpenses, getSaleDate } from '../reportes/data.js';
 import { ensureProductsCache } from '../ventas/data.js';
 import { getDb } from '../../services/firebase.js';
 
-const LOW_STOCK_THRESHOLD = 5;
 let baseDataPromise = null;
 let purchasesPromise = null;
 
@@ -262,13 +261,13 @@ export async function getDashboardMetrics() {
     const totalSales = sales.length;
     const totalRevenue = sales.reduce((sum, sale) => sum + toNumber(sale.totalSale), 0);
     const totalProducts = products.length;
-    const lowStock = products.filter((product) => toNumber(product.stock) < LOW_STOCK_THRESHOLD).length;
+    const outOfStock = products.filter((product) => toNumber(product.stock) === 0).length;
 
     return {
         totalSales,
         totalRevenue,
         totalProducts,
-        lowStock,
+        outOfStock,
     };
 }
 
